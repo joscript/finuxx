@@ -7,10 +7,12 @@ import {
   AddScreen,
   ReportsScreen,
   SettingsScreen,
+  TransactionsScreen,
 } from '../screens';
 
 export type RootTabParamList = {
   Home: undefined;
+  Transactions: undefined;
   Accounts: undefined;
   Add: undefined;
   Reports: undefined;
@@ -24,6 +26,7 @@ type IconName = React.ComponentProps<typeof Ionicons>['name'];
 const getTabBarIcon = (routeName: string, focused: boolean): IconName => {
   const icons: Record<string, { focused: IconName; unfocused: IconName }> = {
     Home: { focused: 'home', unfocused: 'home-outline' },
+    Transactions: { focused: 'receipt', unfocused: 'receipt-outline' },
     Accounts: { focused: 'wallet', unfocused: 'wallet-outline' },
     Add: { focused: 'add-circle', unfocused: 'add-circle-outline' },
     Reports: { focused: 'bar-chart', unfocused: 'bar-chart-outline' },
@@ -47,6 +50,7 @@ export default function BottomTabNavigator() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+      <Tab.Screen name="Transactions" component={TransactionsScreen} options={{ headerShown: false }} />
       <Tab.Screen name="Accounts" component={AccountsScreen} options={{ headerShown: false }} />
       <Tab.Screen
         name="Add"

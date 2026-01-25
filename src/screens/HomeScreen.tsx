@@ -137,9 +137,10 @@ interface HeaderProps {
   avatarUrl: string;
   onNotificationPress?: () => void;
   onProfilePress?: () => void;
+  onSettingsPress?: () => void;
 }
 
-function Header({ userName, avatarUrl, onNotificationPress, onProfilePress }: HeaderProps) {
+function Header({ userName, avatarUrl, onNotificationPress, onProfilePress, onSettingsPress }: HeaderProps) {
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -180,14 +181,22 @@ function Header({ userName, avatarUrl, onNotificationPress, onProfilePress }: He
           </Text>
         </View>
       </View>
-      <Pressable
-        onPress={onNotificationPress}
-        className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-full items-center justify-center active:bg-gray-200 dark:active:bg-gray-700"
-      >
-        <Ionicons name="notifications-outline" size={24} color="#374151" />
-        {/* Notification Badge */}
-        <View className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white dark:border-gray-900" />
-      </Pressable>
+      <View className="flex-row items-center gap-2">
+        <Pressable
+          onPress={onNotificationPress}
+          className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-full items-center justify-center active:bg-gray-200 dark:active:bg-gray-700"
+        >
+          <Ionicons name="notifications-outline" size={24} color="#374151" />
+          {/* Notification Badge */}
+          <View className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white dark:border-gray-900" />
+        </Pressable>
+        <Pressable
+          onPress={onSettingsPress}
+          className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-full items-center justify-center active:bg-gray-200 dark:active:bg-gray-700"
+        >
+          <Ionicons name="menu-outline" size={24} color="#374151" />
+        </Pressable>
+      </View>
     </Animated.View>
   );
 }
@@ -373,6 +382,10 @@ export default function HomeScreen() {
     console.log('Profile pressed');
   };
 
+  const handleSettingsPress = () => {
+    navigation.navigate('Settings');
+  };
+
   const handleViewAllBills = () => {
     console.log('View all bills pressed');
   };
@@ -539,6 +552,7 @@ function FloatingChatButton({ onPress }: FloatingChatButtonProps) {
           avatarUrl={MOCK_USER.avatar}
           onNotificationPress={handleNotificationPress}
           onProfilePress={handleProfilePress}
+          onSettingsPress={handleSettingsPress}
         />
 
         {/* Balance Card Section */}

@@ -34,6 +34,14 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 // ============ TYPES ============
+interface Account {
+  id: string;
+  name: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  color: string;
+  balance: number;
+}
+
 interface Transaction {
   id: string;
   type: 'income' | 'expense';
@@ -46,6 +54,8 @@ interface Transaction {
   date: string;
   isRecurring?: boolean;
   hasReceipt?: boolean;
+  accountId?: string;
+  accountName?: string;
 }
 
 interface TransactionGroup {
@@ -667,6 +677,16 @@ const CATEGORY_OPTIONS = [
   { id: 'other', name: 'Other', icon: 'ellipsis-horizontal-outline' as const, color: '#6b7280' },
 ];
 
+// ============ ACCOUNT OPTIONS ============
+const ACCOUNT_OPTIONS: Account[] = [
+  { id: 'cash', name: 'Cash', icon: 'cash-outline', color: '#22c55e', balance: 5000 },
+  { id: 'gcash', name: 'GCash', icon: 'phone-portrait-outline', color: '#007bff', balance: 12500 },
+  { id: 'maya', name: 'Maya', icon: 'wallet-outline', color: '#6366f1', balance: 8750 },
+  { id: 'bpi', name: 'BPI Savings', icon: 'business-outline', color: '#ef4444', balance: 45000 },
+  { id: 'bdo', name: 'BDO Checking', icon: 'card-outline', color: '#f59e0b', balance: 23000 },
+  { id: 'credit', name: 'Credit Card', icon: 'card-outline', color: '#8b5cf6', balance: -15000 },
+];
+
 // ============ ADD TRANSACTION MODAL ============
 interface AddTransactionModalProps {
   visible: boolean;
@@ -677,22 +697,26 @@ interface AddTransactionModalProps {
 function AddTransactionModal({ visible, onClose, onAdd }: AddTransactionModalProps) {
   const [type, setType] = useState<'income' | 'expense'>('expense');
   const [category, setCategory] = useState(CATEGORY_OPTIONS[0]);
+  const [account, setAccount] = useState(ACCOUNT_OPTIONS[0]);
   const [merchant, setMerchant] = useState('');
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [isRecurring, setIsRecurring] = useState(false);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [showAccountPicker, setShowAccountPicker] = useState(false);
 
   const scale = useSharedValue(1);
 
   const resetForm = () => {
     setType('expense');
     setCategory(CATEGORY_OPTIONS[0]);
+    setAccount(ACCOUNT_OPTIONS[0]);
     setMerchant('');
     setAmount('');
     setNote('');
     setIsRecurring(false);
     setShowCategoryPicker(false);
+    setShowAccountPicker(false);
   };
 
   const handleClose = () => {
@@ -717,6 +741,8 @@ function AddTransactionModal({ visible, onClose, onAdd }: AddTransactionModalPro
       date: new Date().toISOString().split('T')[0],
       isRecurring,
       hasReceipt: false,
+      accountId: account.id,
+      accountName: account.name,
     };
 
     onAdd(newTransaction);
@@ -882,7 +908,10 @@ function AddTransactionModal({ visible, onClose, onAdd }: AddTransactionModalPro
                 Category
               </Text>
               <Pressable
-                onPress={() => setShowCategoryPicker(!showCategoryPicker)}
+                onPress={() => {
+                  setShowCategoryPicker(!showCategoryPicker);
+                  setShowAccountPicker(false);
+                }}
                 className="bg-white dark:bg-gray-800 rounded-2xl px-5 py-4 flex-row items-center justify-between"
                 style={{
                   shadowColor: '#000',
@@ -943,6 +972,94 @@ function AddTransactionModal({ visible, onClose, onAdd }: AddTransactionModalPro
                         {cat.name}
                       </Text>
                       {category.id === cat.id && (
+                        <Ionicons name="checkmark" size={20} color="#22c55e" />
+                      )}
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+            </View>
+
+            {/* Account / Wallet */}
+            <View className="mb-6">
+              <Text className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-3">
+                {type === 'income' ? 'Add to Account' : 'Pay from Account'}
+              </Text>
+              <Pressable
+                onPress={() => {
+                  setShowAccountPicker(!showAccountPicker);
+                  setShowCategoryPicker(false);
+                }}
+                className="bg-white dark:bg-gray-800 rounded-2xl px-5 py-4 flex-row items-center justify-between"
+                style={{
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 8,
+                  elevation: 2,
+                }}
+              >
+                <View className="flex-row items-center flex-1">
+                  <View
+                    className="w-10 h-10 rounded-xl items-center justify-center mr-3"
+                    style={{ backgroundColor: `${account.color}20` }}
+                  >
+                    <Ionicons name={account.icon} size={20} color={account.color} />
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-gray-900 dark:text-white text-base font-semibold">
+                      {account.name}
+                    </Text>
+                    <Text className="text-gray-500 dark:text-gray-400 text-sm">
+                      Balance: ₱{account.balance.toLocaleString()}
+                    </Text>
+                  </View>
+                </View>
+                <Ionicons
+                  name={showAccountPicker ? 'chevron-up' : 'chevron-down'}
+                  size={20}
+                  color="#9ca3af"
+                />
+              </Pressable>
+
+              {/* Account Picker */}
+              {showAccountPicker && (
+                <View
+                  className="bg-white dark:bg-gray-800 rounded-2xl mt-2 overflow-hidden"
+                  style={{
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.05,
+                    shadowRadius: 8,
+                    elevation: 2,
+                  }}
+                >
+                  {ACCOUNT_OPTIONS.map((acc, index) => (
+                    <Pressable
+                      key={acc.id}
+                      onPress={() => {
+                        setAccount(acc);
+                        setShowAccountPicker(false);
+                      }}
+                      className={`flex-row items-center px-5 py-3 ${
+                        index > 0 ? 'border-t border-gray-100 dark:border-gray-700' : ''
+                      } ${account.id === acc.id ? 'bg-gray-50 dark:bg-gray-700' : ''}`}
+                    >
+                      <View
+                        className="w-10 h-10 rounded-xl items-center justify-center mr-3"
+                        style={{ backgroundColor: `${acc.color}20` }}
+                      >
+                        <Ionicons name={acc.icon} size={20} color={acc.color} />
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-gray-900 dark:text-white text-base font-medium">
+                          {acc.name}
+                        </Text>
+                        <Text className={`text-sm ${acc.balance >= 0 ? 'text-gray-500 dark:text-gray-400' : 'text-red-500'}`}>
+                          ₱{acc.balance.toLocaleString()}
+                        </Text>
+                      </View>
+                      {account.id === acc.id && (
                         <Ionicons name="checkmark" size={20} color="#22c55e" />
                       )}
                     </Pressable>

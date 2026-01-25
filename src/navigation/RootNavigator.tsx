@@ -1,11 +1,12 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import BottomTabNavigator from './BottomTabNavigator';
-import { CoachScreen } from '../screens';
+import { CoachScreen, BudgetScreen } from '../screens';
 
 export type RootStackParamList = {
   MainTabs: undefined;
   Coach: undefined;
+  Budget: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -17,6 +18,14 @@ export default function RootNavigator() {
       <Stack.Screen
         name="Coach"
         component={CoachScreen}
+        options={{
+          presentation: 'card',
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="Budget"
+        component={BudgetScreen}
         options={{
           presentation: 'card',
           animation: 'slide_from_right',

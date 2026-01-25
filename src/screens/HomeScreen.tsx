@@ -346,7 +346,7 @@ export default function HomeScreen() {
   };
 
   const handleBudgetPress = () => {
-    console.log('Budget card pressed');
+    navigation.navigate('Budget');
   };
 
   const handleStatPress = (statName: string) => {

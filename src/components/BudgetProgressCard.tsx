@@ -8,6 +8,7 @@ import Animated, {
   withDelay,
   Easing,
 } from 'react-native-reanimated';
+import { Ionicons } from '@expo/vector-icons';
 
 const AnimatedView = Animated.createAnimatedComponent(View);
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -102,7 +103,7 @@ export function BudgetProgressCard({
       className="bg-white dark:bg-gray-800 rounded-[28px] p-7 mx-5"
     >
       <View className="flex-row justify-between items-center mb-6">
-        <View>
+        <View className="flex-1">
           <Text className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">
             Monthly Budget
           </Text>
@@ -110,10 +111,15 @@ export function BudgetProgressCard({
             {currency}{(total - spent).toLocaleString()} left
           </Text>
         </View>
-        <View className={`${getStatusBgColor()} rounded-full px-3.5 py-1.5`}>
-          <Text className={`${getStatusTextColor()} text-xs font-bold`}>
-            {getStatusText()}
-          </Text>
+        <View className="flex-row items-center">
+          <View className={`${getStatusBgColor()} rounded-full px-3.5 py-1.5 mr-2`}>
+            <Text className={`${getStatusTextColor()} text-xs font-bold`}>
+              {getStatusText()}
+            </Text>
+          </View>
+          <View className="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-full items-center justify-center">
+            <Ionicons name="chevron-forward" size={18} color="#9ca3af" />
+          </View>
         </View>
       </View>
 

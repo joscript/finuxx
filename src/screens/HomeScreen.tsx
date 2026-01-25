@@ -1,16 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, Pressable, Image, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import type { NavigationProp } from '@react-navigation/native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
   withSpring,
   withDelay,
+  withRepeat,
+  withSequence,
   Easing,
   FadeInDown,
   FadeIn,
+  interpolate,
+  runOnJS,
 } from 'react-native-reanimated';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import {
   BalanceCard,
@@ -23,6 +30,9 @@ import {
   SkeletonStatItem,
   SkeletonBillItem,
 } from '../components';
+import { RootStackParamList } from '../navigation';
+
+type HomeScreenNavigationProp = NavigationProp<RootStackParamList>;
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -319,6 +329,7 @@ function SkeletonLoading() {
 // ============ MAIN HOME SCREEN ============
 export default function HomeScreen() {
   const [isLoading, setIsLoading] = useState(true);
+  const navigation = useNavigation<HomeScreenNavigationProp>();
 
   // Simulate loading delay
   useEffect(() => {
@@ -343,7 +354,7 @@ export default function HomeScreen() {
   };
 
   const handleCoachPress = () => {
-    console.log('AI Coach pressed');
+    navigation.navigate('Coach');
   };
 
   const handleBillPress = (billId: string) => {
@@ -374,25 +385,154 @@ export default function HomeScreen() {
     console.log('View all categories pressed');
   };
 
+// ============ FLOATING CHAT BUTTON ============
+interface FloatingChatButtonProps {
+  onPress: () => void;
+}
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const BUTTON_SIZE = 56;
+const MARGIN = 20;
+
+function FloatingChatButton({ onPress }: FloatingChatButtonProps) {
+  const translateX = useSharedValue(SCREEN_WIDTH - BUTTON_SIZE - MARGIN);
+  const translateY = useSharedValue(SCREEN_HEIGHT - BUTTON_SIZE - 120); // Account for tab bar
+  const contextX = useSharedValue(0);
+  const contextY = useSharedValue(0);
+  const scale = useSharedValue(1);
+  const glowOpacity = useSharedValue(0.4);
+  const isDragging = useSharedValue(false);
+
+  useEffect(() => {
+    // Subtle pulsing glow effect
+    glowOpacity.value = withRepeat(
+      withSequence(
+        withTiming(0.7, { duration: 1500 }),
+        withTiming(0.4, { duration: 1500 })
+      ),
+      -1,
+      true
+    );
+  }, []);
+
+  const panGesture = Gesture.Pan()
+    .onStart(() => {
+      contextX.value = translateX.value;
+      contextY.value = translateY.value;
+      isDragging.value = true;
+      scale.value = withSpring(1.1);
+    })
+    .onUpdate((event) => {
+      // Calculate new position with bounds
+      const newX = contextX.value + event.translationX;
+      const newY = contextY.value + event.translationY;
+      
+      // Clamp to screen bounds
+      translateX.value = Math.max(MARGIN, Math.min(newX, SCREEN_WIDTH - BUTTON_SIZE - MARGIN));
+      translateY.value = Math.max(MARGIN + 60, Math.min(newY, SCREEN_HEIGHT - BUTTON_SIZE - 100));
+    })
+    .onEnd((event) => {
+      isDragging.value = false;
+      scale.value = withSpring(1);
+      
+      // Snap to nearest edge
+      const snapToRight = translateX.value > (SCREEN_WIDTH - BUTTON_SIZE) / 2;
+      translateX.value = withSpring(
+        snapToRight ? SCREEN_WIDTH - BUTTON_SIZE - MARGIN : MARGIN,
+        { damping: 15, stiffness: 150 }
+      );
+    });
+
+  const tapGesture = Gesture.Tap()
+    .onStart(() => {
+      scale.value = withSpring(0.9);
+    })
+    .onEnd(() => {
+      scale.value = withSpring(1);
+      runOnJS(onPress)();
+    });
+
+  const composedGesture = Gesture.Race(
+    panGesture,
+    tapGesture
+  );
+
+  const buttonStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: translateX.value },
+      { translateY: translateY.value },
+      { scale: scale.value },
+    ],
+  }));
+
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: isDragging.value ? 0.8 : glowOpacity.value,
+  }));
+
+  return (
+    <GestureDetector gesture={composedGesture}>
+      <Animated.View
+        entering={FadeIn.duration(400).delay(800)}
+        style={[
+          buttonStyle,
+          {
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            zIndex: 999,
+          },
+        ]}
+      >
+        {/* Glow Effect */}
+        <Animated.View
+          style={glowStyle}
+          className="absolute -inset-2 bg-gray-900 rounded-full"
+        />
+        <View
+          style={{
+            width: BUTTON_SIZE,
+            height: BUTTON_SIZE,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 6 },
+            shadowOpacity: 0.3,
+            shadowRadius: 12,
+            elevation: 10,
+          }}
+          className="bg-gray-900 rounded-full items-center justify-center"
+        >
+          <Ionicons name="sparkles" size={24} color="#fff" />
+        </View>
+      </Animated.View>
+    </GestureDetector>
+  );
+}
+
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-white dark:bg-gray-900" edges={['top']}>
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 32 }}
-        >
-          <SkeletonLoading />
-        </ScrollView>
-      </SafeAreaView>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <View className="flex-1">
+          <SafeAreaView className="flex-1 bg-white dark:bg-gray-900" edges={['top']}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 32 }}
+            >
+              <SkeletonLoading />
+            </ScrollView>
+          </SafeAreaView>
+          <FloatingChatButton onPress={handleCoachPress} />
+        </View>
+      </GestureHandlerRootView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-gray-900" edges={['top']}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 32 }}
-      >
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View className="flex-1">
+        <SafeAreaView className="flex-1 bg-white dark:bg-gray-900" edges={['top']}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 32 }}
+          >
         {/* Header Section */}
         <Header
           userName={MOCK_USER.name}
@@ -545,5 +685,10 @@ export default function HomeScreen() {
         </Animated.View>
       </ScrollView>
     </SafeAreaView>
+
+    {/* Floating Chat Button */}
+    <FloatingChatButton onPress={handleCoachPress} />
+  </View>
+  </GestureHandlerRootView>
   );
 }

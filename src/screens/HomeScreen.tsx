@@ -351,7 +351,7 @@ export default function HomeScreen() {
 
   // Press handlers
   const handleBalancePress = () => {
-    console.log('Balance card pressed');
+    navigation.navigate('Accounts' as never);
   };
 
   const handleBudgetPress = () => {

@@ -409,7 +409,7 @@ const MARGIN = 20;
 
 function FloatingChatButton({ onPress }: FloatingChatButtonProps) {
   const translateX = useSharedValue(SCREEN_WIDTH - BUTTON_SIZE - MARGIN);
-  const translateY = useSharedValue(SCREEN_HEIGHT - BUTTON_SIZE - 120); // Account for tab bar
+  const translateY = useSharedValue(SCREEN_HEIGHT - BUTTON_SIZE - 140); // Account for tab bar
   const contextX = useSharedValue(0);
   const contextY = useSharedValue(0);
   const scale = useSharedValue(1);

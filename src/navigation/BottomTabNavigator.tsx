@@ -66,7 +66,7 @@ export default function BottomTabNavigator() {
           }}
         />
         <Tab.Screen name="Transactions" component={TransactionsScreen} options={{ headerShown: false }} />
-        <Tab.Screen name="Reports" component={ReportsScreen} />
+        <Tab.Screen name="Reports" component={ReportsScreen} options={{ headerShown: false }} />
       </Tab.Navigator>
 
       <AddTransactionModal

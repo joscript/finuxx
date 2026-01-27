@@ -379,7 +379,7 @@ export default function HomeScreen() {
   };
 
   const handleNotificationPress = () => {
-    console.log('Notifications pressed');
+    navigation.navigate('Notifications');
   };
 
   const handleProfilePress = () => {
@@ -577,7 +577,7 @@ function FloatingChatButton({ onPress }: FloatingChatButtonProps) {
         </Animated.View>
 
         {/* Quick Stats Row - Horizontal Scroll */}
-        <Animated.View entering={FadeInDown.duration(500).delay(300)} className="mt-6">
+        {/* <Animated.View entering={FadeInDown.duration(500).delay(300)} className="mt-6">
           <SectionHeader title="Quick Stats" />
           <ScrollView
             horizontal
@@ -615,12 +615,12 @@ function FloatingChatButton({ onPress }: FloatingChatButtonProps) {
               onPress={() => handleStatPress('savings')}
             />
           </ScrollView>
-        </Animated.View>
+        </Animated.View> */}
 
         {/* AI Coach CTA Card */}
-        <Animated.View entering={FadeInDown.duration(500).delay(400)} className="mt-4">
+        {/* <Animated.View entering={FadeInDown.duration(500).delay(400)} className="mt-4">
           <CoachCard onPress={handleCoachPress} />
-        </Animated.View>
+        </Animated.View> */}
 
         {/* Goals Card */}
         <Animated.View entering={FadeInDown.duration(500).delay(450)} className="mt-4">

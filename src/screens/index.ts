@@ -8,3 +8,4 @@ export { default as BudgetScreen } from './BudgetScreen';
 export { default as TransactionsScreen } from './TransactionsScreen';
 export { default as GoalsScreen } from './GoalsScreen';
 export { default as GoalDetailScreen } from './GoalDetailScreen';
+export { default as NotificationsScreen } from './NotificationsScreen';

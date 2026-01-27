@@ -1,9 +1,10 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import BottomTabNavigator from './BottomTabNavigator';
-import { CoachScreen, BudgetScreen, SettingsScreen, GoalsScreen, GoalDetailScreen, NotificationsScreen } from '../screens';
+import { CoachScreen, BudgetScreen, SettingsScreen, GoalsScreen, GoalDetailScreen, NotificationsScreen, OnboardingScreen } from '../screens';
 
 export type RootStackParamList = {
+  Onboarding: undefined;
   MainTabs: undefined;
   Coach: undefined;
   Budget: undefined;
@@ -16,8 +17,21 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function RootNavigator() {
+  // In a real app, you would check if the user has completed onboarding
+  // const hasCompletedOnboarding = useAppStore(state => state.hasCompletedOnboarding);
+  const hasCompletedOnboarding = false; // Set to false to test onboarding flow
+
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {!hasCompletedOnboarding && (
+        <Stack.Screen
+          name="Onboarding"
+          component={OnboardingScreen}
+          options={{
+            animation: 'fade',
+          }}
+        />
+      )}
       <Stack.Screen name="MainTabs" component={BottomTabNavigator} />
       <Stack.Screen
         name="Coach"

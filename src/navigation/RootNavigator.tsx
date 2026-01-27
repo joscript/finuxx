@@ -1,13 +1,15 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import BottomTabNavigator from './BottomTabNavigator';
-import { CoachScreen, BudgetScreen, SettingsScreen } from '../screens';
+import { CoachScreen, BudgetScreen, SettingsScreen, GoalsScreen, GoalDetailScreen } from '../screens';
 
 export type RootStackParamList = {
   MainTabs: undefined;
   Coach: undefined;
   Budget: undefined;
   Settings: undefined;
+  Goals: undefined;
+  GoalDetail: { goalId: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -35,6 +37,22 @@ export default function RootNavigator() {
       <Stack.Screen
         name="Settings"
         component={SettingsScreen}
+        options={{
+          presentation: 'card',
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="Goals"
+        component={GoalsScreen}
+        options={{
+          presentation: 'card',
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="GoalDetail"
+        component={GoalDetailScreen}
         options={{
           presentation: 'card',
           animation: 'slide_from_right',

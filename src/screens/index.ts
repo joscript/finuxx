@@ -6,3 +6,5 @@ export { default as SettingsScreen } from './SettingsScreen';
 export { default as CoachScreen } from './CoachScreen';
 export { default as BudgetScreen } from './BudgetScreen';
 export { default as TransactionsScreen } from './TransactionsScreen';
+export { default as GoalsScreen } from './GoalsScreen';
+export { default as GoalDetailScreen } from './GoalDetailScreen';

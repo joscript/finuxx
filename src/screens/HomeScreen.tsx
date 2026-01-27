@@ -366,6 +366,10 @@ export default function HomeScreen() {
     navigation.navigate('Coach');
   };
 
+  const handleGoalsPress = () => {
+    navigation.navigate('Goals');
+  };
+
   const handleBillPress = (billId: string) => {
     console.log(`Bill pressed: ${billId}`);
   };
@@ -616,6 +620,53 @@ function FloatingChatButton({ onPress }: FloatingChatButtonProps) {
         {/* AI Coach CTA Card */}
         <Animated.View entering={FadeInDown.duration(500).delay(400)} className="mt-4">
           <CoachCard onPress={handleCoachPress} />
+        </Animated.View>
+
+        {/* Goals Card */}
+        <Animated.View entering={FadeInDown.duration(500).delay(450)} className="mt-4">
+          <Pressable
+            onPress={handleGoalsPress}
+            className="mx-5 rounded-[28px] overflow-hidden active:opacity-90"
+            style={{
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.08,
+              shadowRadius: 16,
+              elevation: 6,
+            }}
+          >
+            <View className="bg-gradient-to-br bg-violet-500 dark:bg-violet-600 p-6">
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center flex-1">
+                  <View className="bg-white/20 w-12 h-12 rounded-2xl items-center justify-center">
+                    <Ionicons name="flag" size={24} color="#fff" />
+                  </View>
+                  <View className="ml-4 flex-1">
+                    <Text className="text-white text-lg font-bold">Goals & Planning</Text>
+                    <Text className="text-violet-100 text-sm mt-0.5">Track your savings goals</Text>
+                  </View>
+                </View>
+                <View className="flex-row items-center">
+                  <View className="bg-white/20 rounded-full px-3 py-1.5 mr-3">
+                    <Text className="text-white text-xs font-bold">5 Active</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color="#fff" />
+                </View>
+              </View>
+              {/* Mini Progress Indicators */}
+              <View className="flex-row mt-4 gap-2">
+                <View className="flex-1 h-1.5 bg-white/20 rounded-full overflow-hidden">
+                  <View className="h-full bg-white rounded-full" style={{ width: '65%' }} />
+                </View>
+                <View className="flex-1 h-1.5 bg-white/20 rounded-full overflow-hidden">
+                  <View className="h-full bg-white rounded-full" style={{ width: '63%' }} />
+                </View>
+                <View className="flex-1 h-1.5 bg-white/20 rounded-full overflow-hidden">
+                  <View className="h-full bg-white rounded-full" style={{ width: '38%' }} />
+                </View>
+              </View>
+            </View>
+          </Pressable>
         </Animated.View>
 
         {/* Top Categories Section */}

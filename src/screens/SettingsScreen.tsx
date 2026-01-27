@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../context';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -373,6 +374,7 @@ function SettingRow({
 export default function SettingsScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const navigation = useNavigation();
+  const { logout } = useAuth();
 
   // Mock settings state
   const [settings, setSettings] = useState(MOCK_SETTINGS);
@@ -445,7 +447,7 @@ export default function SettingsScreen() {
   };
 
   const handleLogoutPress = () => {
-    console.log('Logout pressed');
+    logout();
   };
 
   if (isLoading) {

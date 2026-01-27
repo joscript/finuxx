@@ -10,3 +10,5 @@ export { default as GoalsScreen } from './GoalsScreen';
 export { default as GoalDetailScreen } from './GoalDetailScreen';
 export { default as NotificationsScreen } from './NotificationsScreen';
 export { default as OnboardingScreen } from './OnboardingScreen';
+export { default as LoginScreen } from './LoginScreen';
+export { default as SignupScreen } from './SignupScreen';

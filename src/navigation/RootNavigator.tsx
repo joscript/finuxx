@@ -1,10 +1,13 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import BottomTabNavigator from './BottomTabNavigator';
-import { CoachScreen, BudgetScreen, SettingsScreen, GoalsScreen, GoalDetailScreen, NotificationsScreen, OnboardingScreen } from '../screens';
+import { CoachScreen, BudgetScreen, SettingsScreen, GoalsScreen, GoalDetailScreen, NotificationsScreen, OnboardingScreen, LoginScreen, SignupScreen } from '../screens';
+import { useAuth } from '../context';
 
 export type RootStackParamList = {
   Onboarding: undefined;
+  Login: undefined;
+  Signup: undefined;
   MainTabs: undefined;
   Coach: undefined;
   Budget: undefined;
@@ -19,7 +22,10 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export default function RootNavigator() {
   // In a real app, you would check if the user has completed onboarding
   // const hasCompletedOnboarding = useAppStore(state => state.hasCompletedOnboarding);
-  const hasCompletedOnboarding = false; // Set to false to test onboarding flow
+  const hasCompletedOnboarding = true; // Set to false to test onboarding flow
+  
+  // Get authentication state from context
+  const { isAuthenticated } = useAuth();
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -32,55 +38,78 @@ export default function RootNavigator() {
           }}
         />
       )}
-      <Stack.Screen name="MainTabs" component={BottomTabNavigator} />
-      <Stack.Screen
-        name="Coach"
-        component={CoachScreen}
-        options={{
-          presentation: 'card',
-          animation: 'slide_from_right',
-        }}
-      />
-      <Stack.Screen
-        name="Budget"
-        component={BudgetScreen}
-        options={{
-          presentation: 'card',
-          animation: 'slide_from_right',
-        }}
-      />
-      <Stack.Screen
-        name="Settings"
-        component={SettingsScreen}
-        options={{
-          presentation: 'card',
-          animation: 'slide_from_right',
-        }}
-      />
-      <Stack.Screen
-        name="Goals"
-        component={GoalsScreen}
-        options={{
-          presentation: 'card',
-          animation: 'slide_from_right',
-        }}
-      />
-      <Stack.Screen
-        name="GoalDetail"
-        component={GoalDetailScreen}
-        options={{
-          presentation: 'card',
-          animation: 'slide_from_right',
-        }}
-      />
-      <Stack.Screen
-        name="Notifications"
-        component={NotificationsScreen}
-        options={{
-          presentation: 'card',
-          animation: 'slide_from_right',
-        }}
-      />
+      {!isAuthenticated ? (
+        // Auth screens - shown when not authenticated
+        <>
+          <Stack.Screen
+            name="Login"
+            component={LoginScreen}
+            options={{
+              animation: 'fade',
+            }}
+          />
+          <Stack.Screen
+            name="Signup"
+            component={SignupScreen}
+            options={{
+              animation: 'slide_from_right',
+            }}
+          />
+        </>
+      ) : (
+        // App screens - shown when authenticated
+        <>
+          <Stack.Screen name="MainTabs" component={BottomTabNavigator} />
+          <Stack.Screen
+            name="Coach"
+            component={CoachScreen}
+            options={{
+              presentation: 'card',
+              animation: 'slide_from_right',
+            }}
+          />
+          <Stack.Screen
+            name="Budget"
+            component={BudgetScreen}
+            options={{
+              presentation: 'card',
+              animation: 'slide_from_right',
+            }}
+          />
+          <Stack.Screen
+            name="Settings"
+            component={SettingsScreen}
+            options={{
+              presentation: 'card',
+              animation: 'slide_from_right',
+            }}
+          />
+          <Stack.Screen
+            name="Goals"
+            component={GoalsScreen}
+            options={{
+              presentation: 'card',
+              animation: 'slide_from_right',
+            }}
+          />
+          <Stack.Screen
+            name="GoalDetail"
+            component={GoalDetailScreen}
+            options={{
+              presentation: 'card',
+              animation: 'slide_from_right',
+            }}
+          />
+          <Stack.Screen
+            name="Notifications"
+            component={NotificationsScreen}
+            options={{
+              presentation: 'card',
+              animation: 'slide_from_right',
+            }}
+          />
+        </>
+      )}
     </Stack.Navigator>
   );
 }

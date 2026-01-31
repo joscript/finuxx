@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
-import type { Goal, GoalContribution } from '../types';
+import type { Goal as LocalGoal, GoalContribution as LocalGoalContribution } from '../types';
 import AddContributionModal from '../components/AddContributionModal';
 import Animated, {
   useSharedValue,
@@ -35,86 +35,16 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { fetchGoals, createGoal, addContribution } from '../store/slices/goalsSlice';
+import { CreateGoalRequest, AddContributionRequest, Goal as ApiGoal } from '../api';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const AnimatedView = Animated.createAnimatedComponent(View);
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// ============ MOCK DATA ============
-const MOCK_GOALS: Goal[] = [
-  {
-    id: '1',
-    name: 'Travel to Japan',
-    emoji: '✈️',
-    targetAmount: 80000,
-    currentAmount: 52000,
-    deadline: 'Apr 2026',
-    monthsLeft: 3,
-    monthlyContribution: 9500,
-    color: '#3b82f6',
-    iconBgColor: 'bg-blue-100 dark:bg-blue-500/20',
-    contributions: [
-      { id: 'c1', goalId: '1', accountId: '1', accountName: 'BDO Savings', amount: 10000, date: new Date('2025-11-15') },
-      { id: 'c2', goalId: '1', accountId: '3', accountName: 'GCash', amount: 5000, date: new Date('2025-12-01') },
-      { id: 'c3', goalId: '1', accountId: '1', accountName: 'BDO Savings', amount: 9500, date: new Date('2025-12-15') },
-      { id: 'c4', goalId: '1', accountId: '1', accountName: 'BDO Savings', amount: 9500, date: new Date('2026-01-15') },
-    ],
-  },
-  {
-    id: '2',
-    name: 'Emergency Fund',
-    emoji: '🛡️',
-    targetAmount: 150000,
-    currentAmount: 95000,
-    deadline: 'Jul 2026',
-    monthsLeft: 6,
-    monthlyContribution: 9200,
-    color: '#22c55e',
-    iconBgColor: 'bg-emerald-100 dark:bg-emerald-500/20',
-    contributions: [],
-  },
-  {
-    id: '3',
-    name: 'New MacBook Pro',
-    emoji: '💻',
-    targetAmount: 120000,
-    currentAmount: 45000,
-    deadline: 'Oct 2026',
-    monthsLeft: 9,
-    monthlyContribution: 8400,
-    color: '#8b5cf6',
-    iconBgColor: 'bg-violet-100 dark:bg-violet-500/20',
-    contributions: [],
-  },
-  {
-    id: '4',
-    name: 'Wedding Fund',
-    emoji: '💍',
-    targetAmount: 500000,
-    currentAmount: 125000,
-    deadline: 'Dec 2027',
-    monthsLeft: 23,
-    monthlyContribution: 16350,
-    color: '#ec4899',
-    iconBgColor: 'bg-pink-100 dark:bg-pink-500/20',
-    contributions: [],
-  },
-  {
-    id: '5',
-    name: 'Car Down Payment',
-    emoji: '🚗',
-    targetAmount: 200000,
-    currentAmount: 68000,
-    deadline: 'Mar 2027',
-    monthsLeft: 14,
-    monthlyContribution: 9450,
-    color: '#f59e0b',
-    iconBgColor: 'bg-amber-100 dark:bg-amber-500/20',
-    contributions: [],
-  },
-];
-
+// ============ AI SUGGESTIONS (mock for now as no AI API exists) ============
 const MOCK_AI_SUGGESTIONS = [
   {
     id: '1',
@@ -1048,15 +978,56 @@ function SkeletonLoading() {
 
 // ============ MAIN GOALS SCREEN ============
 export default function GoalsScreen() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [goals, setGoals] = useState<Goal[]>(MOCK_GOALS);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showContributionModal, setShowContributionModal] = useState(false);
-  const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
-  const [simulationContribution, setSimulationContribution] = useState(
-    MOCK_GOALS.reduce((sum, goal) => sum + goal.monthlyContribution, 0)
-  );
+  const [selectedGoal, setSelectedGoal] = useState<LocalGoal | null>(null);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  
+  // Redux
+  const dispatch = useAppDispatch();
+  const { goals: apiGoals, loading: isLoading } = useAppSelector((state) => state.goals);
+
+  // Fetch goals on mount
+  useEffect(() => {
+    dispatch(fetchGoals());
+  }, [dispatch]);
+  
+  // Transform API goals to local format
+  const goals: LocalGoal[] = useMemo(() => {
+    if (!apiGoals) return [];
+    return apiGoals.map((g: ApiGoal) => {
+      const targetAmount = parseFloat(g.targetAmount);
+      const currentAmount = parseFloat(g.currentAmount);
+      const monthsLeft = g.deadline ? Math.max(1, Math.ceil((new Date(g.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 30))) : 6;
+      return {
+        id: g.id.toString(),
+        name: g.name,
+        emoji: g.icon || '🎯',
+        targetAmount,
+        currentAmount,
+        deadline: g.deadline ? new Date(g.deadline).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'No deadline',
+        monthsLeft,
+        monthlyContribution: Math.ceil((targetAmount - currentAmount) / monthsLeft),
+        color: g.iconColor || '#3b82f6',
+        iconBgColor: 'bg-blue-100 dark:bg-blue-500/20',
+        contributions: g.contributions?.map(c => ({
+          id: c.id.toString(),
+          goalId: c.goalId.toString(),
+          amount: parseFloat(c.amount),
+          date: new Date(c.contributionDate),
+          note: c.notes,
+        })) || [],
+      };
+    });
+  }, [apiGoals]);
+
+  const [simulationContribution, setSimulationContribution] = useState(0);
+
+  useEffect(() => {
+    if (goals.length > 0) {
+      setSimulationContribution(goals.reduce((sum, goal) => sum + goal.monthlyContribution, 0));
+    }
+  }, [goals]);
 
   // Calculate totals
   const totalGoals = goals.length;
@@ -1066,60 +1037,41 @@ export default function GoalsScreen() {
   );
   const totalTarget = goals.reduce((sum, goal) => sum + goal.targetAmount, 0);
   const totalSaved = goals.reduce((sum, goal) => sum + goal.currentAmount, 0);
-  const overallProgress = (totalSaved / totalTarget) * 100;
+  const overallProgress = totalTarget > 0 ? (totalSaved / totalTarget) * 100 : 0;
 
-  // Simulate loading
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  const handleAddGoal = (newGoal: Partial<Goal>) => {
-    const goal: Goal = {
-      id: Date.now().toString(),
+  const handleAddGoal = async (newGoal: Partial<LocalGoal>) => {
+    const request: CreateGoalRequest = {
       name: newGoal.name || 'New Goal',
-      emoji: newGoal.emoji || '🎯',
       targetAmount: newGoal.targetAmount || 10000,
       currentAmount: 0,
-      deadline: 'TBD',
-      monthsLeft: newGoal.monthsLeft || 6,
-      monthlyContribution: Math.ceil((newGoal.targetAmount || 10000) / (newGoal.monthsLeft || 6)),
-      color: '#3b82f6',
-      iconBgColor: 'bg-blue-100 dark:bg-blue-500/20',
-      contributions: [],
+      icon: newGoal.emoji,
+      deadline: newGoal.monthsLeft ? new Date(Date.now() + newGoal.monthsLeft * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : undefined,
     };
-    setGoals([goal, ...goals]);
+    
+    await dispatch(createGoal(request));
+    setShowAddModal(false);
   };
 
   const handleGoalPress = (goalId: string) => {
     navigation.navigate('GoalDetail', { goalId });
   };
 
-  const handleAddFunds = (goal: Goal) => {
+  const handleAddFunds = (goal: LocalGoal) => {
     setSelectedGoal(goal);
     setShowContributionModal(true);
   };
 
-  const handleAddContribution = (contribution: Omit<GoalContribution, 'id'>) => {
-    setGoals((prevGoals) =>
-      prevGoals.map((goal) => {
-        if (goal.id === contribution.goalId) {
-          const newContribution: GoalContribution = {
-            ...contribution,
-            id: Date.now().toString(),
-          };
-          return {
-            ...goal,
-            currentAmount: goal.currentAmount + contribution.amount,
-            contributions: [...goal.contributions, newContribution],
-          };
-        }
-        return goal;
-      })
-    );
+  const handleAddContribution = async (contribution: Omit<LocalGoalContribution, 'id'>) => {
+    if (!selectedGoal) return;
+    
+    const request: AddContributionRequest = {
+      amount: contribution.amount,
+      accountId: contribution.accountId ? parseInt(contribution.accountId) : undefined,
+      contributionDate: contribution.date.toISOString().split('T')[0],
+      notes: contribution.note,
+    };
+    
+    await dispatch(addContribution({ goalId: parseInt(selectedGoal.id), data: request }));
     setShowContributionModal(false);
     setSelectedGoal(null);
   };

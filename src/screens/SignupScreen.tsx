@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -22,7 +22,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../navigation';
-import { useAuth } from '../context';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { register, clearError } from '../store/slices/authSlice';
 
 type SignupScreenNavigationProp = NavigationProp<RootStackParamList>;
 
@@ -291,15 +292,23 @@ function PasswordStrength({ password }: PasswordStrengthProps) {
 
 export default function SignupScreen() {
   const navigation = useNavigation<SignupScreenNavigationProp>();
-  const { login } = useAuth();
+  const dispatch = useAppDispatch();
+  const { isLoading: authLoading, error: authError } = useAppSelector((state) => state.auth);
 
   // Form State
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Sync auth error to local state
+  useEffect(() => {
+    if (authError) {
+      setError(authError);
+      dispatch(clearError());
+    }
+  }, [authError, dispatch]);
 
   // Validation
   const isNameValid = name.trim().length >= 2;
@@ -347,15 +356,9 @@ export default function SignupScreen() {
       return;
     }
 
-    setIsLoading(true);
     setError(null);
-
-    // Simulate auth request
-    setTimeout(() => {
-      setIsLoading(false);
-      // Set authenticated and navigate to main app
-      login();
-    }, 1500);
+    dispatch(register({ name: name.trim(), email, password }));
+    // If successful, Redux will update isAuthenticated and navigation will handle the rest
   };
 
   const navigateToLogin = () => {
@@ -417,7 +420,7 @@ export default function SignupScreen() {
                 }}
                 autoCapitalize="words"
                 icon="person-outline"
-                disabled={isLoading}
+                disabled={authLoading}
                 delay={300}
                 error={getFieldError('name')}
               />
@@ -433,7 +436,7 @@ export default function SignupScreen() {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 icon="mail-outline"
-                disabled={isLoading}
+                disabled={authLoading}
                 delay={400}
                 error={getFieldError('email')}
               />
@@ -449,7 +452,7 @@ export default function SignupScreen() {
                 secureTextEntry
                 showPasswordToggle
                 icon="lock-closed-outline"
-                disabled={isLoading}
+                disabled={authLoading}
                 delay={500}
                 error={getFieldError('password')}
               />
@@ -468,7 +471,7 @@ export default function SignupScreen() {
                 secureTextEntry
                 showPasswordToggle
                 icon="shield-checkmark-outline"
-                disabled={isLoading}
+                disabled={authLoading}
                 delay={600}
                 error={getFieldError('confirmPassword')}
               />
@@ -491,7 +494,7 @@ export default function SignupScreen() {
               <PrimaryButton
                 label="Create Account"
                 onPress={handleSignup}
-                loading={isLoading}
+                loading={authLoading}
                 disabled={false}
               />
             </Animated.View>

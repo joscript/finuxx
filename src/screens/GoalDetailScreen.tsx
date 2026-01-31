@@ -5,6 +5,7 @@ import {
   Pressable,
   ScrollView,
   FlatList,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -20,34 +21,15 @@ import Animated, {
   FadeInUp,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import type { Goal, GoalContribution } from '../types';
+import type { Goal as LocalGoal, GoalContribution as LocalGoalContribution } from '../types';
 import AddContributionModal from '../components/AddContributionModal';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { fetchGoal, addContribution } from '../store/slices/goalsSlice';
+import { AddContributionRequest } from '../api';
+import type { RootStackParamList } from '../navigation';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const AnimatedView = Animated.createAnimatedComponent(View);
-
-// ============ MOCK DATA ============
-// In a real app, this would come from a global state/context or be passed via navigation params
-const MOCK_GOAL: Goal = {
-  id: '1',
-  name: 'Travel to Japan',
-  emoji: '✈️',
-  targetAmount: 80000,
-  currentAmount: 52000,
-  deadline: 'Apr 2026',
-  monthsLeft: 3,
-  monthlyContribution: 9500,
-  color: '#3b82f6',
-  iconBgColor: 'bg-blue-100 dark:bg-blue-500/20',
-  contributions: [
-    { id: 'c1', goalId: '1', accountId: '1', accountName: 'BDO Savings', amount: 10000, date: new Date('2025-11-15'), note: 'Initial deposit' },
-    { id: 'c2', goalId: '1', accountId: '3', accountName: 'GCash', amount: 5000, date: new Date('2025-12-01'), note: 'Side hustle earnings' },
-    { id: 'c3', goalId: '1', accountId: '1', accountName: 'BDO Savings', amount: 9500, date: new Date('2025-12-15') },
-    { id: 'c4', goalId: '1', accountId: '1', accountName: 'BDO Savings', amount: 9500, date: new Date('2026-01-15') },
-    { id: 'c5', goalId: '1', accountId: '4', accountName: 'Maya', amount: 8000, date: new Date('2026-01-20'), note: 'Bonus allocation' },
-    { id: 'c6', goalId: '1', accountId: '1', accountName: 'BDO Savings', amount: 10000, date: new Date('2026-01-25') },
-  ],
-};
 
 // ============ ANIMATED PROGRESS BAR ============
 interface AnimatedProgressBarProps {
@@ -172,24 +154,63 @@ function ContributionItem({ contribution, index, goalColor }: ContributionItemPr
 // ============ MAIN GOAL DETAIL SCREEN ============
 export default function GoalDetailScreen() {
   const navigation = useNavigation();
-  const [goal, setGoal] = useState<Goal>(MOCK_GOAL);
+  const route = useRoute<RouteProp<RootStackParamList, 'GoalDetail'>>();
+  const goalId = route.params?.goalId ? parseInt(route.params.goalId) : 1;
+  
+  // Redux
+  const dispatch = useAppDispatch();
+  const { selectedGoal: apiGoal, loading: isLoading } = useAppSelector((state) => state.goals);
   const [showContributionModal, setShowContributionModal] = useState(false);
+
+  // Fetch goal on mount
+  useEffect(() => {
+    dispatch(fetchGoal(goalId));
+  }, [dispatch, goalId]);
+
+  // Transform API goal to local format
+  const goal: LocalGoal | null = apiGoal ? {
+    id: apiGoal.id.toString(),
+    name: apiGoal.name,
+    emoji: apiGoal.icon || '🎯',
+    targetAmount: parseFloat(apiGoal.targetAmount),
+    currentAmount: parseFloat(apiGoal.currentAmount),
+    deadline: apiGoal.deadline ? new Date(apiGoal.deadline).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'No deadline',
+    monthsLeft: apiGoal.deadline ? Math.max(0, Math.ceil((new Date(apiGoal.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 30))) : 0,
+    monthlyContribution: 0,
+    color: apiGoal.iconColor || '#3b82f6',
+    iconBgColor: 'bg-blue-100 dark:bg-blue-500/20',
+    contributions: apiGoal.contributions?.map(c => ({
+      id: c.id.toString(),
+      goalId: c.goalId.toString(),
+      accountId: c.accountId?.toString(),
+      amount: parseFloat(c.amount),
+      date: new Date(c.contributionDate),
+      note: c.notes,
+    })) || [],
+  } : null;
+
+  if (isLoading || !goal) {
+    return (
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900 items-center justify-center" edges={['top']}>
+        <ActivityIndicator size="large" color="#3b82f6" />
+      </SafeAreaView>
+    );
+  }
 
   const percentage = (goal.currentAmount / goal.targetAmount) * 100;
   const remaining = goal.targetAmount - goal.currentAmount;
-  const isOnTrack = goal.monthlyContribution * goal.monthsLeft >= remaining;
+  const isOnTrack = goal.monthsLeft > 0 ? (remaining / goal.monthsLeft) <= goal.monthlyContribution : true;
   const isComplete = goal.currentAmount >= goal.targetAmount;
 
-  const handleAddContribution = (contribution: Omit<GoalContribution, 'id'>) => {
-    const newContribution: GoalContribution = {
-      ...contribution,
-      id: Date.now().toString(),
+  const handleAddContribution = async (contribution: Omit<LocalGoalContribution, 'id'>) => {
+    const request: AddContributionRequest = {
+      amount: contribution.amount,
+      accountId: contribution.accountId ? parseInt(contribution.accountId) : undefined,
+      contributionDate: contribution.date.toISOString().split('T')[0],
+      notes: contribution.note,
     };
-    setGoal((prev) => ({
-      ...prev,
-      currentAmount: prev.currentAmount + contribution.amount,
-      contributions: [newContribution, ...prev.contributions],
-    }));
+    
+    await dispatch(addContribution({ goalId, data: request }));
     setShowContributionModal(false);
   };
 

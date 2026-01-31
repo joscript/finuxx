@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, FlatList, Modal, Dimensions, TextInput, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -17,6 +17,9 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { fetchCurrentBudget } from '../store/slices/budgetsSlice';
+import { CreateBudgetRequest, UpdateBudgetRequest } from '../api';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const AnimatedView = Animated.createAnimatedComponent(View);
@@ -1164,21 +1167,38 @@ function SkeletonLoading() {
 // ============ MAIN BUDGET SCREEN ============
 export default function BudgetScreen() {
   const navigation = useNavigation();
-  const [isLoading, setIsLoading] = useState(true);
   const [period, setPeriod] = useState<'monthly' | 'weekly'>('monthly');
   const [categories, setCategories] = useState<CategoryType[]>(INITIAL_CATEGORIES);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<CategoryType | null>(null);
+  
+  // Redux
+  const dispatch = useAppDispatch();
+  const { currentBudget: apiBudget, loading: isLoading } = useAppSelector((state) => state.budgets);
 
-  // Simulate loading delay
+  // Fetch budget on mount
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 2000);
+    dispatch(fetchCurrentBudget());
+  }, [dispatch]);
 
-    return () => clearTimeout(timer);
-  }, []);
+  // Transform API budget categories to local format
+  useEffect(() => {
+    if (apiBudget?.categories) {
+      const transformedCategories: CategoryType[] = apiBudget.categories.map((bc, index) => ({
+        id: bc.categoryId.toString(),
+        name: bc.category?.name || 'Category',
+        icon: bc.category?.icon || 'ellipsis-horizontal-outline',
+        spent: parseFloat(bc.spentAmount || '0'),
+        budget: parseFloat(bc.allocatedAmount),
+        color: bc.category?.color || '#6b7280',
+        iconBgColor: 'bg-gray-100 dark:bg-gray-500/20',
+      }));
+      if (transformedCategories.length > 0) {
+        setCategories(transformedCategories);
+      }
+    }
+  }, [apiBudget]);
 
   // Calculate totals from categories
   const totalBudget = categories.reduce((sum, cat) => sum + cat.budget, 0);

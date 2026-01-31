@@ -1,8 +1,9 @@
 import React from 'react';
+import { ActivityIndicator, View } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import BottomTabNavigator from './BottomTabNavigator';
 import { CoachScreen, BudgetScreen, SettingsScreen, GoalsScreen, GoalDetailScreen, NotificationsScreen, OnboardingScreen, LoginScreen, SignupScreen } from '../screens';
-import { useAuth } from '../context';
+import { useAppSelector } from '../store/hooks';
 
 export type RootStackParamList = {
   Onboarding: undefined;
@@ -24,8 +25,17 @@ export default function RootNavigator() {
   // const hasCompletedOnboarding = useAppStore(state => state.hasCompletedOnboarding);
   const hasCompletedOnboarding = true; // Set to false to test onboarding flow
   
-  // Get authentication state from context
-  const { isAuthenticated } = useAuth();
+  // Get authentication state from Redux
+  const { isAuthenticated, isLoading } = useAppSelector((state) => state.auth);
+
+  // Show loading screen while checking auth
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f9fafb' }}>
+        <ActivityIndicator size="large" color="#3b82f6" />
+      </View>
+    );
+  }
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>

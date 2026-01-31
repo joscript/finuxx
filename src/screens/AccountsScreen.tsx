@@ -16,6 +16,9 @@ import Animated, {
   SlideInDown,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { fetchAccounts, createAccount } from '../store/slices/accountsSlice';
+import { Account as ApiAccount, CreateAccountRequest } from '../api';
 
 const AnimatedView = Animated.createAnimatedComponent(View);
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -37,108 +40,6 @@ interface Account {
   lastSynced: Date;
   isSyncing?: boolean;
 }
-
-// ============ MOCK DATA ============
-const MOCK_ACCOUNTS: Account[] = [
-  // Assets
-  {
-    id: '1',
-    name: 'BDO Savings',
-    type: 'savings',
-    category: 'asset',
-    balance: 45250.0,
-    currency: '₱',
-    icon: 'wallet',
-    iconColor: '#3b82f6',
-    iconBgColor: 'bg-blue-100 dark:bg-blue-500/20',
-    lastSynced: new Date(),
-  },
-  {
-    id: '2',
-    name: 'BPI Checking',
-    type: 'checking',
-    category: 'asset',
-    balance: 12500.0,
-    currency: '₱',
-    icon: 'card',
-    iconColor: '#10b981',
-    iconBgColor: 'bg-emerald-100 dark:bg-emerald-500/20',
-    lastSynced: new Date(Date.now() - 3600000),
-  },
-  {
-    id: '3',
-    name: 'GCash Wallet',
-    type: 'wallet',
-    category: 'asset',
-    balance: 3500.0,
-    currency: '₱',
-    icon: 'phone-portrait',
-    iconColor: '#0066ff',
-    iconBgColor: 'bg-sky-100 dark:bg-sky-500/20',
-    lastSynced: new Date(),
-  },
-  {
-    id: '4',
-    name: 'Maya Wallet',
-    type: 'wallet',
-    category: 'asset',
-    balance: 1250.0,
-    currency: '₱',
-    icon: 'phone-portrait',
-    iconColor: '#22c55e',
-    iconBgColor: 'bg-green-100 dark:bg-green-500/20',
-    lastSynced: new Date(Date.now() - 7200000),
-  },
-  {
-    id: '5',
-    name: 'Investment Fund',
-    type: 'investment',
-    category: 'asset',
-    balance: 62500.0,
-    currency: '₱',
-    icon: 'trending-up',
-    iconColor: '#8b5cf6',
-    iconBgColor: 'bg-violet-100 dark:bg-violet-500/20',
-    lastSynced: new Date(),
-  },
-  // Liabilities
-  {
-    id: '6',
-    name: 'BDO Credit Card',
-    type: 'credit',
-    category: 'liability',
-    balance: 15000.0,
-    currency: '₱',
-    icon: 'card',
-    iconColor: '#ef4444',
-    iconBgColor: 'bg-red-100 dark:bg-red-500/20',
-    lastSynced: new Date(),
-  },
-  {
-    id: '7',
-    name: 'Home Loan',
-    type: 'loan',
-    category: 'liability',
-    balance: 25000.0,
-    currency: '₱',
-    icon: 'home',
-    iconColor: '#f59e0b',
-    iconBgColor: 'bg-amber-100 dark:bg-amber-500/20',
-    lastSynced: new Date(Date.now() - 86400000),
-  },
-  {
-    id: '8',
-    name: 'Car Loan',
-    type: 'loan',
-    category: 'liability',
-    balance: 5000.0,
-    currency: '₱',
-    icon: 'car',
-    iconColor: '#f97316',
-    iconBgColor: 'bg-orange-100 dark:bg-orange-500/20',
-    lastSynced: new Date(),
-  },
-];
 
 // ============ ACCOUNT TYPE OPTIONS ============
 const ACCOUNT_TYPE_OPTIONS: { type: AccountType; category: AccountCategory; label: string; icon: keyof typeof Ionicons.glyphMap; color: string; bgColor: string }[] = [
@@ -943,49 +844,39 @@ function SkeletonLoading() {
 
 // ============ MAIN ACCOUNTS SCREEN ============
 export default function AccountsScreen() {
-  const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [accounts, setAccounts] = useState<Account[]>(MOCK_ACCOUNTS);
+  
+  // Redux
+  const dispatch = useAppDispatch();
+  const { accounts, totals, loading: isLoading } = useAppSelector((state) => state.accounts);
 
-  // Calculate totals
-  const assets = accounts
-    .filter((a) => a.category === 'asset')
-    .reduce((sum, a) => sum + a.balance, 0);
+  // Fetch data on mount
+  useEffect(() => {
+    dispatch(fetchAccounts({}));
+  }, [dispatch]);
 
-  const liabilities = accounts
-    .filter((a) => a.category === 'liability')
-    .reduce((sum, a) => sum + a.balance, 0);
+  // Derive data from Redux state
+  const assets = totals?.totalAssets || 0;
+  const liabilities = totals?.totalLiabilities || 0;
 
   const assetAccounts = accounts.filter((a) => a.category === 'asset');
   const liabilityAccounts = accounts.filter((a) => a.category === 'liability');
 
-  // Simulate loading delay
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
   // Handlers
-  const handleSync = useCallback(() => {
+  const handleSync = useCallback(async () => {
     if (isSyncing) return;
     setIsSyncing(true);
-    setTimeout(() => {
-      setIsSyncing(false);
-    }, 2000);
-  }, [isSyncing]);
+    await dispatch(fetchAccounts({}));
+    setIsSyncing(false);
+  }, [isSyncing, dispatch]);
 
-  const handleRefresh = useCallback(() => {
+  const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
-    handleSync();
-    setTimeout(() => {
-      setIsRefreshing(false);
-    }, 2000);
-  }, [handleSync]);
+    await dispatch(fetchAccounts({}));
+    setIsRefreshing(false);
+  }, [dispatch]);
 
   const handleNetWorthPress = () => {
     console.log('Net worth pressed');
@@ -999,13 +890,19 @@ export default function AccountsScreen() {
     setShowAddModal(true);
   };
 
-  const handleAddNewAccount = (newAccountData: Omit<Account, 'id' | 'lastSynced' | 'isSyncing'>) => {
-    const newAccount: Account = {
-      ...newAccountData,
-      id: `${Date.now()}`,
-      lastSynced: new Date(),
+  const handleAddNewAccount = async (newAccountData: Omit<Account, 'id' | 'lastSynced' | 'isSyncing'>) => {
+    // Create API request
+    const createRequest: CreateAccountRequest = {
+      name: newAccountData.name,
+      type: newAccountData.type === 'credit' ? 'credit_card' : newAccountData.type === 'wallet' ? 'cash' : newAccountData.type,
+      category: newAccountData.category,
+      balance: newAccountData.balance,
+      currency: newAccountData.currency,
+      icon: newAccountData.icon as string,
+      iconColor: newAccountData.iconColor,
     };
-    setAccounts((prev) => [...prev, newAccount]);
+    
+    await dispatch(createAccount(createRequest));
   };
 
   if (isLoading) {

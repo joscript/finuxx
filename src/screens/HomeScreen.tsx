@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, ScrollView, Pressable, Image, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -31,6 +31,11 @@ import {
   SkeletonBillItem,
 } from '../components';
 import { RootStackParamList } from '../navigation';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { fetchAccounts } from '../store/slices/accountsSlice';
+import { fetchCurrentBudget } from '../store/slices/budgetsSlice';
+import { fetchBills } from '../store/slices/billsSlice';
+import { fetchTransactionSummary } from '../store/slices/transactionsSlice';
 
 type HomeScreenNavigationProp = NavigationProp<RootStackParamList>;
 
@@ -38,90 +43,9 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-// ============ MOCK DATA ============
-const MOCK_USER = {
-  name: 'Josua',
-  avatar: 'https://scontent.fcrk2-4.fna.fbcdn.net/v/t39.30808-1/452520623_2513715905502570_4656031386816113501_n.jpg?stp=dst-jpg_s480x480_tt6&_nc_cat=100&ccb=1-7&_nc_sid=1d2534&_nc_eui2=AeGzE2cW0JEmTuJamWkgltViRljU-CF6-HRGWNT4IXr4dG8CyY8oJBi11-umFwf6Ztd8LzqcTFa-5ee6auZPHHol&_nc_ohc=aRWyNVYfE7gQ7kNvwFM9N6f&_nc_oc=Admqkd1vIqSrNaHHPKtVqxgWikKZH_T4hjFR-3tPJehAfVM7T3MPQZZhPe_AKTmk-kQ&_nc_zt=24&_nc_ht=scontent.fcrk2-4.fna&_nc_gid=fLcKi5C2AEiRB1fqbuGtzQ&oh=00_Afocb2ycTPpEx7ZhvCwcRoVe7qV2-S44QQHz5hy_SAG8jg&oe=697B49F6',
-};
-
-const MOCK_BALANCE = '48,250.00';
-
-const MOCK_BUDGET = {
-  spent: 12500,
-  total: 20000,
-};
-
-const MOCK_STATS = {
-  todaySpending: '₱850',
-  monthIncome: '₱35,000',
-  savings: '₱8,500',
-};
-
-const MOCK_BILLS = [
-  {
-    id: '1',
-    name: 'Netflix Subscription',
-    date: 'Jan 28, 2026',
-    amount: '₱549',
-    icon: 'tv-outline' as const,
-    iconColor: '#e50914',
-    iconBgColor: 'bg-red-100 dark:bg-red-500/20',
-  },
-  {
-    id: '2',
-    name: 'Electric Bill',
-    date: 'Feb 1, 2026',
-    amount: '₱2,450',
-    icon: 'flash-outline' as const,
-    iconColor: '#f59e0b',
-    iconBgColor: 'bg-amber-100 dark:bg-amber-500/20',
-  },
-  {
-    id: '3',
-    name: 'Internet (PLDT)',
-    date: 'Feb 5, 2026',
-    amount: '₱1,699',
-    icon: 'wifi-outline' as const,
-    iconColor: '#3b82f6',
-    iconBgColor: 'bg-blue-100 dark:bg-blue-500/20',
-  },
-];
-
-const MOCK_NET_WORTH = {
-  assets: 125000,
-  liabilities: 45000,
-};
-
-const MOCK_CATEGORIES = [
-  {
-    id: '1',
-    name: 'Food',
-    spent: 450,
-    budget: 600,
-    color: '#22c55e',
-  },
-  {
-    id: '2',
-    name: 'Transport',
-    spent: 180,
-    budget: 200,
-    color: '#22c55e',
-  },
-  {
-    id: '3',
-    name: 'Shopping',
-    spent: 520,
-    budget: 400,
-    color: '#ef4444',
-  },
-  {
-    id: '4',
-    name: 'Entertainment',
-    spent: 120,
-    budget: 300,
-    color: '#22c55e',
-  },
-];
+// ============ CONSTANTS ============
+// Default avatar for users without profile picture
+const DEFAULT_AVATAR = 'https://ui-avatars.com/api/?name=User&background=random';
 
 // ============ HELPER FUNCTIONS ============
 function getGreeting(): string {
@@ -337,17 +261,55 @@ function SkeletonLoading() {
 
 // ============ MAIN HOME SCREEN ============
 export default function HomeScreen() {
-  const [isLoading, setIsLoading] = useState(true);
   const navigation = useNavigation<HomeScreenNavigationProp>();
+  const dispatch = useAppDispatch();
+  
+  // Redux state selectors
+  const { user } = useAppSelector((state) => state.auth);
+  const { accounts, totals, loading: accountsLoading } = useAppSelector((state) => state.accounts);
+  const { currentBudget, loading: budgetLoading } = useAppSelector((state) => state.budgets);
+  const { bills, loading: billsLoading } = useAppSelector((state) => state.bills);
+  const { summary: transactionSummary, loading: summaryLoading } = useAppSelector((state) => state.transactions);
 
-  // Simulate loading delay
+  // Fetch data on mount
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 2000);
+    dispatch(fetchAccounts({}));
+    dispatch(fetchCurrentBudget());
+    dispatch(fetchBills({ upcoming: true }));
+    dispatch(fetchTransactionSummary());
+  }, [dispatch]);
 
-    return () => clearTimeout(timer);
-  }, []);
+  const isLoading = accountsLoading || budgetLoading || billsLoading || summaryLoading;
+
+  // Derive data from Redux state with fallbacks
+  const userName = user?.name?.split(' ')[0] || 'User';
+  const userAvatar = DEFAULT_AVATAR;
+  
+  const balance = totals?.netWorth?.toLocaleString() || '0.00';
+  const totalAssets = totals?.totalAssets || 0;
+  const totalLiabilities = totals?.totalLiabilities || 0;
+  
+  const budgetSpent = currentBudget?.spent || 0;
+  const budgetTotal = parseFloat(currentBudget?.totalAmount || '0');
+  
+  const todaySpending = `₱${transactionSummary?.totalExpenses?.toLocaleString() || '0'}`;
+  const monthIncome = `₱${transactionSummary?.totalIncome?.toLocaleString() || '0'}`;
+  const savings = `₱${transactionSummary?.netFlow?.toLocaleString() || '0'}`;
+
+  const upcomingBills = bills?.slice(0, 3) || [];
+  
+  // Derive categories from budget data
+  const budgetCategories = (currentBudget?.categories || []).slice(0, 4).map((cat: any) => {
+    const spent = parseFloat(cat.spentAmount || '0');
+    const budget = parseFloat(cat.allocatedAmount || '0');
+    return {
+      id: cat.id.toString(),
+      name: cat.category?.name || 'Category',
+      spent,
+      budget,
+      color: spent > budget ? '#ef4444' : '#22c55e',
+    };
+  });
 
   // Press handlers
   const handleBalancePress = () => {
@@ -552,8 +514,8 @@ function FloatingChatButton({ onPress }: FloatingChatButtonProps) {
           >
         {/* Header Section */}
         <Header
-          userName={MOCK_USER.name}
-          avatarUrl={MOCK_USER.avatar}
+          userName={userName}
+          avatarUrl={userAvatar}
           onNotificationPress={handleNotificationPress}
           onProfilePress={handleProfilePress}
           onSettingsPress={handleSettingsPress}
@@ -562,7 +524,7 @@ function FloatingChatButton({ onPress }: FloatingChatButtonProps) {
         {/* Balance Card Section */}
         <Animated.View entering={FadeInDown.duration(500).delay(100)}>
           <BalanceCard
-            balance={MOCK_BALANCE}
+            balance={balance}
             onPress={handleBalancePress}
           />
         </Animated.View>
@@ -570,8 +532,8 @@ function FloatingChatButton({ onPress }: FloatingChatButtonProps) {
         {/* Budget Progress Section */}
         <Animated.View entering={FadeInDown.duration(500).delay(200)} className="mt-5">
           <BudgetProgressCard
-            spent={MOCK_BUDGET.spent}
-            total={MOCK_BUDGET.total}
+            spent={budgetSpent}
+            total={budgetTotal}
             onPress={handleBudgetPress}
           />
         </Animated.View>
@@ -686,7 +648,7 @@ function FloatingChatButton({ onPress }: FloatingChatButtonProps) {
               elevation: 6,
             }}
           >
-            {MOCK_CATEGORIES.map((category, index) => (
+            {budgetCategories.map((category, index) => (
               <View key={category.id}>
                 <CategoryItem
                   name={category.name}
@@ -695,7 +657,7 @@ function FloatingChatButton({ onPress }: FloatingChatButtonProps) {
                   color={category.color}
                   onPress={() => handleCategoryPress(category.id)}
                 />
-                {index < MOCK_CATEGORIES.length - 1 && (
+                {index < budgetCategories.length - 1 && (
                   <View className="h-px bg-gray-100 dark:bg-gray-700" />
                 )}
               </View>
@@ -720,22 +682,28 @@ function FloatingChatButton({ onPress }: FloatingChatButtonProps) {
               elevation: 6,
             }}
           >
-            {MOCK_BILLS.map((bill, index) => (
-              <View key={bill.id}>
-                <BillItem
-                  name={bill.name}
-                  date={bill.date}
-                  amount={bill.amount}
-                  icon={bill.icon}
-                  iconColor={bill.iconColor}
-                  iconBgColor={bill.iconBgColor}
-                  onPress={() => handleBillPress(bill.id)}
-                />
-                {index < MOCK_BILLS.length - 1 && (
-                  <View className="h-px bg-gray-100 dark:bg-gray-700 ml-[76px]" />
-                )}
+            {upcomingBills.length > 0 ? (
+              upcomingBills.map((bill, index) => (
+                <View key={bill.id}>
+                  <BillItem
+                    name={bill.name}
+                    date={new Date(bill.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    amount={`₱${parseFloat(bill.amount).toLocaleString()}`}
+                    icon="receipt-outline"
+                    iconColor="#3b82f6"
+                    iconBgColor="bg-blue-100 dark:bg-blue-500/20"
+                    onPress={() => handleBillPress(bill.id.toString())}
+                  />
+                  {index < upcomingBills.length - 1 && (
+                    <View className="h-px bg-gray-100 dark:bg-gray-700 ml-[76px]" />
+                  )}
+                </View>
+              ))
+            ) : (
+              <View className="py-8 items-center">
+                <Text className="text-gray-400 dark:text-gray-500">No upcoming bills</Text>
               </View>
-            ))}
+            )}
           </View>
         </Animated.View>
 
@@ -743,8 +711,8 @@ function FloatingChatButton({ onPress }: FloatingChatButtonProps) {
         <Animated.View entering={FadeInDown.duration(500).delay(700)} className="mt-8">
           <SectionHeader title="Net Worth" />
           <NetWorthCard
-            assets={MOCK_NET_WORTH.assets}
-            liabilities={MOCK_NET_WORTH.liabilities}
+            assets={totalAssets}
+            liabilities={totalLiabilities}
             onPress={handleNetWorthPress}
           />
         </Animated.View>

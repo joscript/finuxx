@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -25,6 +25,9 @@ import Animated, {
   interpolate,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { fetchNotifications, markNotificationAsRead, markAllNotificationsAsRead, deleteNotification } from '../store/slices/notificationsSlice';
+import { Notification as ApiNotification } from '../api';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -52,104 +55,13 @@ interface FilterTabItem {
   label: string;
 }
 
-// ============ MOCK DATA ============
+// ============ CONSTANTS ============
 const FILTER_TABS: FilterTabItem[] = [
   { id: 'all', label: 'All' },
   { id: 'alerts', label: 'Alerts' },
   { id: 'bills', label: 'Bills' },
   { id: 'ai', label: 'AI Coach' },
   { id: 'system', label: 'System' },
-];
-
-const MOCK_NOTIFICATIONS: Notification[] = [
-  {
-    id: '1',
-    type: 'alert',
-    title: 'Budget Limit Warning',
-    message: 'You\'ve spent 85% of your Food budget this month. Consider slowing down.',
-    timestamp: '2 min ago',
-    isRead: false,
-    icon: 'warning-outline',
-    iconColor: '#f59e0b',
-    iconBgColor: 'bg-amber-100 dark:bg-amber-500/20',
-  },
-  {
-    id: '2',
-    type: 'bill',
-    title: 'Netflix Due Tomorrow',
-    message: 'Your Netflix subscription of ₱549 is due on Jan 28.',
-    timestamp: '1 hour ago',
-    isRead: false,
-    icon: 'calendar-outline',
-    iconColor: '#e50914',
-    iconBgColor: 'bg-red-100 dark:bg-red-500/20',
-  },
-  {
-    id: '3',
-    type: 'ai',
-    title: 'Spending Pattern Detected',
-    message: 'I noticed you spend 40% more on weekends. Want tips to balance it?',
-    timestamp: '3 hours ago',
-    isRead: false,
-    icon: 'sparkles',
-    iconColor: '#8b5cf6',
-    iconBgColor: 'bg-violet-100 dark:bg-violet-500/20',
-  },
-  {
-    id: '4',
-    type: 'alert',
-    title: 'Unusual Spending Alert',
-    message: 'A transaction of ₱5,500 at SM Mall is higher than your usual spending.',
-    timestamp: '5 hours ago',
-    isRead: true,
-    icon: 'alert-circle-outline',
-    iconColor: '#ef4444',
-    iconBgColor: 'bg-red-100 dark:bg-red-500/20',
-  },
-  {
-    id: '5',
-    type: 'system',
-    title: 'Low Balance Warning',
-    message: 'Your BDO Savings account balance is below ₱5,000.',
-    timestamp: 'Yesterday',
-    isRead: true,
-    icon: 'wallet-outline',
-    iconColor: '#3b82f6',
-    iconBgColor: 'bg-blue-100 dark:bg-blue-500/20',
-  },
-  {
-    id: '6',
-    type: 'ai',
-    title: 'Weekly Summary Ready',
-    message: 'Your weekly spending report is ready. You saved ₱2,500 this week! 🎉',
-    timestamp: 'Yesterday',
-    isRead: true,
-    icon: 'bar-chart-outline',
-    iconColor: '#22c55e',
-    iconBgColor: 'bg-emerald-100 dark:bg-emerald-500/20',
-  },
-  {
-    id: '7',
-    type: 'bill',
-    title: 'Electric Bill Reminder',
-    message: 'Your Meralco bill of ₱2,450 is due in 5 days.',
-    timestamp: '2 days ago',
-    isRead: true,
-    icon: 'flash-outline',
-    iconColor: '#f59e0b',
-    iconBgColor: 'bg-amber-100 dark:bg-amber-500/20',
-  },
-  {
-    id: '8',
-    type: 'system',
-    title: 'App Update Available',
-    message: 'A new version of Finuxx is available with exciting new features.',
-    timestamp: '3 days ago',
-    isRead: true,
-    icon: 'download-outline',
-    iconColor: '#6366f1',
-    iconBgColor: 'bg-indigo-100 dark:bg-indigo-500/20',
-  },
 ];
 
 // ============ HELPER FUNCTIONS ============
@@ -514,19 +426,63 @@ function FilterTabsBar({ activeFilter, onFilterChange }: FilterTabsBarProps) {
 
 // ============ MAIN NOTIFICATIONS SCREEN ============
 export default function NotificationsScreen() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const navigation = useNavigation();
+  
+  // Redux
+  const dispatch = useAppDispatch();
+  const { notifications: apiNotifications, loading: isLoading } = useAppSelector((state) => state.notifications);
 
-  // Simulate loading delay
+  // Fetch notifications on mount
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-
-    return () => clearTimeout(timer);
-  }, []);
+    dispatch(fetchNotifications());
+  }, [dispatch]);
+  
+  // Transform API notifications to local format
+  const notifications: Notification[] = useMemo(() => {
+    if (!apiNotifications) return [];
+    return apiNotifications.map((n: ApiNotification) => {
+      const typeMap: Record<string, NotificationType> = {
+        'bill_reminder': 'bill',
+        'budget_alert': 'alert',
+        'goal_update': 'ai',
+        'general': 'system',
+      };
+      const notifType = typeMap[n.type] || 'system';
+      
+      const iconMap: Record<NotificationType, { icon: keyof typeof Ionicons.glyphMap; color: string; bgColor: string }> = {
+        'alert': { icon: 'warning-outline', color: '#f59e0b', bgColor: 'bg-amber-100 dark:bg-amber-500/20' },
+        'bill': { icon: 'calendar-outline', color: '#ef4444', bgColor: 'bg-red-100 dark:bg-red-500/20' },
+        'ai': { icon: 'sparkles', color: '#8b5cf6', bgColor: 'bg-violet-100 dark:bg-violet-500/20' },
+        'system': { icon: 'information-circle-outline', color: '#3b82f6', bgColor: 'bg-blue-100 dark:bg-blue-500/20' },
+      };
+      
+      const iconInfo = iconMap[notifType];
+      const createdAt = new Date(n.createdAt);
+      const now = new Date();
+      const diffMs = now.getTime() - createdAt.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMs / 3600000);
+      const diffDays = Math.floor(diffMs / 86400000);
+      
+      let timestamp = 'Just now';
+      if (diffDays > 0) timestamp = `${diffDays}d ago`;
+      else if (diffHours > 0) timestamp = `${diffHours}h ago`;
+      else if (diffMins > 0) timestamp = `${diffMins}m ago`;
+      
+      return {
+        id: n.id.toString(),
+        type: notifType,
+        title: n.title,
+        message: n.message,
+        timestamp,
+        isRead: n.isRead,
+        icon: iconInfo.icon,
+        iconColor: iconInfo.color,
+        iconBgColor: iconInfo.bgColor,
+      };
+    });
+  }, [apiNotifications]);
 
   const filteredNotifications = filterNotifications(notifications, activeFilter);
 
@@ -534,21 +490,17 @@ export default function NotificationsScreen() {
     navigation.goBack();
   };
 
-  const handleClearAll = () => {
-    setNotifications([]);
+  const handleClearAll = async () => {
+    await dispatch(markAllNotificationsAsRead());
   };
 
-  const handleNotificationPress = useCallback((id: string) => {
-    setNotifications((prev) =>
-      prev.map((notification) =>
-        notification.id === id ? { ...notification, isRead: true } : notification
-      )
-    );
-  }, []);
+  const handleNotificationPress = useCallback(async (id: string) => {
+    await dispatch(markNotificationAsRead(parseInt(id)));
+  }, [dispatch]);
 
-  const handleDeleteNotification = useCallback((id: string) => {
-    setNotifications((prev) => prev.filter((notification) => notification.id !== id));
-  }, []);
+  const handleDeleteNotification = useCallback(async (id: string) => {
+    await dispatch(deleteNotification(parseInt(id)));
+  }, [dispatch]);
 
   const handleFilterChange = (filter: FilterType) => {
     setActiveFilter(filter);

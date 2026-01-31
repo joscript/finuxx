@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { useAuth } from '../context';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { logout } from '../store/slices/authSlice';
+import { fetchSettings, updateSettings } from '../store/slices/settingsSlice';
+import { Settings as ApiSettings } from '../api';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -26,26 +29,22 @@ import { Ionicons } from '@expo/vector-icons';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// ============ MOCK DATA ============
-const MOCK_USER = {
-  name: 'Josua',
-  email: 'josua@example.com',
-  avatar:
-    'https://scontent.fcrk2-4.fna.fbcdn.net/v/t39.30808-1/452520623_2513715905502570_4656031386816113501_n.jpg?stp=dst-jpg_s480x480_tt6&_nc_cat=100&ccb=1-7&_nc_sid=1d2534&_nc_eui2=AeGzE2cW0JEmTuJamWkgltViRljU-CF6-HRGWNT4IXr4dG8CyY8oJBi11-umFwf6Ztd8LzqcTFa-5ee6auZPHHol&_nc_ohc=aRWyNVYfE7gQ7kNvwFM9N6f&_nc_oc=Admqkd1vIqSrNaHHPKtVqxgWikKZH_T4hjFR-3tPJehAfVM7T3MPQZZhPe_AKTmk-kQ&_nc_zt=24&_nc_ht=scontent.fcrk2-4.fna&_nc_gid=fLcKi5C2AEiRB1fqbuGtzQ&oh=00_Afocb2ycTPpEx7ZhvCwcRoVe7qV2-S44QQHz5hy_SAG8jg&oe=697B49F6',
-};
+// Default avatar for users without profile picture
+const DEFAULT_AVATAR = 'https://ui-avatars.com/api/?name=User&background=random';
 
-const MOCK_SETTINGS = {
-  currency: 'PHP (₱)',
-  language: 'English',
-  theme: 'System',
-  startOfWeek: 'Monday',
+// Default settings when API data is not available
+const DEFAULT_SETTINGS = {
+  currency: 'PHP',
+  language: 'en',
+  theme: 'system',
+  startOfWeek: 'monday',
   budgetAlerts: true,
   billReminders: true,
   aiCoachNudges: true,
   lowBalanceAlerts: false,
   biometricLogin: true,
   autoLockTime: '1 minute',
-  connectedDevices: 2,
+  connectedDevices: 1,
   appVersion: '1.0.0',
 };
 
@@ -372,26 +371,51 @@ function SettingRow({
 
 // ============ MAIN SETTINGS SCREEN ============
 export default function SettingsScreen() {
-  const [isLoading, setIsLoading] = useState(true);
   const navigation = useNavigation();
-  const { logout } = useAuth();
+  
+  // Redux
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state) => state.auth);
+  const { settings: apiSettings, loading: isLoading } = useAppSelector((state) => state.settings);
 
-  // Mock settings state
-  const [settings, setSettings] = useState(MOCK_SETTINGS);
-
-  // Simulate loading delay
+  // Fetch settings on mount
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Toggle handlers
-  const handleToggle = (key: keyof typeof settings) => (value: boolean) => {
-    setSettings((prev) => ({ ...prev, [key]: value }));
+    dispatch(fetchSettings());
+  }, [dispatch]);
+  
+  // Transform API settings to local format with defaults
+  const settings = {
+    currency: apiSettings?.currency || DEFAULT_SETTINGS.currency,
+    language: apiSettings?.language || DEFAULT_SETTINGS.language,
+    theme: apiSettings?.theme || DEFAULT_SETTINGS.theme,
+    startOfWeek: apiSettings?.startOfWeek || DEFAULT_SETTINGS.startOfWeek,
+    budgetAlerts: apiSettings?.budgetAlerts ?? DEFAULT_SETTINGS.budgetAlerts,
+    billReminders: apiSettings?.billReminders ?? DEFAULT_SETTINGS.billReminders,
+    aiCoachNudges: apiSettings?.aiCoachNudges ?? DEFAULT_SETTINGS.aiCoachNudges,
+    lowBalanceAlerts: apiSettings?.lowBalanceAlerts ?? DEFAULT_SETTINGS.lowBalanceAlerts,
+    biometricLogin: DEFAULT_SETTINGS.biometricLogin, // Local setting, not in API
+    autoLockTime: DEFAULT_SETTINGS.autoLockTime,
+    connectedDevices: DEFAULT_SETTINGS.connectedDevices,
+    appVersion: DEFAULT_SETTINGS.appVersion,
   };
+
+  // Format display values
+  const currencyDisplay = settings.currency === 'PHP' ? 'PHP (₱)' : settings.currency;
+  const languageDisplay = settings.language === 'en' ? 'English' : settings.language;
+  const themeDisplay = settings.theme.charAt(0).toUpperCase() + settings.theme.slice(1);
+  const startOfWeekDisplay = settings.startOfWeek.charAt(0).toUpperCase() + settings.startOfWeek.slice(1);
+
+  // Toggle handlers - update via Redux
+  const handleToggle = (key: 'budgetAlerts' | 'billReminders' | 'aiCoachNudges' | 'lowBalanceAlerts') => async (value: boolean) => {
+    try {
+      await dispatch(updateSettings({ [key]: value }));
+    } catch (error) {
+      console.error('Failed to update setting:', error);
+    }
+  };
+
+  // Local toggle handler for biometric (not stored in API)
+  const [biometricLogin, setBiometricLogin] = useState(DEFAULT_SETTINGS.biometricLogin);
 
   // Navigation handlers
   const handleEditProfile = () => {
@@ -447,7 +471,7 @@ export default function SettingsScreen() {
   };
 
   const handleLogoutPress = () => {
-    logout();
+    dispatch(logout());
   };
 
   if (isLoading) {
@@ -495,9 +519,9 @@ export default function SettingsScreen() {
         {/* Profile Card */}
         <Animated.View entering={FadeInDown.duration(500).delay(100)} className="mt-2">
           <ProfileCard
-            name={MOCK_USER.name}
-            email={MOCK_USER.email}
-            avatarUrl={MOCK_USER.avatar}
+            name={user?.name || 'User'}
+            email={user?.email || 'user@example.com'}
+            avatarUrl={DEFAULT_AVATAR}
             onEditPress={handleEditProfile}
           />
         </Animated.View>
@@ -511,7 +535,7 @@ export default function SettingsScreen() {
               iconColor="#22c55e"
               iconBgColor="bg-emerald-50 dark:bg-emerald-500/20"
               title="Currency"
-              value={settings.currency}
+              value={currencyDisplay}
               onPress={handleCurrencyPress}
             />
             <SettingRow
@@ -519,7 +543,7 @@ export default function SettingsScreen() {
               iconColor="#3b82f6"
               iconBgColor="bg-blue-50 dark:bg-blue-500/20"
               title="Language"
-              value={settings.language}
+              value={languageDisplay}
               onPress={handleLanguagePress}
             />
             <SettingRow
@@ -527,7 +551,7 @@ export default function SettingsScreen() {
               iconColor="#8b5cf6"
               iconBgColor="bg-violet-50 dark:bg-violet-500/20"
               title="Theme"
-              value={settings.theme}
+              value={themeDisplay}
               onPress={handleThemePress}
             />
             <SettingRow
@@ -535,7 +559,7 @@ export default function SettingsScreen() {
               iconColor="#f59e0b"
               iconBgColor="bg-amber-50 dark:bg-amber-500/20"
               title="Start of Week"
-              value={settings.startOfWeek}
+              value={startOfWeekDisplay}
               onPress={handleStartOfWeekPress}
               isLast
             />
@@ -596,8 +620,8 @@ export default function SettingsScreen() {
               iconBgColor="bg-emerald-50 dark:bg-emerald-500/20"
               title="Biometric Login"
               hasToggle
-              toggleValue={settings.biometricLogin}
-              onToggleChange={handleToggle('biometricLogin')}
+              toggleValue={biometricLogin}
+              onToggleChange={setBiometricLogin}
             />
             <SettingRow
               icon="keypad-outline"

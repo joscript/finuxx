@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -28,6 +28,9 @@ import Animated, {
   Layout,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { fetchTransactions, createTransaction } from '../store/slices/transactionsSlice';
+import { CreateTransactionRequest } from '../api';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -1552,9 +1555,7 @@ function SkeletonLoading() {
 
 // ============ MAIN TRANSACTIONS SCREEN ============
 export default function TransactionsScreen() {
-  const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [showAddModal, setShowAddModal] = useState(false);
@@ -1562,24 +1563,70 @@ export default function TransactionsScreen() {
   const [filters, setFilters] = useState<FilterOptions>(DEFAULT_FILTERS);
   const flatListRef = useRef<FlatList>(null);
 
-  // Simulate loading
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setTransactions(MOCK_TRANSACTIONS);
-      setIsLoading(false);
-    }, 1500);
+  // Calculate date range for selected month
+  const startDate = useMemo(() => {
+    const date = new Date(selectedYear, selectedMonth, 1);
+    return date.toISOString().split('T')[0];
+  }, [selectedMonth, selectedYear]);
+  
+  const endDate = useMemo(() => {
+    const date = new Date(selectedYear, selectedMonth + 1, 0);
+    return date.toISOString().split('T')[0];
+  }, [selectedMonth, selectedYear]);
 
-    return () => clearTimeout(timer);
-  }, []);
+  // Redux
+  const dispatch = useAppDispatch();
+  const { transactions: apiTransactions, loading: isLoading, pagination } = useAppSelector((state) => state.transactions);
+
+  // Fetch transactions when filters change
+  useEffect(() => {
+    dispatch(fetchTransactions({
+      startDate,
+      endDate,
+      type: filters.type === 'all' ? undefined : filters.type,
+    }));
+  }, [dispatch, startDate, endDate, filters.type]);
+
+  const hasMore = pagination ? pagination.page < pagination.totalPages : false;
+
+  const loadMore = useCallback(async () => {
+    if (pagination && pagination.page < pagination.totalPages) {
+      await dispatch(fetchTransactions({
+        startDate,
+        endDate,
+        type: filters.type === 'all' ? undefined : filters.type,
+        page: pagination.page + 1,
+      }));
+    }
+  }, [dispatch, pagination, startDate, endDate, filters.type]);
+
+  // Transform API data to local Transaction type
+  const transactions: Transaction[] = useMemo(() => {
+    if (!apiTransactions) return [];
+    return apiTransactions.map(t => ({
+      id: t.id.toString(),
+      type: t.type as 'income' | 'expense',
+      category: t.category?.name || 'Uncategorized',
+      categoryIcon: (t.category?.icon || 'ellipsis-horizontal-outline') as keyof typeof Ionicons.glyphMap,
+      categoryColor: t.category?.color || '#6b7280',
+      merchant: t.merchant || t.description || 'Unknown',
+      note: t.notes,
+      amount: parseFloat(t.amount),
+      date: t.transactionDate,
+      accountId: t.accountId?.toString(),
+    }));
+  }, [apiTransactions]);
 
   // Handle refresh
-  const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    setTimeout(() => {
-      setTransactions(MOCK_TRANSACTIONS);
-      setRefreshing(false);
-    }, 1000);
-  }, []);
+    await dispatch(fetchTransactions({
+      startDate,
+      endDate,
+      type: filters.type === 'all' ? undefined : filters.type,
+    }));
+    setRefreshing(false);
+  }, [dispatch, startDate, endDate, filters.type]);
 
   // Handle month change
   const handleMonthChange = useCallback((month: number, year: number) => {
@@ -1640,11 +1687,28 @@ export default function TransactionsScreen() {
   };
 
   // Handle new transaction added
-  const handleNewTransaction = useCallback((newTransaction: Transaction) => {
-    setTransactions((prev) => [newTransaction, ...prev]);
-    // Scroll to top to show new transaction
-    flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
-  }, []);
+  const handleNewTransaction = useCallback(async (newTransaction: Transaction) => {
+    // Create via API
+    const createRequest: CreateTransactionRequest = {
+      accountId: parseInt(newTransaction.accountId || '1'),
+      type: newTransaction.type,
+      amount: newTransaction.amount,
+      merchant: newTransaction.merchant,
+      description: newTransaction.note,
+      transactionDate: newTransaction.date,
+    };
+    
+    const result = await dispatch(createTransaction(createRequest));
+    if (createTransaction.fulfilled.match(result)) {
+      // Refresh and scroll to top to show new transaction
+      await dispatch(fetchTransactions({
+        startDate,
+        endDate,
+        type: filters.type === 'all' ? undefined : filters.type,
+      }));
+      flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+    }
+  }, [dispatch, startDate, endDate, filters.type]);
 
   // Handle filter press
   const handleFilterPress = () => {

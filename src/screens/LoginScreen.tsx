@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -24,7 +24,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../navigation';
-import { useAuth } from '../context';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { login, clearError } from '../store/slices/authSlice';
 
 type LoginScreenNavigationProp = NavigationProp<RootStackParamList>;
 
@@ -279,13 +280,21 @@ function SocialButton({ label, icon, onPress, disabled = false }: SocialButtonPr
 
 export default function LoginScreen() {
   const navigation = useNavigation<LoginScreenNavigationProp>();
-  const { login } = useAuth();
+  const dispatch = useAppDispatch();
+  const { isLoading: authLoading, error: authError } = useAppSelector((state) => state.auth);
   
   // Form State
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Sync auth error to local state
+  useEffect(() => {
+    if (authError) {
+      setError(authError);
+      dispatch(clearError());
+    }
+  }, [authError, dispatch]);
 
   // Simple validation
   const isEmailValid = email.includes('@') && email.includes('.');
@@ -298,15 +307,9 @@ export default function LoginScreen() {
       return;
     }
 
-    setIsLoading(true);
     setError(null);
-
-    // Simulate auth request
-    setTimeout(() => {
-      setIsLoading(false);
-      // Set authenticated and navigate to main app
-      login();
-    }, 1500);
+    dispatch(login({ email, password }));
+    // If successful, Redux will update isAuthenticated and navigation will handle the rest
   };
 
   const handleForgotPassword = () => {
@@ -394,7 +397,7 @@ export default function LoginScreen() {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 icon="mail-outline"
-                disabled={isLoading}
+                disabled={authLoading}
                 delay={300}
               />
 
@@ -406,7 +409,7 @@ export default function LoginScreen() {
                 secureTextEntry
                 showPasswordToggle
                 icon="lock-closed-outline"
-                disabled={isLoading}
+                disabled={authLoading}
                 delay={400}
               />
 
@@ -440,7 +443,7 @@ export default function LoginScreen() {
               <PrimaryButton
                 label="Login"
                 onPress={handleLogin}
-                loading={isLoading}
+                loading={authLoading}
                 disabled={!isFormValid}
               />
             </Animated.View>
@@ -464,13 +467,13 @@ export default function LoginScreen() {
                 label="Google"
                 icon="logo-google"
                 onPress={handleGoogleLogin}
-                disabled={isLoading}
+                disabled={authLoading}
               />
               <SocialButton
                 label="Apple"
                 icon="logo-apple"
                 onPress={handleAppleLogin}
-                disabled={isLoading}
+                disabled={authLoading}
               />
             </Animated.View>
 

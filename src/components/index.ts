@@ -8,3 +8,6 @@ export { SkeletonCard, SkeletonRow, SkeletonStatItem, SkeletonBillItem } from '.
 export { default as AddTransactionModal } from './AddTransactionModal';
 export type { Transaction } from './AddTransactionModal';
 export { default as AddContributionModal } from './AddContributionModal';
+
+// Accounts components
+export * from './accounts';

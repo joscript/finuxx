@@ -13,7 +13,7 @@ export interface AuthTokens {
 }
 
 // ============ ACCOUNT TYPES ============
-export type AccountType = 'checking' | 'savings' | 'credit_card' | 'investment' | 'loan' | 'cash' | 'other';
+export type AccountType = 'checking' | 'savings' | 'credit' | 'investment' | 'wallet' | 'loan';
 export type AccountCategory = 'asset' | 'liability';
 
 export interface Account {
@@ -26,6 +26,7 @@ export interface Account {
   currency: string;
   icon?: string;
   iconColor?: string;
+  iconBgColor?: string;
   institution?: string;
   accountNumber?: string;
   notes?: string;
@@ -47,6 +48,7 @@ export interface CreateAccountRequest {
   currency?: string;
   icon?: string;
   iconColor?: string;
+  iconBgColor?: string;
   institution?: string;
   accountNumber?: string;
   notes?: string;

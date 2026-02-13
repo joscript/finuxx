@@ -52,7 +52,7 @@ export const createCategory = createAsyncThunk(
 
 export const updateCategory = createAsyncThunk(
   'categories/updateCategory',
-  async ({ id, data }: { id: number; data: UpdateCategoryRequest }, { rejectWithValue }) => {
+  async ({ id, data }: { id: string; data: UpdateCategoryRequest }, { rejectWithValue }) => {
     try {
       const response = await categoryService.update(id, data);
       
@@ -69,7 +69,7 @@ export const updateCategory = createAsyncThunk(
 
 export const deleteCategory = createAsyncThunk(
   'categories/deleteCategory',
-  async (id: number, { rejectWithValue }) => {
+  async (id: string, { rejectWithValue }) => {
     try {
       const response = await categoryService.delete(id);
       

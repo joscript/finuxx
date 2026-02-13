@@ -71,7 +71,7 @@ export const createBudget = createAsyncThunk(
 
 export const updateBudget = createAsyncThunk(
   'budgets/updateBudget',
-  async ({ id, data }: { id: number; data: UpdateBudgetRequest }, { rejectWithValue }) => {
+  async ({ id, data }: { id: string; data: UpdateBudgetRequest }, { rejectWithValue }) => {
     try {
       const response = await budgetService.update(id, data);
       
@@ -88,7 +88,7 @@ export const updateBudget = createAsyncThunk(
 
 export const deleteBudget = createAsyncThunk(
   'budgets/deleteBudget',
-  async (id: number, { rejectWithValue }) => {
+  async (id: string, { rejectWithValue }) => {
     try {
       const response = await budgetService.delete(id);
       

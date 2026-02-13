@@ -12,6 +12,7 @@ import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { 
   fetchCurrentBudget, 
   updateBudget, 
+  createBudget,
   clearBudgetsError 
 } from '../store/slices/budgetsSlice';
 import {
@@ -41,7 +42,7 @@ export default function BudgetScreen() {
 
   // Fetch budget on mount
   useEffect(() => {
-    dispatch(fetchCurrentBudget());
+  dispatch(fetchCurrentBudget());
   }, [dispatch]);
 
   // Show error if any
@@ -111,7 +112,7 @@ export default function BudgetScreen() {
     setAddModalVisible(true);
   };
 
-  const handleSaveBudget = async (categoryId: string, newBudget: number, apiCategoryId?: number) => {
+  const handleSaveBudget = async (categoryId: string, newBudget: number, apiCategoryId?: string) => {
     if (!currentBudget?.id) {
       // No current budget exists - close modal and show message
       setEditModalVisible(false);
@@ -121,19 +122,29 @@ export default function BudgetScreen() {
 
     setIsUpdating(true);
     try {
-      // Build the updated categories array
+      // Build the updated categories array with full data required by backend
       const updatedCategories = currentBudget.categories?.map(cat => ({
         categoryId: cat.categoryId,
         allocatedAmount: cat.categoryId === apiCategoryId 
           ? newBudget 
           : parseFloat(cat.allocatedAmount),
+        name: cat.category?.name || 'Category',
+        icon: cat.category?.icon || 'ellipsis-horizontal-outline',
+        color: cat.category?.color || '#6b7280',
+        iconBgColor: cat.iconBgColor || 'bg-gray-100 dark:bg-gray-500/20',
       })) || [];
 
       // If the category doesn't exist in current budget, add it
       if (apiCategoryId && !updatedCategories.some(c => c.categoryId === apiCategoryId)) {
+        // Find the category info from the UI categories
+        const uiCat = categories.find(c => c.categoryId === apiCategoryId);
         updatedCategories.push({
           categoryId: apiCategoryId,
           allocatedAmount: newBudget,
+          name: uiCat?.name || 'Category',
+          icon: uiCat?.icon || 'ellipsis-horizontal-outline',
+          color: uiCat?.color || '#6b7280',
+          iconBgColor: uiCat?.iconBgColor || 'bg-gray-100 dark:bg-gray-500/20',
         });
       }
 
@@ -158,7 +169,7 @@ export default function BudgetScreen() {
     }
   };
 
-  const handleDeleteBudget = async (categoryId: string, apiCategoryId?: number) => {
+  const handleDeleteBudget = async (categoryId: string, apiCategoryId?: string) => {
     if (!currentBudget?.id) {
       setEditModalVisible(false);
       return;
@@ -172,6 +183,10 @@ export default function BudgetScreen() {
         .map(cat => ({
           categoryId: cat.categoryId,
           allocatedAmount: parseFloat(cat.allocatedAmount),
+          name: cat.category?.name || 'Category',
+          icon: cat.category?.icon || 'ellipsis-horizontal-outline',
+          color: cat.category?.color || '#6b7280',
+          iconBgColor: cat.iconBgColor || 'bg-gray-100 dark:bg-gray-500/20',
         })) || [];
 
       // Calculate new total
@@ -201,15 +216,8 @@ export default function BudgetScreen() {
     color: string; 
     iconBgColor: string; 
     budget: number;
-    categoryId?: number;
+    categoryId?: string;
   }) => {
-    if (!currentBudget?.id) {
-      // No current budget exists - need to create one first
-      setAddModalVisible(false);
-      Alert.alert('Info', 'No active budget found. Please create a budget first.');
-      return;
-    }
-
     if (!newCategory.categoryId) {
       setAddModalVisible(false);
       Alert.alert('Error', 'Category ID is required');
@@ -218,34 +226,73 @@ export default function BudgetScreen() {
 
     setIsUpdating(true);
     try {
-      // Build the updated categories array with the new category
-      const existingCategories = currentBudget.categories?.map(cat => ({
-        categoryId: cat.categoryId,
-        allocatedAmount: parseFloat(cat.allocatedAmount),
-      })) || [];
+      if (!currentBudget?.id) {
+        // No current budget exists - create one for the current month
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth();
+        const monthName = now.toLocaleString('default', { month: 'long' });
+        const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+        const lastDay = new Date(year, month + 1, 0).getDate();
+        const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 
-      const updatedCategories = [
-        ...existingCategories,
-        {
-          categoryId: newCategory.categoryId,
-          allocatedAmount: newCategory.budget,
-        },
-      ];
+        await dispatch(createBudget({
+          name: `${monthName} ${year} Budget`,
+          totalAmount: newCategory.budget,
+          startDate,
+          endDate,
+          categories: [
+            {
+              categoryId: newCategory.categoryId,
+              allocatedAmount: newCategory.budget,
+              name: newCategory.name,
+              icon: newCategory.icon,
+              color: newCategory.color,
+              iconBgColor: newCategory.iconBgColor,
+            },
+          ],
+        })).unwrap();
 
-      // Calculate new total
-      const newTotalAmount = updatedCategories.reduce((sum, cat) => sum + cat.allocatedAmount, 0);
+        // Refresh current budget to get spending data
+        dispatch(fetchCurrentBudget());
+        setAddModalVisible(false);
+      } else {
+        // Budget exists - add category to it
+        const existingCategories = currentBudget.categories?.map(cat => ({
+          categoryId: cat.categoryId,
+          allocatedAmount: parseFloat(cat.allocatedAmount),
+          name: cat.category?.name || 'Category',
+          icon: cat.category?.icon || 'ellipsis-horizontal-outline',
+          color: cat.category?.color || '#6b7280',
+          iconBgColor: cat.iconBgColor || 'bg-gray-100 dark:bg-gray-500/20',
+        })) || [];
 
-      await dispatch(updateBudget({
-        id: currentBudget.id,
-        data: {
-          totalAmount: newTotalAmount,
-          categories: updatedCategories,
-        },
-      })).unwrap();
+        const updatedCategories = [
+          ...existingCategories,
+          {
+            categoryId: newCategory.categoryId,
+            allocatedAmount: newCategory.budget,
+            name: newCategory.name,
+            icon: newCategory.icon,
+            color: newCategory.color,
+            iconBgColor: newCategory.iconBgColor,
+          },
+        ];
 
-      // Refresh current budget
-      dispatch(fetchCurrentBudget());
-      setAddModalVisible(false);
+        const newTotalAmount = updatedCategories.reduce((sum, cat) => sum + cat.allocatedAmount, 0);
+
+        await dispatch(updateBudget({
+          id: currentBudget.id,
+          data: {
+            totalAmount: newTotalAmount,
+            categories: updatedCategories,
+          },
+        })).unwrap();
+
+        // Refresh current budget
+        dispatch(fetchCurrentBudget());
+        setAddModalVisible(false);
+      }
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to add category');
     } finally {

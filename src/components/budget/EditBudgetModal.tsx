@@ -8,8 +8,8 @@ interface EditBudgetModalProps {
   visible: boolean;
   category: UIBudgetCategory | null;
   onClose: () => void;
-  onSave: (categoryId: string, newBudget: number, apiCategoryId?: number) => void;
-  onDelete: (categoryId: string, apiCategoryId?: number) => void;
+  onSave: (categoryId: string, newBudget: number, apiCategoryId?: string) => void;
+  onDelete: (categoryId: string, apiCategoryId?: string) => void;
   isLoading?: boolean;
 }
 

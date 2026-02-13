@@ -24,7 +24,7 @@ class BudgetService {
   /**
    * Get single budget by ID
    */
-  async getById(id: number): Promise<{ success: boolean; data?: { budget: Budget }; message?: string }> {
+  async getById(id: string): Promise<{ success: boolean; data?: { budget: Budget }; message?: string }> {
     return apiClient.get<{ budget: Budget }>(`${ENDPOINTS.BUDGETS}/${id}`);
   }
 
@@ -38,14 +38,14 @@ class BudgetService {
   /**
    * Update a budget
    */
-  async update(id: number, data: UpdateBudgetRequest): Promise<{ success: boolean; data?: { budget: Budget }; message?: string }> {
+  async update(id: string, data: UpdateBudgetRequest): Promise<{ success: boolean; data?: { budget: Budget }; message?: string }> {
     return apiClient.put<{ budget: Budget }>(`${ENDPOINTS.BUDGETS}/${id}`, data);
   }
 
   /**
    * Delete a budget
    */
-  async delete(id: number): Promise<{ success: boolean; message?: string }> {
+  async delete(id: string): Promise<{ success: boolean; message?: string }> {
     return apiClient.delete(`${ENDPOINTS.BUDGETS}/${id}`);
   }
 }

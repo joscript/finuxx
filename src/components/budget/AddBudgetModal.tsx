@@ -2,13 +2,38 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, Pressable, Modal, TextInput, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AvailableCategory } from './types';
-import { AVAILABLE_CATEGORIES, QUICK_AMOUNT_OPTIONS } from './constants';
+import { QUICK_AMOUNT_OPTIONS } from './constants';
+import { categoryService, Category } from '../../api';
+
+// Helper to get background color class based on category color
+function getIconBgColor(color?: string): string {
+  if (!color) return 'bg-gray-100 dark:bg-gray-500/20';
+  const colorMap: Record<string, string> = {
+    '#22c55e': 'bg-emerald-100 dark:bg-emerald-500/20',
+    '#4CAF50': 'bg-green-100 dark:bg-green-500/20',
+    '#10b981': 'bg-green-100 dark:bg-green-500/20',
+    '#f59e0b': 'bg-amber-100 dark:bg-amber-500/20',
+    '#ef4444': 'bg-red-100 dark:bg-red-500/20',
+    '#8b5cf6': 'bg-violet-100 dark:bg-violet-500/20',
+    '#3b82f6': 'bg-blue-100 dark:bg-blue-500/20',
+    '#ec4899': 'bg-pink-100 dark:bg-pink-500/20',
+    '#06b6d4': 'bg-cyan-100 dark:bg-cyan-500/20',
+    '#a855f7': 'bg-purple-100 dark:bg-purple-500/20',
+    '#6366f1': 'bg-indigo-100 dark:bg-indigo-500/20',
+    '#0ea5e9': 'bg-sky-100 dark:bg-sky-500/20',
+    '#f43f5e': 'bg-rose-100 dark:bg-rose-500/20',
+    '#14b8a6': 'bg-teal-100 dark:bg-teal-500/20',
+    '#FF6B6B': 'bg-red-100 dark:bg-red-500/20',
+    '#2196F3': 'bg-blue-100 dark:bg-blue-500/20',
+  };
+  return colorMap[color] || 'bg-gray-100 dark:bg-gray-500/20';
+}
 
 interface AddBudgetModalProps {
   visible: boolean;
   existingCategories: string[];
   onClose: () => void;
-  onAdd: (category: { name: string; icon: string; color: string; iconBgColor: string; budget: number; categoryId?: number }) => void;
+  onAdd: (category: { name: string; icon: string; color: string; iconBgColor: string; budget: number; categoryId?: string }) => void;
   isLoading?: boolean;
 }
 
@@ -16,16 +41,41 @@ export function AddBudgetModal({ visible, existingCategories, onClose, onAdd, is
   const [step, setStep] = useState<'category' | 'amount'>('category');
   const [selectedCategory, setSelectedCategory] = useState<AvailableCategory | null>(null);
   const [budgetAmount, setBudgetAmount] = useState('');
+  const [apiCategories, setApiCategories] = useState<AvailableCategory[]>([]);
+  const [isFetchingCategories, setIsFetchingCategories] = useState(false);
 
+  // Fetch categories from API when modal opens
   useEffect(() => {
     if (visible) {
       setStep('category');
       setSelectedCategory(null);
       setBudgetAmount('');
+      fetchCategories();
     }
   }, [visible]);
 
-  const availableToAdd = AVAILABLE_CATEGORIES.filter(
+  const fetchCategories = async () => {
+    setIsFetchingCategories(true);
+    try {
+      const response = await categoryService.getAll({ type: 'expense' });
+      if (response.success && response.data?.categories) {
+        const mapped: AvailableCategory[] = response.data.categories.map((cat: Category) => ({
+          name: cat.name,
+          icon: cat.icon || 'ellipsis-horizontal-outline',
+          color: cat.color || '#6b7280',
+          iconBgColor: getIconBgColor(cat.color),
+          categoryId: cat.id,
+        }));
+        setApiCategories(mapped);
+      }
+    } catch (err) {
+      console.error('Failed to fetch categories:', err);
+    } finally {
+      setIsFetchingCategories(false);
+    }
+  };
+
+  const availableToAdd = apiCategories.filter(
     (cat) => !existingCategories.includes(cat.name)
   );
 
@@ -100,6 +150,14 @@ export function AddBudgetModal({ visible, existingCategories, onClose, onAdd, is
                   showsVerticalScrollIndicator={false}
                   className="max-h-[400px]"
                 >
+                  {isFetchingCategories ? (
+                    <View className="items-center py-10">
+                      <ActivityIndicator size="large" color="#10B981" />
+                      <Text className="text-gray-500 dark:text-gray-400 text-base mt-3">
+                        Loading categories...
+                      </Text>
+                    </View>
+                  ) : (
                   <View className="flex-row flex-wrap">
                     {availableToAdd.map((category, index) => (
                       <Pressable
@@ -117,8 +175,9 @@ export function AddBudgetModal({ visible, existingCategories, onClose, onAdd, is
                       </Pressable>
                     ))}
                   </View>
+                  )}
 
-                  {availableToAdd.length === 0 && (
+                  {!isFetchingCategories && availableToAdd.length === 0 && (
                     <View className="items-center py-10">
                       <Ionicons name="checkmark-circle" size={48} color="#22c55e" />
                       <Text className="text-gray-500 dark:text-gray-400 text-base mt-3 text-center">

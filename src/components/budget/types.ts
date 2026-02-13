@@ -7,7 +7,7 @@ export type { ApiBudget, ApiBudgetCategory };
 // UI representation of a budget category (transformed from API data)
 export interface UIBudgetCategory {
   id: string;
-  categoryId: number;
+  categoryId: string;
   name: string;
   icon: string;
   spent: number;
@@ -21,7 +21,7 @@ export interface AvailableCategory {
   icon: string;
   color: string;
   iconBgColor: string;
-  categoryId?: number; // API category ID if available
+  categoryId?: string; // API category ID (UUID)
 }
 
 export type BudgetPeriod = 'monthly' | 'weekly';
@@ -31,12 +31,12 @@ export function transformBudgetCategory(apiCategory: ApiBudgetCategory, index: n
   return {
     id: apiCategory.id?.toString() || `cat-${index}`,
     categoryId: apiCategory.categoryId,
-    name: apiCategory.category?.name || 'Category',
-    icon: apiCategory.category?.icon || 'ellipsis-horizontal-outline',
+    name: apiCategory.category?.name || apiCategory.name || 'Category',
+    icon: apiCategory.category?.icon || apiCategory.icon || 'ellipsis-horizontal-outline',
     spent: apiCategory.spent || 0,
     budget: parseFloat(apiCategory.allocatedAmount) || 0,
-    color: apiCategory.category?.color || '#6b7280',
-    iconBgColor: getIconBgColor(apiCategory.category?.color),
+    color: apiCategory.category?.color || apiCategory.color || '#6b7280',
+    iconBgColor: apiCategory.iconBgColor || getIconBgColor(apiCategory.category?.color || apiCategory.color),
   };
 }
 

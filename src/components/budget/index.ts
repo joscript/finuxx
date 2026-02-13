@@ -12,4 +12,4 @@ export { BudgetSkeletonSummaryCard, BudgetSkeletonCategoryItem, BudgetSkeletonLo
 // Types and constants
 export type { UIBudgetCategory, AvailableCategory, BudgetPeriod, ApiBudget, ApiBudgetCategory } from './types';
 export { transformBudgetCategory } from './types';
-export { INITIAL_CATEGORIES, AVAILABLE_CATEGORIES, QUICK_AMOUNT_OPTIONS } from './constants';
+export { QUICK_AMOUNT_OPTIONS } from './constants';

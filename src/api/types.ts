@@ -109,29 +109,32 @@ export interface TransactionFilters {
 }
 
 // ============ CATEGORY TYPES ============
-export type CategoryType = 'income' | 'expense';
-
 export interface Category {
-  id: number;
-  userId?: number;
+  id: string;
+  userId?: string;
   name: string;
-  type: CategoryType;
-  icon?: string;
-  color?: string;
-  parentId?: number;
+  icon: string;
+  color: string;
+  isIncomeCategory: boolean;
+  isSystemDefault: boolean;
+  isUserCategory: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface CreateCategoryRequest {
   name: string;
-  type: CategoryType;
-  icon?: string;
-  color?: string;
-  parentId?: number;
+  icon: string;
+  color: string;
+  isIncomeCategory?: boolean;
 }
 
-export interface UpdateCategoryRequest extends Partial<CreateCategoryRequest> {}
+export interface UpdateCategoryRequest {
+  name?: string;
+  icon?: string;
+  color?: string;
+  isIncomeCategory?: boolean;
+}
 
 // ============ GOAL TYPES ============
 export interface Goal {
@@ -184,8 +187,8 @@ export interface AddContributionRequest {
 
 // ============ BUDGET TYPES ============
 export interface Budget {
-  id: number;
-  userId: number;
+  id: string;
+  userId: string;
   name: string;
   totalAmount: string;
   startDate: string;
@@ -200,10 +203,14 @@ export interface Budget {
 }
 
 export interface BudgetCategory {
-  id: number;
-  budgetId: number;
-  categoryId: number;
+  id: string;
+  budgetId: string;
+  categoryId: string;
   allocatedAmount: string;
+  name: string;
+  icon: string;
+  color: string;
+  iconBgColor: string;
   // Calculated spending fields from GET /budgets/current
   spent?: number;
   remaining?: number;
@@ -212,8 +219,12 @@ export interface BudgetCategory {
 }
 
 export interface BudgetCategoryAllocation {
-  categoryId: number;
+  categoryId: string;
   allocatedAmount: number;
+  name: string;
+  icon: string;
+  color: string;
+  iconBgColor: string;
 }
 
 export interface CreateBudgetRequest {

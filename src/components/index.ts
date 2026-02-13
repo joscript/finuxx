@@ -11,3 +11,6 @@ export { default as AddContributionModal } from './AddContributionModal';
 
 // Accounts components
 export * from './accounts';
+
+// Budget components
+export * from './budget';

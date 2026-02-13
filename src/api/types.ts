@@ -193,9 +193,10 @@ export interface Budget {
   createdAt: string;
   updatedAt: string;
   categories?: BudgetCategory[];
-  spent?: number;
-  remaining?: number;
-  progress?: number;
+  // Calculated fields from GET /budgets/current
+  totalSpent?: number;
+  totalRemaining?: number;
+  percentageUsed?: number;
 }
 
 export interface BudgetCategory {
@@ -203,8 +204,16 @@ export interface BudgetCategory {
   budgetId: number;
   categoryId: number;
   allocatedAmount: string;
-  spentAmount?: string;
+  // Calculated spending fields from GET /budgets/current
+  spent?: number;
+  remaining?: number;
+  percentage?: number;
   category?: Category;
+}
+
+export interface BudgetCategoryAllocation {
+  categoryId: number;
+  allocatedAmount: number;
 }
 
 export interface CreateBudgetRequest {
@@ -212,13 +221,16 @@ export interface CreateBudgetRequest {
   totalAmount: number;
   startDate: string;
   endDate: string;
-  categories?: {
-    categoryId: number;
-    allocatedAmount: number;
-  }[];
+  categories?: BudgetCategoryAllocation[];
 }
 
-export interface UpdateBudgetRequest extends Partial<CreateBudgetRequest> {}
+export interface UpdateBudgetRequest {
+  name?: string;
+  totalAmount?: number;
+  startDate?: string;
+  endDate?: string;
+  categories?: BudgetCategoryAllocation[];
+}
 
 // ============ BILL TYPES ============
 export type BillFrequency = 'once' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly';

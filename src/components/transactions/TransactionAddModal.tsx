@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -8,188 +8,98 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-} from "react-native";
+} from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
-} from "react-native-reanimated";
-import { Ionicons } from "@expo/vector-icons";
+} from 'react-native-reanimated';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { Ionicons } from '@expo/vector-icons';
+import { Transaction, Account, CATEGORY_OPTIONS, ACCOUNT_OPTIONS } from './types';
+import { Account as ApiAccount, Category as ApiCategory } from '../../api/types';
+import { fetchAccounts } from '../../store/slices/accountsSlice';
+import { fetchCategories } from '../../store/slices/categoriesSlice';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-// ============ TYPES ============
-export interface Account {
-  id: string;
-  name: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  color: string;
-  balance: number;
-}
-
-export interface Transaction {
-  id: string;
-  type: "income" | "expense";
-  category: string;
-  categoryIcon: keyof typeof Ionicons.glyphMap;
-  categoryColor: string;
-  merchant: string;
-  note?: string;
-  amount: number;
-  date: string;
-  isRecurring?: boolean;
-  hasReceipt?: boolean;
-  accountId?: string;
-  accountName?: string;
-}
-
-// ============ ACCOUNT OPTIONS ============
-const ACCOUNT_OPTIONS: Account[] = [
-  {
-    id: "cash",
-    name: "Cash",
-    icon: "cash-outline",
-    color: "#22c55e",
-    balance: 5000,
-  },
-  {
-    id: "gcash",
-    name: "GCash",
-    icon: "phone-portrait-outline",
-    color: "#007bff",
-    balance: 12500,
-  },
-  {
-    id: "maya",
-    name: "Maya",
-    icon: "wallet-outline",
-    color: "#6366f1",
-    balance: 8750,
-  },
-  {
-    id: "bpi",
-    name: "BPI Savings",
-    icon: "business-outline",
-    color: "#ef4444",
-    balance: 45000,
-  },
-  {
-    id: "bdo",
-    name: "BDO Checking",
-    icon: "card-outline",
-    color: "#f59e0b",
-    balance: 23000,
-  },
-  {
-    id: "credit",
-    name: "Credit Card",
-    icon: "card-outline",
-    color: "#8b5cf6",
-    balance: -15000,
-  },
-];
-
-// ============ CATEGORY OPTIONS ============
-const CATEGORY_OPTIONS = [
-  {
-    id: "food",
-    name: "Food & Dining",
-    icon: "restaurant-outline" as const,
-    color: "#f97316",
-  },
-  {
-    id: "transport",
-    name: "Transportation",
-    icon: "car-outline" as const,
-    color: "#3b82f6",
-  },
-  {
-    id: "shopping",
-    name: "Shopping",
-    icon: "bag-outline" as const,
-    color: "#ec4899",
-  },
-  {
-    id: "bills",
-    name: "Bills & Utilities",
-    icon: "flash-outline" as const,
-    color: "#f59e0b",
-  },
-  {
-    id: "entertainment",
-    name: "Entertainment",
-    icon: "game-controller-outline" as const,
-    color: "#8b5cf6",
-  },
-  {
-    id: "health",
-    name: "Health",
-    icon: "medical-outline" as const,
-    color: "#ef4444",
-  },
-  {
-    id: "groceries",
-    name: "Groceries",
-    icon: "cart-outline" as const,
-    color: "#10b981",
-  },
-  {
-    id: "salary",
-    name: "Salary",
-    icon: "briefcase-outline" as const,
-    color: "#22c55e",
-  },
-  {
-    id: "freelance",
-    name: "Freelance",
-    icon: "laptop-outline" as const,
-    color: "#06b6d4",
-  },
-  {
-    id: "investment",
-    name: "Investment",
-    icon: "trending-up-outline" as const,
-    color: "#22c55e",
-  },
-  {
-    id: "other",
-    name: "Other",
-    icon: "ellipsis-horizontal-outline" as const,
-    color: "#6b7280",
-  },
-];
-
-// ============ ADD TRANSACTION MODAL ============
-interface AddTransactionModalProps {
+interface TransactionAddModalProps {
   visible: boolean;
   onClose: () => void;
-  onAdd?: (transaction: Transaction) => void;
+  onAdd: (transaction: Transaction) => void;
 }
 
-export default function AddTransactionModal({
-  visible,
-  onClose,
-  onAdd,
-}: AddTransactionModalProps) {
-  const [type, setType] = useState<"income" | "expense">("expense");
-  const [category, setCategory] = useState(CATEGORY_OPTIONS[0]);
-  const [account, setAccount] = useState(ACCOUNT_OPTIONS[0]);
-  const [merchant, setMerchant] = useState("");
-  const [amount, setAmount] = useState("");
-  const [note, setNote] = useState("");
+export default function TransactionAddModal({ visible, onClose, onAdd }: TransactionAddModalProps) {
+  const dispatch = useAppDispatch();
+  const { accounts, isLoading: accountsLoading, error: accountsError } = useAppSelector((state: any) => state.accounts);
+  const { categories, isLoading: categoriesLoading, error: categoriesError } = useAppSelector((state: any) => state.categories);
+  // Map API accounts to picker format
+  const accountOptions = useMemo(() => {
+    if (accounts && accounts.length > 0) {
+      return accounts.map((acc: ApiAccount) => ({
+        id: String(acc.id),
+        name: acc.name,
+        icon: (acc.icon || 'wallet-outline') as keyof typeof Ionicons.glyphMap,
+        color: acc.iconColor || '#6b7280',
+        balance: parseFloat(acc.balance) || 0,
+      }));
+    }
+    return ACCOUNT_OPTIONS;
+  }, [accounts]);
+
+  // Map API categories to picker format
+  const categoryOptions = useMemo(() => {
+    if (categories && categories.length > 0) {
+      return categories.map((cat: ApiCategory) => ({
+        id: String(cat.id),
+        name: cat.name,
+        icon: (cat.icon || 'ellipsis-horizontal-outline') as keyof typeof Ionicons.glyphMap,
+        color: cat.color || '#6b7280',
+        isIncomeCategory: cat.isIncomeCategory,
+      }));
+    }
+    return CATEGORY_OPTIONS;
+  }, [categories]);
+
+  const [type, setType] = useState<'income' | 'expense'>('expense');
+  const [category, setCategory] = useState(categoryOptions[0]);
+  const [account, setAccount] = useState(accountOptions[0]);
+  const [merchant, setMerchant] = useState('');
+  const [amount, setAmount] = useState('');
+  const [note, setNote] = useState('');
   const [isRecurring, setIsRecurring] = useState(false);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showAccountPicker, setShowAccountPicker] = useState(false);
 
   const scale = useSharedValue(1);
 
+  useEffect(() => {
+    dispatch(fetchAccounts());
+    dispatch(fetchCategories());
+  }, [dispatch]);
+
+  // Update selected category/account when API data loads
+  useEffect(() => {
+    if (categoryOptions.length > 0) {
+      const expenseCategories = categoryOptions.filter((c: any) => !c.isIncomeCategory);
+      setCategory(expenseCategories[0] || categoryOptions[0]);
+    }
+  }, [categoryOptions]);
+
+  useEffect(() => {
+    if (accountOptions.length > 0) {
+      setAccount(accountOptions[0]);
+    }
+  }, [accountOptions]);
+
   const resetForm = () => {
-    setType("expense");
-    setCategory(CATEGORY_OPTIONS[0]);
-    setAccount(ACCOUNT_OPTIONS[0]);
-    setMerchant("");
-    setAmount("");
-    setNote("");
+    setType('expense');
+    const expenseCategories = categoryOptions.filter((c: any) => !c.isIncomeCategory);
+    setCategory(expenseCategories[0] || categoryOptions[0]);
+    setAccount(accountOptions[0]);
+    setMerchant('');
+    setAmount('');
+    setNote('');
     setIsRecurring(false);
     setShowCategoryPicker(false);
     setShowAccountPicker(false);
@@ -213,17 +123,15 @@ export default function AddTransactionModal({
       categoryColor: category.color,
       merchant: merchant.trim(),
       note: note.trim() || undefined,
-      amount: parseFloat(amount.replace(/,/g, "")),
-      date: new Date().toISOString().split("T")[0],
+      amount: parseFloat(amount.replace(/,/g, '')),
+      date: new Date().toISOString().split('T')[0],
       isRecurring,
       hasReceipt: false,
       accountId: account.id,
       accountName: account.name,
     };
 
-    console.log(">>> New Transaction:", newTransaction);
-
-    onAdd?.(newTransaction);
+    onAdd(newTransaction);
     handleClose();
   };
 
@@ -239,11 +147,15 @@ export default function AddTransactionModal({
     scale.value = withSpring(1);
   };
 
-  const filteredCategories = CATEGORY_OPTIONS.filter((cat) => {
-    if (type === "income") {
-      return ["salary", "freelance", "investment", "other"].includes(cat.id);
+  const filteredCategories = categoryOptions.filter((cat: any) => {
+    if (cat.isIncomeCategory !== undefined) {
+      return type === 'income' ? cat.isIncomeCategory : !cat.isIncomeCategory;
     }
-    return !["salary", "freelance", "investment"].includes(cat.id);
+    // Fallback for hardcoded options
+    if (type === 'income') {
+      return ['salary', 'freelance', 'investment', 'other'].includes(cat.id);
+    }
+    return !['salary', 'freelance', 'investment'].includes(cat.id);
   });
 
   return (
@@ -254,7 +166,7 @@ export default function AddTransactionModal({
       onRequestClose={handleClose}
     >
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1 bg-gray-50 dark:bg-gray-900"
       >
         {/* Header */}
@@ -278,16 +190,17 @@ export default function AddTransactionModal({
               <View className="flex-row bg-gray-100 dark:bg-gray-800 rounded-2xl p-1">
                 <Pressable
                   onPress={() => {
-                    setType("expense");
-                    setCategory(CATEGORY_OPTIONS[0]);
+                    setType('expense');
+                    const expenseCats = categoryOptions.filter((c: any) => !c.isIncomeCategory);
+                    setCategory(expenseCats[0] || categoryOptions[0]);
                   }}
                   className={`flex-1 py-3 rounded-xl items-center ${
-                    type === "expense" ? "bg-white dark:bg-gray-700" : ""
+                    type === 'expense' ? 'bg-white dark:bg-gray-700' : ''
                   }`}
                   style={
-                    type === "expense"
+                    type === 'expense'
                       ? {
-                          shadowColor: "#000",
+                          shadowColor: '#000',
                           shadowOffset: { width: 0, height: 2 },
                           shadowOpacity: 0.1,
                           shadowRadius: 4,
@@ -300,13 +213,13 @@ export default function AddTransactionModal({
                     <Ionicons
                       name="arrow-up"
                       size={18}
-                      color={type === "expense" ? "#ef4444" : "#9ca3af"}
+                      color={type === 'expense' ? '#ef4444' : '#9ca3af'}
                     />
                     <Text
                       className={`ml-2 font-semibold ${
-                        type === "expense"
-                          ? "text-red-500"
-                          : "text-gray-400 dark:text-gray-500"
+                        type === 'expense'
+                          ? 'text-red-500'
+                          : 'text-gray-400 dark:text-gray-500'
                       }`}
                     >
                       Expense
@@ -315,19 +228,17 @@ export default function AddTransactionModal({
                 </Pressable>
                 <Pressable
                   onPress={() => {
-                    setType("income");
-                    setCategory(
-                      CATEGORY_OPTIONS.find((c) => c.id === "salary") ||
-                        CATEGORY_OPTIONS[0],
-                    );
+                    setType('income');
+                    const incomeCats = categoryOptions.filter((c: any) => c.isIncomeCategory);
+                    setCategory(incomeCats[0] || categoryOptions[0]);
                   }}
                   className={`flex-1 py-3 rounded-xl items-center ${
-                    type === "income" ? "bg-white dark:bg-gray-700" : ""
+                    type === 'income' ? 'bg-white dark:bg-gray-700' : ''
                   }`}
                   style={
-                    type === "income"
+                    type === 'income'
                       ? {
-                          shadowColor: "#000",
+                          shadowColor: '#000',
                           shadowOffset: { width: 0, height: 2 },
                           shadowOpacity: 0.1,
                           shadowRadius: 4,
@@ -340,13 +251,13 @@ export default function AddTransactionModal({
                     <Ionicons
                       name="arrow-down"
                       size={18}
-                      color={type === "income" ? "#22c55e" : "#9ca3af"}
+                      color={type === 'income' ? '#22c55e' : '#9ca3af'}
                     />
                     <Text
                       className={`ml-2 font-semibold ${
-                        type === "income"
-                          ? "text-emerald-500"
-                          : "text-gray-400 dark:text-gray-500"
+                        type === 'income'
+                          ? 'text-emerald-500'
+                          : 'text-gray-400 dark:text-gray-500'
                       }`}
                     >
                       Income
@@ -364,16 +275,14 @@ export default function AddTransactionModal({
               <View
                 className="bg-white dark:bg-gray-800 rounded-2xl px-5 py-4 flex-row items-center"
                 style={{
-                  shadowColor: "#000",
+                  shadowColor: '#000',
                   shadowOffset: { width: 0, height: 2 },
                   shadowOpacity: 0.05,
                   shadowRadius: 8,
                   elevation: 2,
                 }}
               >
-                <Text className="text-gray-400 text-2xl font-medium mr-2">
-                  ₱
-                </Text>
+                <Text className="text-gray-400 text-2xl font-medium mr-2">₱</Text>
                 <TextInput
                   value={amount}
                   onChangeText={setAmount}
@@ -397,7 +306,7 @@ export default function AddTransactionModal({
                 }}
                 className="bg-white dark:bg-gray-800 rounded-2xl px-5 py-4 flex-row items-center justify-between"
                 style={{
-                  shadowColor: "#000",
+                  shadowColor: '#000',
                   shadowOffset: { width: 0, height: 2 },
                   shadowOpacity: 0.05,
                   shadowRadius: 8,
@@ -409,18 +318,14 @@ export default function AddTransactionModal({
                     className="w-10 h-10 rounded-xl items-center justify-center mr-3"
                     style={{ backgroundColor: `${category.color}20` }}
                   >
-                    <Ionicons
-                      name={category.icon}
-                      size={20}
-                      color={category.color}
-                    />
+                    <Ionicons name={category.icon} size={20} color={category.color} />
                   </View>
                   <Text className="text-gray-900 dark:text-white text-base font-semibold">
                     {category.name}
                   </Text>
                 </View>
                 <Ionicons
-                  name={showCategoryPicker ? "chevron-up" : "chevron-down"}
+                  name={showCategoryPicker ? 'chevron-up' : 'chevron-down'}
                   size={20}
                   color="#9ca3af"
                 />
@@ -431,14 +336,14 @@ export default function AddTransactionModal({
                 <View
                   className="bg-white dark:bg-gray-800 rounded-2xl mt-2 overflow-hidden"
                   style={{
-                    shadowColor: "#000",
+                    shadowColor: '#000',
                     shadowOffset: { width: 0, height: 2 },
                     shadowOpacity: 0.05,
                     shadowRadius: 8,
                     elevation: 2,
                   }}
                 >
-                  {filteredCategories.map((cat, index) => (
+                  {filteredCategories.map((cat: any, index: number) => (
                     <Pressable
                       key={cat.id}
                       onPress={() => {
@@ -446,10 +351,8 @@ export default function AddTransactionModal({
                         setShowCategoryPicker(false);
                       }}
                       className={`flex-row items-center px-5 py-3 ${
-                        index > 0
-                          ? "border-t border-gray-100 dark:border-gray-700"
-                          : ""
-                      } ${category.id === cat.id ? "bg-gray-50 dark:bg-gray-700" : ""}`}
+                        index > 0 ? 'border-t border-gray-100 dark:border-gray-700' : ''
+                      } ${category.id === cat.id ? 'bg-gray-50 dark:bg-gray-700' : ''}`}
                     >
                       <View
                         className="w-10 h-10 rounded-xl items-center justify-center mr-3"
@@ -472,7 +375,7 @@ export default function AddTransactionModal({
             {/* Account / Wallet */}
             <View className="mb-6">
               <Text className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-3">
-                {type === "income" ? "Add to Account" : "Pay from Account"}
+                {type === 'income' ? 'Add to Account' : 'Pay from Account'}
               </Text>
               <Pressable
                 onPress={() => {
@@ -481,7 +384,7 @@ export default function AddTransactionModal({
                 }}
                 className="bg-white dark:bg-gray-800 rounded-2xl px-5 py-4 flex-row items-center justify-between"
                 style={{
-                  shadowColor: "#000",
+                  shadowColor: '#000',
                   shadowOffset: { width: 0, height: 2 },
                   shadowOpacity: 0.05,
                   shadowRadius: 8,
@@ -493,11 +396,7 @@ export default function AddTransactionModal({
                     className="w-10 h-10 rounded-xl items-center justify-center mr-3"
                     style={{ backgroundColor: `${account.color}20` }}
                   >
-                    <Ionicons
-                      name={account.icon}
-                      size={20}
-                      color={account.color}
-                    />
+                    <Ionicons name={account.icon} size={20} color={account.color} />
                   </View>
                   <View className="flex-1">
                     <Text className="text-gray-900 dark:text-white text-base font-semibold">
@@ -509,7 +408,7 @@ export default function AddTransactionModal({
                   </View>
                 </View>
                 <Ionicons
-                  name={showAccountPicker ? "chevron-up" : "chevron-down"}
+                  name={showAccountPicker ? 'chevron-up' : 'chevron-down'}
                   size={20}
                   color="#9ca3af"
                 />
@@ -520,14 +419,14 @@ export default function AddTransactionModal({
                 <View
                   className="bg-white dark:bg-gray-800 rounded-2xl mt-2 overflow-hidden"
                   style={{
-                    shadowColor: "#000",
+                    shadowColor: '#000',
                     shadowOffset: { width: 0, height: 2 },
                     shadowOpacity: 0.05,
                     shadowRadius: 8,
                     elevation: 2,
                   }}
                 >
-                  {ACCOUNT_OPTIONS.map((acc, index) => (
+                  {accountOptions.map((acc: any, index: number) => (
                     <Pressable
                       key={acc.id}
                       onPress={() => {
@@ -535,10 +434,8 @@ export default function AddTransactionModal({
                         setShowAccountPicker(false);
                       }}
                       className={`flex-row items-center px-5 py-3 ${
-                        index > 0
-                          ? "border-t border-gray-100 dark:border-gray-700"
-                          : ""
-                      } ${account.id === acc.id ? "bg-gray-50 dark:bg-gray-700" : ""}`}
+                        index > 0 ? 'border-t border-gray-100 dark:border-gray-700' : ''
+                      } ${account.id === acc.id ? 'bg-gray-50 dark:bg-gray-700' : ''}`}
                     >
                       <View
                         className="w-10 h-10 rounded-xl items-center justify-center mr-3"
@@ -550,9 +447,7 @@ export default function AddTransactionModal({
                         <Text className="text-gray-900 dark:text-white text-base font-medium">
                           {acc.name}
                         </Text>
-                        <Text
-                          className={`text-sm ${acc.balance >= 0 ? "text-gray-500 dark:text-gray-400" : "text-red-500"}`}
-                        >
+                        <Text className={`text-sm ${acc.balance >= 0 ? 'text-gray-500 dark:text-gray-400' : 'text-red-500'}`}>
                           ₱{acc.balance.toLocaleString()}
                         </Text>
                       </View>
@@ -568,12 +463,12 @@ export default function AddTransactionModal({
             {/* Merchant / Source */}
             <View className="mb-6">
               <Text className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-3">
-                {type === "income" ? "Source" : "Merchant"}
+                {type === 'income' ? 'Source' : 'Merchant'}
               </Text>
               <View
                 className="bg-white dark:bg-gray-800 rounded-2xl px-5 py-4"
                 style={{
-                  shadowColor: "#000",
+                  shadowColor: '#000',
                   shadowOffset: { width: 0, height: 2 },
                   shadowOpacity: 0.05,
                   shadowRadius: 8,
@@ -583,9 +478,7 @@ export default function AddTransactionModal({
                 <TextInput
                   value={merchant}
                   onChangeText={setMerchant}
-                  placeholder={
-                    type === "income" ? "e.g., Company Inc." : "e.g., Jollibee"
-                  }
+                  placeholder={type === 'income' ? 'e.g., Company Inc.' : 'e.g., Jollibee'}
                   placeholderTextColor="#9ca3af"
                   className="text-gray-900 dark:text-white text-base"
                 />
@@ -600,7 +493,7 @@ export default function AddTransactionModal({
               <View
                 className="bg-white dark:bg-gray-800 rounded-2xl px-5 py-4"
                 style={{
-                  shadowColor: "#000",
+                  shadowColor: '#000',
                   shadowOffset: { width: 0, height: 2 },
                   shadowOpacity: 0.05,
                   shadowRadius: 8,
@@ -615,7 +508,7 @@ export default function AddTransactionModal({
                   multiline
                   numberOfLines={2}
                   className="text-gray-900 dark:text-white text-base"
-                  style={{ minHeight: 60, textAlignVertical: "top" }}
+                  style={{ minHeight: 60, textAlignVertical: 'top' }}
                 />
               </View>
             </View>
@@ -625,7 +518,7 @@ export default function AddTransactionModal({
               onPress={() => setIsRecurring(!isRecurring)}
               className="bg-white dark:bg-gray-800 rounded-2xl px-5 py-4 flex-row items-center justify-between mb-8"
               style={{
-                shadowColor: "#000",
+                shadowColor: '#000',
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.05,
                 shadowRadius: 8,
@@ -647,17 +540,15 @@ export default function AddTransactionModal({
               </View>
               <View
                 className={`w-12 h-7 rounded-full p-0.5 ${
-                  isRecurring
-                    ? "bg-emerald-500"
-                    : "bg-gray-300 dark:bg-gray-600"
+                  isRecurring ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'
                 }`}
               >
                 <View
                   className={`w-6 h-6 rounded-full bg-white ${
-                    isRecurring ? "ml-auto" : ""
+                    isRecurring ? 'ml-auto' : ''
                   }`}
                   style={{
-                    shadowColor: "#000",
+                    shadowColor: '#000',
                     shadowOffset: { width: 0, height: 2 },
                     shadowOpacity: 0.2,
                     shadowRadius: 2,
@@ -676,7 +567,7 @@ export default function AddTransactionModal({
               style={[
                 animatedButtonStyle,
                 {
-                  shadowColor: "#000",
+                  shadowColor: '#000',
                   shadowOffset: { width: 0, height: 4 },
                   shadowOpacity: 0.2,
                   shadowRadius: 8,
@@ -685,15 +576,15 @@ export default function AddTransactionModal({
               ]}
               className={`py-4 rounded-2xl items-center ${
                 merchant.trim() && amount.trim()
-                  ? "bg-gray-900 dark:bg-white"
-                  : "bg-gray-300 dark:bg-gray-700"
+                  ? 'bg-gray-900 dark:bg-white'
+                  : 'bg-gray-300 dark:bg-gray-700'
               }`}
             >
               <Text
                 className={`text-lg font-bold ${
                   merchant.trim() && amount.trim()
-                    ? "text-white dark:text-gray-900"
-                    : "text-gray-500 dark:text-gray-400"
+                    ? 'text-white dark:text-gray-900'
+                    : 'text-gray-500 dark:text-gray-400'
                 }`}
               >
                 Add Transaction

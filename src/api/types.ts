@@ -85,8 +85,8 @@ export interface TransactionSummary {
 }
 
 export interface CreateTransactionRequest {
-  accountId: number;
-  categoryId?: number;
+  accountId?: string;
+  categoryId?: string;
   type: TransactionType;
   amount: number;
   merchant?: string;

@@ -14,3 +14,6 @@ export * from './accounts';
 
 // Budget components
 export * from './budget';
+
+// Transactions components
+export * from './transactions';

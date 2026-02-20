@@ -619,7 +619,7 @@ export default function HomeScreen() {
         </Animated.View>
 
         {/* Top Categories Section */}
-        <Animated.View entering={FadeInDown.duration(500).delay(500)} className="mt-8">
+      {budgetCategories.length && <Animated.View entering={FadeInDown.duration(500).delay(500)} className="mt-8">
           <SectionHeader
             title="Top Categories"
             actionLabel="See all"
@@ -650,7 +650,7 @@ export default function HomeScreen() {
               </View>
             ))}
           </View>
-        </Animated.View>
+        </Animated.View>}
 
         {/* Upcoming Bills Section */}
         <Animated.View entering={FadeInDown.duration(500).delay(600)} className="mt-8">

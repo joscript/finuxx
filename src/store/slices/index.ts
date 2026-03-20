@@ -10,7 +10,7 @@ export {
   refreshUser,
   clearError,
   setUser,
-} from './authSlice';
+} from "./authSlice";
 
 // Accounts
 export {
@@ -21,7 +21,7 @@ export {
   deleteAccount,
   clearAccountsError,
   resetAccounts,
-} from './accountsSlice';
+} from "./accountsSlice";
 
 // Transactions
 export {
@@ -34,7 +34,7 @@ export {
   clearTransactionsError,
   setFilters,
   resetTransactions,
-} from './transactionsSlice';
+} from "./transactionsSlice";
 
 // Goals
 export {
@@ -49,7 +49,7 @@ export {
   setSelectedGoal,
   clearSelectedGoal,
   resetGoals,
-} from './goalsSlice';
+} from "./goalsSlice";
 
 // Budgets
 export {
@@ -61,7 +61,7 @@ export {
   deleteBudget,
   clearBudgetsError,
   resetBudgets,
-} from './budgetsSlice';
+} from "./budgetsSlice";
 
 // Bills
 export {
@@ -71,9 +71,10 @@ export {
   updateBill,
   deleteBill,
   markBillAsPaid,
+  markBillAsUnpaid,
   clearBillsError,
   resetBills,
-} from './billsSlice';
+} from "./billsSlice";
 
 // Notifications
 export {
@@ -84,7 +85,7 @@ export {
   deleteNotification,
   clearNotificationsError,
   resetNotifications,
-} from './notificationsSlice';
+} from "./notificationsSlice";
 
 // Settings
 export {
@@ -93,7 +94,7 @@ export {
   updateSettings,
   clearSettingsError,
   resetSettings,
-} from './settingsSlice';
+} from "./settingsSlice";
 
 // Categories
 export {
@@ -104,4 +105,27 @@ export {
   deleteCategory,
   clearCategoriesError,
   resetCategories,
-} from './categoriesSlice';
+} from "./categoriesSlice";
+
+// Reports
+export {
+  default as reportsReducer,
+  fetchAllReports,
+  fetchReportOverview,
+  fetchReportCategories,
+  fetchReportTrends,
+  fetchReportInsights,
+  setPeriod,
+  clearReportsError,
+  resetReports,
+} from "./reportsSlice";
+
+// Coach
+export {
+  default as coachReducer,
+  fetchCoachMessages,
+  sendCoachMessage,
+  clearCoachHistory,
+  clearCoachError,
+  resetCoach,
+} from "./coachSlice";

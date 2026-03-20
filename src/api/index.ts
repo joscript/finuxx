@@ -1,11 +1,16 @@
 // API Configuration
-export { API_CONFIG, ENDPOINTS } from './config';
+export { API_CONFIG, ENDPOINTS } from "./config";
 
 // API Client
-export { apiClient, STORAGE_KEYS, type ApiResponse, type PaginatedResponse } from './client';
+export {
+  apiClient,
+  STORAGE_KEYS,
+  type ApiResponse,
+  type PaginatedResponse,
+} from "./client";
 
 // Types
-export * from './types';
+export * from "./types";
 
 // Services
 export {
@@ -18,6 +23,8 @@ export {
   billService,
   notificationService,
   settingsService,
+  reportService,
+  coachService,
   type RegisterRequest,
   type LoginRequest,
   type UpdatePasswordRequest,
@@ -28,4 +35,4 @@ export {
   type TransactionsResponse,
   type BillsResponse,
   type BillFilters,
-} from './services';
+} from "./services";

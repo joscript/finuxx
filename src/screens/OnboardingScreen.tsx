@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,8 +8,8 @@ import {
   ViewToken,
   NativeSyntheticEvent,
   NativeScrollEvent,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -26,17 +26,19 @@ import Animated, {
   FadeInUp,
   SlideInRight,
   runOnJS,
-} from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
+} from "react-native-reanimated";
+import { Ionicons } from "@expo/vector-icons";
+import { useAppDispatch } from "../store/hooks";
+import { updateSettings } from "../store/slices/settingsSlice";
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const AnimatedView = Animated.createAnimatedComponent(View);
 
 // ============ TYPES ============
-type IncomeType = 'salary' | 'freelance' | 'mixed';
-type GoalType = 'travel' | 'emergency' | 'debt' | 'gadgets';
+type IncomeType = "salary" | "freelance" | "mixed";
+type GoalType = "travel" | "emergency" | "debt" | "gadgets";
 
 interface OnboardingState {
   incomeType: IncomeType | null;
@@ -63,10 +65,10 @@ function ProgressDots({ total, current }: ProgressDotsProps) {
             entering={FadeIn.delay(index * 50)}
             className={`h-2 rounded-full ${
               isActive
-                ? 'w-8 bg-gray-900 dark:bg-white'
+                ? "w-8 bg-gray-900 dark:bg-white"
                 : isPast
-                ? 'w-2 bg-gray-700 dark:bg-gray-300'
-                : 'w-2 bg-gray-200 dark:bg-gray-700'
+                  ? "w-2 bg-gray-700 dark:bg-gray-300"
+                  : "w-2 bg-gray-200 dark:bg-gray-700"
             }`}
           />
         );
@@ -79,7 +81,7 @@ function ProgressDots({ total, current }: ProgressDotsProps) {
 interface PrimaryButtonProps {
   label: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'ghost';
+  variant?: "primary" | "secondary" | "ghost";
   disabled?: boolean;
   icon?: keyof typeof Ionicons.glyphMap;
 }
@@ -87,7 +89,7 @@ interface PrimaryButtonProps {
 function PrimaryButton({
   label,
   onPress,
-  variant = 'primary',
+  variant = "primary",
   disabled = false,
   icon,
 }: PrimaryButtonProps) {
@@ -106,18 +108,18 @@ function PrimaryButton({
   };
 
   const bgClass =
-    variant === 'primary'
-      ? 'bg-gray-900 dark:bg-white'
-      : variant === 'secondary'
-      ? 'bg-gray-100 dark:bg-gray-800'
-      : 'bg-transparent';
+    variant === "primary"
+      ? "bg-gray-900 dark:bg-white"
+      : variant === "secondary"
+        ? "bg-gray-100 dark:bg-gray-800"
+        : "bg-transparent";
 
   const textClass =
-    variant === 'primary'
-      ? 'text-white dark:text-gray-900'
-      : variant === 'secondary'
-      ? 'text-gray-900 dark:text-white'
-      : 'text-gray-900 dark:text-white';
+    variant === "primary"
+      ? "text-white dark:text-gray-900"
+      : variant === "secondary"
+        ? "text-gray-900 dark:text-white"
+        : "text-gray-900 dark:text-white";
 
   return (
     <AnimatedPressable
@@ -128,26 +130,28 @@ function PrimaryButton({
       style={[
         animatedStyle,
         {
-          shadowColor: variant === 'primary' ? '#111827' : 'transparent',
+          shadowColor: variant === "primary" ? "#111827" : "transparent",
           shadowOffset: { width: 0, height: 8 },
           shadowOpacity: 0.3,
           shadowRadius: 16,
-          elevation: variant === 'primary' ? 8 : 0,
+          elevation: variant === "primary" ? 8 : 0,
         },
       ]}
       className={`${bgClass} rounded-2xl py-5 px-8 flex-row items-center justify-center ${
-        disabled ? 'opacity-50' : ''
+        disabled ? "opacity-50" : ""
       }`}
     >
       {icon && (
         <Ionicons
           name={icon}
           size={20}
-          color={variant === 'primary' ? '#fff' : '#374151'}
+          color={variant === "primary" ? "#fff" : "#374151"}
           style={{ marginRight: 8 }}
         />
       )}
-      <Text className={`${textClass} text-lg font-bold tracking-tight`}>{label}</Text>
+      <Text className={`${textClass} text-lg font-bold tracking-tight`}>
+        {label}
+      </Text>
     </AnimatedPressable>
   );
 }
@@ -197,7 +201,7 @@ function OptionCard({
       style={[
         animatedStyle,
         {
-          shadowColor: selected ? '#111827' : '#000',
+          shadowColor: selected ? "#111827" : "#000",
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: selected ? 0.2 : 0.08,
           shadowRadius: 12,
@@ -206,11 +210,13 @@ function OptionCard({
       ]}
       className={`rounded-2xl p-5 mb-3 flex-row items-center ${
         selected
-          ? 'bg-gray-100 dark:bg-gray-700 border-2 border-gray-900 dark:border-white'
-          : 'bg-white dark:bg-gray-800 border-2 border-transparent'
+          ? "bg-gray-100 dark:bg-gray-700 border-2 border-gray-900 dark:border-white"
+          : "bg-white dark:bg-gray-800 border-2 border-transparent"
       }`}
     >
-      <View className={`w-14 h-14 rounded-2xl items-center justify-center ${iconBgColor}`}>
+      <View
+        className={`w-14 h-14 rounded-2xl items-center justify-center ${iconBgColor}`}
+      >
         <Ionicons name={icon} size={26} color={iconColor} />
       </View>
       <View className="flex-1 ml-4">
@@ -218,15 +224,25 @@ function OptionCard({
           {label}
         </Text>
         {description && (
-          <Text className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">{description}</Text>
+          <Text className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">
+            {description}
+          </Text>
         )}
       </View>
       <View
         className={`w-6 h-6 rounded-full border-2 items-center justify-center ${
-          selected ? 'bg-gray-900 dark:bg-white border-gray-900 dark:border-white' : 'border-gray-300 dark:border-gray-600'
+          selected
+            ? "bg-gray-900 dark:bg-white border-gray-900 dark:border-white"
+            : "border-gray-300 dark:border-gray-600"
         }`}
       >
-        {selected && <Ionicons name="checkmark" size={14} color={selected ? '#fff' : '#111827'} />}
+        {selected && (
+          <Ionicons
+            name="checkmark"
+            size={14}
+            color={selected ? "#fff" : "#111827"}
+          />
+        )}
       </View>
     </AnimatedPressable>
   );
@@ -241,7 +257,13 @@ interface SelectChipProps {
   delay?: number;
 }
 
-function SelectChip({ label, icon, selected, onPress, delay = 0 }: SelectChipProps) {
+function SelectChip({
+  label,
+  icon,
+  selected,
+  onPress,
+  delay = 0,
+}: SelectChipProps) {
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -265,19 +287,21 @@ function SelectChip({ label, icon, selected, onPress, delay = 0 }: SelectChipPro
       style={animatedStyle}
       className={`rounded-2xl px-5 py-4 mr-3 mb-3 flex-row items-center ${
         selected
-          ? 'bg-gray-900 dark:bg-white'
-          : 'bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700'
+          ? "bg-gray-900 dark:bg-white"
+          : "bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
       }`}
     >
       <Ionicons
         name={icon}
         size={20}
-        color={selected ? '#fff' : '#6b7280'}
+        color={selected ? "#fff" : "#6b7280"}
         style={{ marginRight: 8 }}
       />
       <Text
         className={`text-base font-semibold ${
-          selected ? 'text-white dark:text-gray-900' : 'text-gray-700 dark:text-gray-300'
+          selected
+            ? "text-white dark:text-gray-900"
+            : "text-gray-700 dark:text-gray-300"
         }`}
       >
         {label}
@@ -324,10 +348,10 @@ function ValuePropCard({
     glowOpacity.value = withRepeat(
       withSequence(
         withTiming(0.8, { duration: 1500 }),
-        withTiming(0.5, { duration: 1500 })
+        withTiming(0.5, { duration: 1500 }),
       ),
       -1,
-      true
+      true,
     );
   }, []);
 
@@ -353,7 +377,9 @@ function ValuePropCard({
             style={glowStyle}
             className={`absolute -inset-2 ${iconBgColor} rounded-full opacity-50`}
           />
-          <View className={`w-14 h-14 rounded-2xl items-center justify-center ${iconBgColor}`}>
+          <View
+            className={`w-14 h-14 rounded-2xl items-center justify-center ${iconBgColor}`}
+          >
             <Ionicons name={icon} size={28} color={iconColor} />
           </View>
         </View>
@@ -361,7 +387,9 @@ function ValuePropCard({
           <Text className="text-gray-900 dark:text-white text-lg font-bold tracking-tight">
             {title}
           </Text>
-          <Text className="text-gray-500 dark:text-gray-400 text-sm mt-1">{description}</Text>
+          <Text className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+            {description}
+          </Text>
         </View>
       </View>
     </Animated.View>
@@ -376,7 +404,10 @@ function WelcomeScreen() {
   const logoOpacity = useSharedValue(0);
 
   React.useEffect(() => {
-    logoOpacity.value = withTiming(1, { duration: 800, easing: Easing.out(Easing.cubic) });
+    logoOpacity.value = withTiming(1, {
+      duration: 800,
+      easing: Easing.out(Easing.cubic),
+    });
     logoScale.value = withSpring(1, { damping: 12, stiffness: 100 });
   }, []);
 
@@ -392,7 +423,7 @@ function WelcomeScreen() {
         style={[
           logoStyle,
           {
-            shadowColor: '#111827',
+            shadowColor: "#111827",
             shadowOffset: { width: 0, height: 12 },
             shadowOpacity: 0.3,
             shadowRadius: 24,
@@ -409,7 +440,7 @@ function WelcomeScreen() {
         entering={FadeInDown.delay(300).duration(600)}
         className="text-gray-900 dark:text-white text-4xl font-bold text-center tracking-tight mb-4"
       >
-        Your Smart{'\n'}Money Coach
+        Your Smart{"\n"}Money Coach
       </Animated.Text>
 
       {/* Subtext */}
@@ -417,7 +448,8 @@ function WelcomeScreen() {
         entering={FadeInDown.delay(500).duration(600)}
         className="text-gray-500 dark:text-gray-400 text-lg text-center leading-7"
       >
-        Track, plan, and grow your money with AI.{'\n'}Your financial success starts here.
+        Track, plan, and grow your money with AI.{"\n"}Your financial success
+        starts here.
       </Animated.Text>
 
       {/* Decorative Elements */}
@@ -494,7 +526,10 @@ interface IncomeSetupScreenProps {
   onSelectIncome: (type: IncomeType) => void;
 }
 
-function IncomeSetupScreen({ selectedIncome, onSelectIncome }: IncomeSetupScreenProps) {
+function IncomeSetupScreen({
+  selectedIncome,
+  onSelectIncome,
+}: IncomeSetupScreenProps) {
   const incomeOptions: {
     type: IncomeType;
     label: string;
@@ -504,28 +539,28 @@ function IncomeSetupScreen({ selectedIncome, onSelectIncome }: IncomeSetupScreen
     iconBgColor: string;
   }[] = [
     {
-      type: 'salary',
-      label: 'Salary',
-      description: 'Regular paycheck from employer',
-      icon: 'briefcase-outline',
-      iconColor: '#3b82f6',
-      iconBgColor: 'bg-blue-100 dark:bg-blue-500/20',
+      type: "salary",
+      label: "Salary",
+      description: "Regular paycheck from employer",
+      icon: "briefcase-outline",
+      iconColor: "#3b82f6",
+      iconBgColor: "bg-blue-100 dark:bg-blue-500/20",
     },
     {
-      type: 'freelance',
-      label: 'Freelance',
-      description: 'Variable income from clients',
-      icon: 'laptop-outline',
-      iconColor: '#8b5cf6',
-      iconBgColor: 'bg-violet-100 dark:bg-violet-500/20',
+      type: "freelance",
+      label: "Freelance",
+      description: "Variable income from clients",
+      icon: "laptop-outline",
+      iconColor: "#8b5cf6",
+      iconBgColor: "bg-violet-100 dark:bg-violet-500/20",
     },
     {
-      type: 'mixed',
-      label: 'Mixed',
-      description: 'Both salary and side income',
-      icon: 'layers-outline',
-      iconColor: '#22c55e',
-      iconBgColor: 'bg-emerald-100 dark:bg-emerald-500/20',
+      type: "mixed",
+      label: "Mixed",
+      description: "Both salary and side income",
+      icon: "layers-outline",
+      iconColor: "#22c55e",
+      iconBgColor: "bg-emerald-100 dark:bg-emerald-500/20",
     },
   ];
 
@@ -569,16 +604,23 @@ interface GoalsSetupScreenProps {
   onToggleGoal: (goal: GoalType) => void;
 }
 
-function GoalsSetupScreen({ selectedGoals, onToggleGoal }: GoalsSetupScreenProps) {
+function GoalsSetupScreen({
+  selectedGoals,
+  onToggleGoal,
+}: GoalsSetupScreenProps) {
   const goalOptions: {
     type: GoalType;
     label: string;
     icon: keyof typeof Ionicons.glyphMap;
   }[] = [
-    { type: 'travel', label: 'Travel', icon: 'airplane-outline' },
-    { type: 'emergency', label: 'Emergency Fund', icon: 'shield-checkmark-outline' },
-    { type: 'debt', label: 'Debt Payoff', icon: 'trending-down-outline' },
-    { type: 'gadgets', label: 'Gadgets', icon: 'phone-portrait-outline' },
+    { type: "travel", label: "Travel", icon: "airplane-outline" },
+    {
+      type: "emergency",
+      label: "Emergency Fund",
+      icon: "shield-checkmark-outline",
+    },
+    { type: "debt", label: "Debt Payoff", icon: "trending-down-outline" },
+    { type: "gadgets", label: "Gadgets", icon: "phone-portrait-outline" },
   ];
 
   return (
@@ -617,8 +659,8 @@ function GoalsSetupScreen({ selectedGoals, onToggleGoal }: GoalsSetupScreenProps
             className="mt-8 bg-gray-100 dark:bg-gray-800 rounded-2xl p-4"
           >
             <Text className="text-gray-700 dark:text-gray-300 text-center text-sm font-medium">
-              {selectedGoals.length} goal{selectedGoals.length > 1 ? 's' : ''} selected —{' '}
-              We'll help you get there! 🎯
+              {selectedGoals.length} goal{selectedGoals.length > 1 ? "s" : ""}{" "}
+              selected — We'll help you get there! 🎯
             </Text>
           </Animated.View>
         )}
@@ -637,10 +679,10 @@ function MeetCoachScreen() {
     pulseScale.value = withRepeat(
       withSequence(
         withTiming(1.05, { duration: 1500 }),
-        withTiming(1, { duration: 1500 })
+        withTiming(1, { duration: 1500 }),
       ),
       -1,
-      true
+      true,
     );
 
     // Chat bubble fade in
@@ -676,7 +718,7 @@ function MeetCoachScreen() {
           style={[
             avatarStyle,
             {
-              shadowColor: '#8b5cf6',
+              shadowColor: "#8b5cf6",
               shadowOffset: { width: 0, height: 12 },
               shadowOpacity: 0.3,
               shadowRadius: 24,
@@ -693,7 +735,7 @@ function MeetCoachScreen() {
           style={[
             bubbleStyle,
             {
-              shadowColor: '#000',
+              shadowColor: "#000",
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.1,
               shadowRadius: 12,
@@ -705,16 +747,19 @@ function MeetCoachScreen() {
           {/* Chat bubble tail */}
           <View
             className="absolute -top-3 left-1/2 -ml-3 w-6 h-6 bg-white dark:bg-gray-800"
-            style={{ transform: [{ rotate: '45deg' }] }}
+            style={{ transform: [{ rotate: "45deg" }] }}
           />
           <Text className="text-gray-700 dark:text-gray-200 text-lg text-center leading-7">
-            "Hi! I'm your personal finance coach. I'll help you build a budget, save smarter, and
-            reach your goals faster! 💪"
+            "Hi! I'm your personal finance coach. I'll help you build a budget,
+            save smarter, and reach your goals faster! 💪"
           </Text>
         </AnimatedView>
 
         {/* Features List */}
-        <Animated.View entering={FadeInUp.delay(800).duration(500)} className="mt-8">
+        <Animated.View
+          entering={FadeInUp.delay(800).duration(500)}
+          className="mt-8"
+        >
           <View className="flex-row items-center mb-3">
             <View className="w-8 h-8 bg-emerald-100 dark:bg-emerald-500/20 rounded-full items-center justify-center">
               <Ionicons name="checkmark" size={18} color="#22c55e" />
@@ -755,10 +800,14 @@ export default function OnboardingScreen() {
 
   const flatListRef = useRef<FlatList>(null);
   const totalSteps = 5;
+  const dispatch = useAppDispatch();
 
   const handleNext = useCallback(() => {
     if (currentStep < totalSteps - 1) {
-      flatListRef.current?.scrollToIndex({ index: currentStep + 1, animated: true });
+      flatListRef.current?.scrollToIndex({
+        index: currentStep + 1,
+        animated: true,
+      });
       setCurrentStep(currentStep + 1);
     }
   }, [currentStep]);
@@ -777,10 +826,17 @@ export default function OnboardingScreen() {
   };
 
   const handleComplete = () => {
+    // Persist onboarding preferences to backend settings
+    if (state.incomeType || state.goals.length > 0) {
+      dispatch(
+        updateSettings({
+          incomeType: state.incomeType ?? undefined,
+          financialGoals: state.goals.length > 0 ? state.goals : undefined,
+        }),
+      );
+    }
     // Navigate to main app
-    console.log('Onboarding complete!', state);
     // In a real app: navigation.replace('MainTabs')
-    
   };
 
   const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -817,7 +873,10 @@ export default function OnboardingScreen() {
       case 3:
         return (
           <OnboardingCard>
-            <GoalsSetupScreen selectedGoals={state.goals} onToggleGoal={handleToggleGoal} />
+            <GoalsSetupScreen
+              selectedGoals={state.goals}
+              onToggleGoal={handleToggleGoal}
+            />
           </OnboardingCard>
         );
       case 4:
@@ -834,11 +893,11 @@ export default function OnboardingScreen() {
   const getButtonLabel = () => {
     switch (currentStep) {
       case 0:
-        return 'Get Started';
+        return "Get Started";
       case 4:
-        return 'Start Using App';
+        return "Start Using App";
       default:
-        return 'Continue';
+        return "Continue";
     }
   };
 
@@ -884,7 +943,7 @@ export default function OnboardingScreen() {
           label={getButtonLabel()}
           onPress={currentStep === 4 ? handleComplete : handleNext}
           disabled={!canContinue()}
-          icon={currentStep === 4 ? 'rocket' : 'arrow-forward'}
+          icon={currentStep === 4 ? "rocket" : "arrow-forward"}
         />
       </View>
     </SafeAreaView>

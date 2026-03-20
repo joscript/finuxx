@@ -13,8 +13,14 @@ export interface AuthTokens {
 }
 
 // ============ ACCOUNT TYPES ============
-export type AccountType = 'checking' | 'savings' | 'credit' | 'investment' | 'wallet' | 'loan';
-export type AccountCategory = 'asset' | 'liability';
+export type AccountType =
+  | "checking"
+  | "savings"
+  | "credit"
+  | "investment"
+  | "wallet"
+  | "loan";
+export type AccountCategory = "asset" | "liability";
 
 export interface Account {
   id: number;
@@ -57,7 +63,7 @@ export interface CreateAccountRequest {
 export interface UpdateAccountRequest extends Partial<CreateAccountRequest> {}
 
 // ============ TRANSACTION TYPES ============
-export type TransactionType = 'income' | 'expense' | 'transfer';
+export type TransactionType = "income" | "expense" | "transfer";
 
 export interface Transaction {
   id: number;
@@ -244,7 +250,13 @@ export interface UpdateBudgetRequest {
 }
 
 // ============ BILL TYPES ============
-export type BillFrequency = 'once' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly';
+export type BillFrequency =
+  | "once"
+  | "weekly"
+  | "biweekly"
+  | "monthly"
+  | "quarterly"
+  | "yearly";
 
 export interface Bill {
   id: number;
@@ -294,7 +306,11 @@ export interface PayBillRequest {
 }
 
 // ============ NOTIFICATION TYPES ============
-export type NotificationType = 'bill_reminder' | 'budget_alert' | 'goal_update' | 'general';
+export type NotificationType =
+  | "bill_reminder"
+  | "budget_alert"
+  | "goal_update"
+  | "general";
 
 export interface Notification {
   id: number;
@@ -321,10 +337,12 @@ export interface Settings {
   userId: number;
   currency: string;
   language: string;
-  theme: 'light' | 'dark' | 'system';
+  theme: "light" | "dark" | "system";
   notifications: NotificationSettings;
   dateFormat: string;
-  startOfWeek: 'sunday' | 'monday';
+  startOfWeek: "sunday" | "monday";
+  incomeType?: "salary" | "freelance" | "mixed" | null;
+  financialGoals?: string[] | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -332,8 +350,72 @@ export interface Settings {
 export interface UpdateSettingsRequest {
   currency?: string;
   language?: string;
-  theme?: 'light' | 'dark' | 'system';
+  theme?: "light" | "dark" | "system";
   notifications?: Partial<NotificationSettings>;
   dateFormat?: string;
-  startOfWeek?: 'sunday' | 'monday';
+  startOfWeek?: "sunday" | "monday";
+  incomeType?: "salary" | "freelance" | "mixed";
+  financialGoals?: string[];
+}
+
+// ============ REPORTS ============
+
+export type ReportPeriod = "week" | "month" | "year";
+
+export interface ReportOverview {
+  income: number;
+  expenses: number;
+  savings: number;
+  transactionCount: number;
+  period: ReportPeriod;
+  startDate: string;
+  endDate: string;
+}
+
+export interface ReportCategory {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+  amount: number;
+  count: number;
+  percent: number;
+}
+
+export interface ReportTrends {
+  chartData: number[];
+  labels: string[];
+  period: ReportPeriod;
+}
+
+export interface ReportInsight {
+  id: string;
+  text: string;
+  type: "warning" | "tip" | "success";
+}
+
+export interface ReportQuery {
+  period?: ReportPeriod;
+  startDate?: string;
+  endDate?: string;
+}
+
+// ============ COACH ============
+
+export interface CoachMessage {
+  id: string;
+  userId: string;
+  type: "user" | "ai" | "suggestion";
+  message: string;
+  suggestions?: string[] | null;
+  createdAt: string;
+}
+
+export interface SendCoachMessageRequest {
+  message: string;
+}
+
+export interface CoachMessageResponse {
+  userMessage: CoachMessage;
+  aiMessage: CoachMessage;
 }

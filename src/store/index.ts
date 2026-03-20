@@ -1,13 +1,15 @@
-import { configureStore } from '@reduxjs/toolkit';
-import authReducer from './slices/authSlice';
-import accountsReducer from './slices/accountsSlice';
-import transactionsReducer from './slices/transactionsSlice';
-import goalsReducer from './slices/goalsSlice';
-import budgetsReducer from './slices/budgetsSlice';
-import billsReducer from './slices/billsSlice';
-import notificationsReducer from './slices/notificationsSlice';
-import settingsReducer from './slices/settingsSlice';
-import categoriesReducer from './slices/categoriesSlice';
+import { configureStore } from "@reduxjs/toolkit";
+import authReducer from "./slices/authSlice";
+import accountsReducer from "./slices/accountsSlice";
+import transactionsReducer from "./slices/transactionsSlice";
+import goalsReducer from "./slices/goalsSlice";
+import budgetsReducer from "./slices/budgetsSlice";
+import billsReducer from "./slices/billsSlice";
+import notificationsReducer from "./slices/notificationsSlice";
+import settingsReducer from "./slices/settingsSlice";
+import categoriesReducer from "./slices/categoriesSlice";
+import reportsReducer from "./slices/reportsSlice";
+import coachReducer from "./slices/coachSlice";
 
 export const store = configureStore({
   reducer: {
@@ -20,12 +22,14 @@ export const store = configureStore({
     notifications: notificationsReducer,
     settings: settingsReducer,
     categories: categoriesReducer,
+    reports: reportsReducer,
+    coach: coachReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
         // Ignore these action types
-        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
+        ignoredActions: ["persist/PERSIST", "persist/REHYDRATE"],
       },
     }),
 });

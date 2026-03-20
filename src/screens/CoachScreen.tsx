@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,9 +11,9 @@ import {
   Image,
   Dimensions,
   ListRenderItem,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -29,13 +29,19 @@ import Animated, {
   SlideInLeft,
   Easing,
   interpolate,
-} from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
+} from "react-native-reanimated";
+import { Ionicons } from "@expo/vector-icons";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import {
+  fetchCoachMessages,
+  sendCoachMessage,
+} from "../store/slices/coachSlice";
+import type { CoachMessage } from "../api/types";
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 // ============ TYPES ============
-type MessageType = 'user' | 'ai' | 'suggestion';
+type MessageType = "user" | "ai" | "suggestion";
 
 interface Message {
   id: string;
@@ -45,51 +51,31 @@ interface Message {
   suggestions?: string[];
 }
 
-// ============ MOCK DATA ============
-const AI_AVATAR = 'https://api.dicebear.com/7.x/bottts/png?seed=finuxx&backgroundColor=6366f1';
-
+// ============ CONSTANTS ============
 const QUICK_SUGGESTIONS = [
-  'Create a budget',
-  'Analyze my spending',
-  'How can I save more?',
-  'Pay off debt faster',
+  "Create a budget",
+  "Analyze my spending",
+  "How can I save more?",
+  "Pay off debt faster",
 ];
 
-const INITIAL_MESSAGES: Message[] = [
-  {
-    id: '1',
-    type: 'ai',
-    text: "Hi there! 👋 I'm your AI Finance Coach. I'm here to help you make smarter money decisions, build better habits, and reach your financial goals.",
-    timestamp: new Date(Date.now() - 60000),
-  },
-  {
-    id: '2',
-    type: 'ai',
-    text: "Based on your recent activity, I noticed you've been doing great with your food budget! 🎉 Would you like some tips to optimize your other spending categories?",
-    timestamp: new Date(Date.now() - 30000),
-    suggestions: ['Yes, show me tips', 'Analyze all categories', 'Maybe later'],
-  },
-];
-
-const AI_RESPONSES = [
-  "That's a great question! Based on your spending patterns, I'd recommend setting aside 20% of your income for savings. Would you like me to create a personalized savings plan?",
-  "I've analyzed your transactions from the past month. Your biggest opportunity for savings is in the dining out category - you could save around ₱2,500 by cooking at home 3 more times per week. 🍳",
-  "Here's a quick tip: Try the 50/30/20 rule - 50% for needs, 30% for wants, and 20% for savings. Based on your income, that means budgeting around ₱17,500 for essentials each month.",
-  "I see you have some upcoming bills. Would you like me to help you create a payment schedule to avoid late fees? I can also suggest ways to reduce some of these recurring expenses.",
-  "Great progress! You've reduced your spending by 12% compared to last month. Keep it up! 💪 Want to set a new savings goal?",
-];
+function coachMessageToMessage(cm: CoachMessage): Message {
+  return {
+    id: cm.id,
+    type: cm.type,
+    text: cm.message,
+    timestamp: new Date(cm.createdAt),
+    suggestions: cm.suggestions ?? undefined,
+  };
+}
 
 // ============ HELPER FUNCTIONS ============
 function formatTime(date: Date): string {
-  return date.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
+  return date.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
     hour12: true,
   });
-}
-
-function generateId(): string {
-  return Math.random().toString(36).substring(2, 9);
 }
 
 // ============ TYPING INDICATOR COMPONENT ============
@@ -102,32 +88,32 @@ function TypingIndicator() {
     dot1.value = withRepeat(
       withSequence(
         withTiming(1, { duration: 400, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0, { duration: 400, easing: Easing.inOut(Easing.ease) })
+        withTiming(0, { duration: 400, easing: Easing.inOut(Easing.ease) }),
       ),
       -1,
-      false
+      false,
     );
     dot2.value = withDelay(
       150,
       withRepeat(
         withSequence(
           withTiming(1, { duration: 400, easing: Easing.inOut(Easing.ease) }),
-          withTiming(0, { duration: 400, easing: Easing.inOut(Easing.ease) })
+          withTiming(0, { duration: 400, easing: Easing.inOut(Easing.ease) }),
         ),
         -1,
-        false
-      )
+        false,
+      ),
     );
     dot3.value = withDelay(
       300,
       withRepeat(
         withSequence(
           withTiming(1, { duration: 400, easing: Easing.inOut(Easing.ease) }),
-          withTiming(0, { duration: 400, easing: Easing.inOut(Easing.ease) })
+          withTiming(0, { duration: 400, easing: Easing.inOut(Easing.ease) }),
         ),
         -1,
-        false
-      )
+        false,
+      ),
     );
   }, []);
 
@@ -183,7 +169,7 @@ function SkeletonChat() {
     shimmer.value = withRepeat(
       withTiming(1, { duration: 1500, easing: Easing.linear }),
       -1,
-      false
+      false,
     );
   }, []);
 
@@ -191,8 +177,16 @@ function SkeletonChat() {
     opacity: interpolate(shimmer.value, [0, 0.5, 1], [0.3, 0.7, 0.3]),
   }));
 
-  const SkeletonBubble = ({ isUser, width }: { isUser: boolean; width: number }) => (
-    <View className={`flex-row items-start mb-4 px-5 ${isUser ? 'justify-end' : ''}`}>
+  const SkeletonBubble = ({
+    isUser,
+    width,
+  }: {
+    isUser: boolean;
+    width: number;
+  }) => (
+    <View
+      className={`flex-row items-start mb-4 px-5 ${isUser ? "justify-end" : ""}`}
+    >
       {!isUser && (
         <Animated.View
           style={shimmerStyle}
@@ -202,9 +196,7 @@ function SkeletonChat() {
       <Animated.View
         style={[shimmerStyle, { width }]}
         className={`h-16 rounded-2xl ${
-          isUser
-            ? 'bg-white/20 rounded-tr-sm'
-            : 'bg-gray-700 rounded-tl-sm'
+          isUser ? "bg-white/20 rounded-tr-sm" : "bg-gray-700 rounded-tl-sm"
         }`}
       />
     </View>
@@ -224,10 +216,14 @@ function SkeletonChat() {
 interface SuggestionChipProps {
   text: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary';
+  variant?: "primary" | "secondary";
 }
 
-function SuggestionChip({ text, onPress, variant = 'secondary' }: SuggestionChipProps) {
+function SuggestionChip({
+  text,
+  onPress,
+  variant = "secondary",
+}: SuggestionChipProps) {
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -242,7 +238,7 @@ function SuggestionChip({ text, onPress, variant = 'secondary' }: SuggestionChip
     scale.value = withSpring(1);
   };
 
-  const isPrimary = variant === 'primary';
+  const isPrimary = variant === "primary";
 
   return (
     <Animated.View style={animatedStyle}>
@@ -251,14 +247,12 @@ function SuggestionChip({ text, onPress, variant = 'secondary' }: SuggestionChip
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         className={`px-4 py-2.5 rounded-full mr-2 mb-2 ${
-          isPrimary
-            ? 'bg-white'
-            : 'bg-white/10 border border-white/20'
+          isPrimary ? "bg-white" : "bg-white/10 border border-white/20"
         }`}
       >
         <Text
           className={`text-sm font-medium ${
-            isPrimary ? 'text-gray-900' : 'text-white'
+            isPrimary ? "text-gray-900" : "text-white"
           }`}
         >
           {text}
@@ -275,15 +269,19 @@ interface MessageBubbleProps {
 }
 
 function MessageBubble({ message, onSuggestionPress }: MessageBubbleProps) {
-  const isUser = message.type === 'user';
-  const enteringAnimation = isUser ? SlideInRight.duration(400) : SlideInLeft.duration(400);
+  const isUser = message.type === "user";
+  const enteringAnimation = isUser
+    ? SlideInRight.duration(400)
+    : SlideInLeft.duration(400);
 
   return (
     <Animated.View
       entering={enteringAnimation}
-      className={`mb-4 px-5 ${isUser ? 'items-end' : 'items-start'}`}
+      className={`mb-4 px-5 ${isUser ? "items-end" : "items-start"}`}
     >
-      <View className={`flex-row items-end ${isUser ? 'flex-row-reverse' : ''}`}>
+      <View
+        className={`flex-row items-end ${isUser ? "flex-row-reverse" : ""}`}
+      >
         {/* AI Avatar */}
         {!isUser && (
           <View className="w-8 h-8 rounded-full bg-white/10 items-center justify-center mr-3 mb-1">
@@ -292,26 +290,28 @@ function MessageBubble({ message, onSuggestionPress }: MessageBubbleProps) {
         )}
 
         {/* Message Content */}
-        <View className={`max-w-[75%] ${isUser ? 'items-end' : 'items-start'}`}>
+        <View className={`max-w-[75%] ${isUser ? "items-end" : "items-start"}`}>
           {/* Bubble */}
           {isUser ? (
             <View
               className="bg-white rounded-2xl rounded-tr-sm px-4 py-3"
               style={{
-                shadowColor: '#000',
+                shadowColor: "#000",
                 shadowOffset: { width: 0, height: 4 },
                 shadowOpacity: 0.15,
                 shadowRadius: 8,
                 elevation: 4,
               }}
             >
-              <Text className="text-gray-900 text-base leading-6">{message.text}</Text>
+              <Text className="text-gray-900 text-base leading-6">
+                {message.text}
+              </Text>
             </View>
           ) : (
             <View
               className="bg-gray-800 rounded-2xl rounded-tl-sm px-4 py-3"
               style={{
-                shadowColor: '#000',
+                shadowColor: "#000",
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.2,
                 shadowRadius: 8,
@@ -327,7 +327,7 @@ function MessageBubble({ message, onSuggestionPress }: MessageBubbleProps) {
           {/* Timestamp */}
           <Text
             className={`text-xs mt-1.5 ${
-              isUser ? 'text-gray-500' : 'text-gray-500 ml-0.5'
+              isUser ? "text-gray-500" : "text-gray-500 ml-0.5"
             }`}
           >
             {formatTime(message.timestamp)}
@@ -341,7 +341,7 @@ function MessageBubble({ message, onSuggestionPress }: MessageBubbleProps) {
                   key={index}
                   text={suggestion}
                   onPress={() => onSuggestionPress?.(suggestion)}
-                  variant={index === 0 ? 'primary' : 'secondary'}
+                  variant={index === 0 ? "primary" : "secondary"}
                 />
               ))}
             </View>
@@ -377,7 +377,7 @@ function ChatHeader({ onBackPress }: ChatHeaderProps) {
           <View
             className="w-11 h-11 rounded-full bg-white/10 items-center justify-center"
             style={{
-              shadowColor: '#000',
+              shadowColor: "#000",
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.2,
               shadowRadius: 8,
@@ -418,7 +418,10 @@ interface QuickSuggestionsProps {
   onSuggestionPress: (suggestion: string) => void;
 }
 
-function QuickSuggestions({ suggestions, onSuggestionPress }: QuickSuggestionsProps) {
+function QuickSuggestions({
+  suggestions,
+  onSuggestionPress,
+}: QuickSuggestionsProps) {
   return (
     <Animated.View
       entering={FadeInUp.duration(400).delay(200)}
@@ -449,7 +452,12 @@ interface InputBarProps {
   onAttachPress?: () => void;
 }
 
-function InputBar({ value, onChangeText, onSend, onAttachPress }: InputBarProps) {
+function InputBar({
+  value,
+  onChangeText,
+  onSend,
+  onAttachPress,
+}: InputBarProps) {
   const [isFocused, setIsFocused] = useState(false);
   const borderScale = useSharedValue(0);
   const sendButtonScale = useSharedValue(1);
@@ -459,7 +467,7 @@ function InputBar({ value, onChangeText, onSend, onAttachPress }: InputBarProps)
   }, [isFocused]);
 
   const containerStyle = useAnimatedStyle(() => ({
-    borderColor: isFocused ? '#ffffff' : 'transparent',
+    borderColor: isFocused ? "#ffffff" : "transparent",
     borderWidth: interpolate(borderScale.value, [0, 1], [1, 2]),
   }));
 
@@ -521,7 +529,7 @@ function InputBar({ value, onChangeText, onSend, onAttachPress }: InputBarProps)
             disabled={value.trim().length === 0}
             className="w-10 h-10 bg-white rounded-full items-center justify-center"
             style={{
-              shadowColor: '#000',
+              shadowColor: "#000",
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.2,
               shadowRadius: 8,
@@ -538,9 +546,14 @@ function InputBar({ value, onChangeText, onSend, onAttachPress }: InputBarProps)
 
 // ============ MAIN COACH SCREEN ============
 export default function CoachScreen() {
-  const [isLoading, setIsLoading] = useState(true);
+  const dispatch = useAppDispatch();
+  const {
+    messages: coachMessages,
+    isLoading: reduxLoading,
+    isSending,
+  } = useAppSelector((state) => state.coach);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [inputText, setInputText] = useState('');
+  const [inputText, setInputText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const navigation = useNavigation();
@@ -549,15 +562,38 @@ export default function CoachScreen() {
     navigation.goBack();
   }, [navigation]);
 
-  // Simulate initial loading
+  // Fetch messages on mount
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-      setMessages(INITIAL_MESSAGES);
-    }, 1500);
+    dispatch(fetchCoachMessages({ limit: 50 }));
+  }, [dispatch]);
 
-    return () => clearTimeout(timer);
-  }, []);
+  // Sync Redux messages to local state (reversed for inverted FlatList)
+  useEffect(() => {
+    if (coachMessages.length > 0) {
+      const mapped = coachMessages.map(coachMessageToMessage).reverse();
+      setMessages(mapped);
+    } else if (!reduxLoading && coachMessages.length === 0) {
+      // Show welcome message when no history exists
+      setMessages([
+        {
+          id: "welcome",
+          type: "ai",
+          text: "Hi there! 👋 I'm your AI Finance Coach. I'm here to help you make smarter money decisions, build better habits, and reach your financial goals. Ask me anything!",
+          timestamp: new Date(),
+          suggestions: [
+            "Analyze my spending",
+            "How can I save more?",
+            "Create a budget",
+          ],
+        },
+      ]);
+    }
+  }, [coachMessages, reduxLoading]);
+
+  // Show typing indicator while sending
+  useEffect(() => {
+    setIsTyping(isSending);
+  }, [isSending]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -569,72 +605,56 @@ export default function CoachScreen() {
   }, [messages]);
 
   const handleSendMessage = useCallback(() => {
-    if (inputText.trim().length === 0) return;
+    if (inputText.trim().length === 0 || isSending) return;
 
-    const userMessage: Message = {
-      id: generateId(),
-      type: 'user',
-      text: inputText.trim(),
+    const text = inputText.trim();
+    setInputText("");
+
+    // Optimistically add user message to local state
+    const optimisticUserMsg: Message = {
+      id: `temp-${Date.now()}`,
+      type: "user",
+      text,
       timestamp: new Date(),
     };
+    setMessages((prev) => [optimisticUserMsg, ...prev]);
 
-    setMessages((prev) => [userMessage, ...prev]);
-    setInputText('');
-    setIsTyping(true);
-
-    // Simulate AI response
-    const responseDelay = 1500 + Math.random() * 1000;
-    setTimeout(() => {
-      const aiResponse: Message = {
-        id: generateId(),
-        type: 'ai',
-        text: AI_RESPONSES[Math.floor(Math.random() * AI_RESPONSES.length)],
-        timestamp: new Date(),
-      };
-      setIsTyping(false);
-      setMessages((prev) => [aiResponse, ...prev]);
-    }, responseDelay);
-  }, [inputText]);
+    // Dispatch real API call
+    dispatch(sendCoachMessage(text));
+  }, [inputText, isSending, dispatch]);
 
   const handleSuggestionPress = useCallback((suggestion: string) => {
     setInputText(suggestion);
   }, []);
 
-  const handleQuickSuggestionPress = useCallback((suggestion: string) => {
-    const userMessage: Message = {
-      id: generateId(),
-      type: 'user',
-      text: suggestion,
-      timestamp: new Date(),
-    };
+  const handleQuickSuggestionPress = useCallback(
+    (suggestion: string) => {
+      if (isSending) return;
 
-    setMessages((prev) => [userMessage, ...prev]);
-    setIsTyping(true);
-
-    // Simulate AI response
-    const responseDelay = 1500 + Math.random() * 1000;
-    setTimeout(() => {
-      const aiResponse: Message = {
-        id: generateId(),
-        type: 'ai',
-        text: AI_RESPONSES[Math.floor(Math.random() * AI_RESPONSES.length)],
+      // Optimistically add user message
+      const optimisticUserMsg: Message = {
+        id: `temp-${Date.now()}`,
+        type: "user",
+        text: suggestion,
         timestamp: new Date(),
-        suggestions: Math.random() > 0.5 ? ['Tell me more', 'Set a goal', 'View details'] : undefined,
       };
-      setIsTyping(false);
-      setMessages((prev) => [aiResponse, ...prev]);
-    }, responseDelay);
-  }, []);
+      setMessages((prev) => [optimisticUserMsg, ...prev]);
+
+      // Dispatch real API call
+      dispatch(sendCoachMessage(suggestion));
+    },
+    [isSending, dispatch],
+  );
 
   const handleAttachPress = useCallback(() => {
-    console.log('Attachment pressed');
+    console.log("Attachment pressed");
   }, []);
 
   const renderMessage: ListRenderItem<Message> = useCallback(
     ({ item }) => (
       <MessageBubble message={item} onSuggestionPress={handleSuggestionPress} />
     ),
-    [handleSuggestionPress]
+    [handleSuggestionPress],
   );
 
   const keyExtractor = useCallback((item: Message) => item.id, []);
@@ -646,9 +666,9 @@ export default function CoachScreen() {
     return null;
   }, [isTyping]);
 
-  if (isLoading) {
+  if (reduxLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-900" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-gray-900" edges={["top"]}>
         <ChatHeader onBackPress={handleBackPress} />
         <SkeletonChat />
       </SafeAreaView>
@@ -656,11 +676,11 @@ export default function CoachScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-900" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-gray-900" edges={["top"]}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
       >
         {/* Header */}
         <ChatHeader onBackPress={handleBackPress} />

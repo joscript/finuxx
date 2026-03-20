@@ -1,19 +1,27 @@
-export { BalanceCard } from './BalanceCard';
-export { BudgetProgressCard } from './BudgetProgressCard';
-export { StatItem } from './StatItem';
-export { CoachCard } from './CoachCard';
-export { BillItem } from './BillItem';
-export { NetWorthCard } from './NetWorthCard';
-export { SkeletonCard, SkeletonRow, SkeletonStatItem, SkeletonBillItem } from './SkeletonCard';
-export { default as AddTransactionModal } from './AddTransactionModal';
-export type { Transaction } from './AddTransactionModal';
-export { default as AddContributionModal } from './AddContributionModal';
+export { BalanceCard } from "./BalanceCard";
+export { BudgetProgressCard } from "./BudgetProgressCard";
+export { StatItem } from "./StatItem";
+export { CoachCard } from "./CoachCard";
+export { BillItem } from "./BillItem";
+export { NetWorthCard } from "./NetWorthCard";
+export {
+  SkeletonCard,
+  SkeletonRow,
+  SkeletonStatItem,
+  SkeletonBillItem,
+} from "./SkeletonCard";
+export { default as AddTransactionModal } from "./AddTransactionModal";
+export type { Transaction } from "./AddTransactionModal";
+export { default as AddContributionModal } from "./AddContributionModal";
 
 // Accounts components
-export * from './accounts';
+export * from "./accounts";
 
 // Budget components
-export * from './budget';
+export * from "./budget";
 
 // Transactions components
-export * from './transactions';
+export * from "./transactions";
+
+// Bills components
+export * from "./bills";

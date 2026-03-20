@@ -508,7 +508,7 @@ export default function HomeScreen() {
   };
 
   const handleViewAllBills = () => {
-    console.log("View all bills pressed");
+    navigation.navigate("Bills");
   };
 
   const handleCategoryPress = (categoryId: string) => {

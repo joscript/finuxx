@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, Pressable, Dimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState, useEffect, useCallback } from "react";
+import { View, Text, ScrollView, Pressable, Dimensions } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -14,95 +14,18 @@ import Animated, {
   FadeIn,
   interpolate,
   runOnJS,
-} from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
+} from "react-native-reanimated";
+import { Ionicons } from "@expo/vector-icons";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { fetchAllReports, setPeriod } from "../store/slices/reportsSlice";
+import type { ReportPeriod } from "../api/types";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const AnimatedText = Animated.createAnimatedComponent(Text);
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
-// ============ MOCK DATA ============
-type Period = 'week' | 'month' | 'year';
-
-const MOCK_DATA: Record<Period, {
-  income: number;
-  expenses: number;
-  savings: number;
-  forecast: number;
-  categories: Array<{
-    id: string;
-    name: string;
-    amount: number;
-    percent: number;
-    color: string;
-    icon: keyof typeof Ionicons.glyphMap;
-  }>;
-  chartData: number[];
-  insights: Array<{
-    id: string;
-    text: string;
-    type: 'warning' | 'tip' | 'success';
-  }>;
-}> = {
-  week: {
-    income: 8750,
-    expenses: 4320,
-    savings: 4430,
-    forecast: 52680,
-    categories: [
-      { id: '1', name: 'Food & Dining', amount: 1850, percent: 42, color: '#f97316', icon: 'restaurant-outline' },
-      { id: '2', name: 'Transportation', amount: 920, percent: 21, color: '#3b82f6', icon: 'car-outline' },
-      { id: '3', name: 'Entertainment', amount: 650, percent: 15, color: '#a855f7', icon: 'game-controller-outline' },
-      { id: '4', name: 'Shopping', amount: 580, percent: 13, color: '#ec4899', icon: 'bag-outline' },
-      { id: '5', name: 'Others', amount: 320, percent: 9, color: '#6b7280', icon: 'ellipsis-horizontal-outline' },
-    ],
-    chartData: [3200, 4100, 2800, 5200, 3900, 4320, 3800],
-    insights: [
-      { id: '1', text: 'You spend 45% more on food during weekends. Consider meal prepping!', type: 'warning' },
-      { id: '2', text: 'Your transportation costs are 15% lower than last week. Great job!', type: 'success' },
-    ],
-  },
-  month: {
-    income: 35000,
-    expenses: 22500,
-    savings: 12500,
-    forecast: 60750,
-    categories: [
-      { id: '1', name: 'Food & Dining', amount: 7200, percent: 32, color: '#f97316', icon: 'restaurant-outline' },
-      { id: '2', name: 'Bills & Utilities', amount: 5400, percent: 24, color: '#10b981', icon: 'receipt-outline' },
-      { id: '3', name: 'Transportation', amount: 4050, percent: 18, color: '#3b82f6', icon: 'car-outline' },
-      { id: '4', name: 'Shopping', amount: 3150, percent: 14, color: '#ec4899', icon: 'bag-outline' },
-      { id: '5', name: 'Entertainment', amount: 1800, percent: 8, color: '#a855f7', icon: 'game-controller-outline' },
-      { id: '6', name: 'Others', amount: 900, percent: 4, color: '#6b7280', icon: 'ellipsis-horizontal-outline' },
-    ],
-    chartData: [18000, 21000, 19500, 22500, 20000, 22500, 21000, 23000, 22500, 24000, 21500, 22500],
-    insights: [
-      { id: '1', text: 'Subscriptions are increasing your monthly cost by ₱1,200. Review unused services.', type: 'warning' },
-      { id: '2', text: 'You\'re on track to save ₱12,500 this month. Keep it up!', type: 'success' },
-      { id: '3', text: 'Try the 50/30/20 rule: 50% needs, 30% wants, 20% savings.', type: 'tip' },
-    ],
-  },
-  year: {
-    income: 420000,
-    expenses: 285000,
-    savings: 135000,
-    forecast: 183250,
-    categories: [
-      { id: '1', name: 'Food & Dining', amount: 85500, percent: 30, color: '#f97316', icon: 'restaurant-outline' },
-      { id: '2', name: 'Bills & Utilities', amount: 68400, percent: 24, color: '#10b981', icon: 'receipt-outline' },
-      { id: '3', name: 'Transportation', amount: 51300, percent: 18, color: '#3b82f6', icon: 'car-outline' },
-      { id: '4', name: 'Shopping', amount: 42750, percent: 15, color: '#ec4899', icon: 'bag-outline' },
-      { id: '5', name: 'Entertainment', amount: 22800, percent: 8, color: '#a855f7', icon: 'game-controller-outline' },
-      { id: '6', name: 'Others', amount: 14250, percent: 5, color: '#6b7280', icon: 'ellipsis-horizontal-outline' },
-    ],
-    chartData: [22000, 24500, 21000, 25000, 23500, 26000, 24000, 27000, 25500, 28000, 26500, 27000],
-    insights: [
-      { id: '1', text: 'Your annual savings rate is 32%. That\'s above the recommended 20%!', type: 'success' },
-      { id: '2', text: 'December spending typically increases by 40%. Plan ahead for the holidays.', type: 'tip' },
-    ],
-  },
-};
+type Period = ReportPeriod;
 
 // ============ SKELETON COMPONENTS ============
 interface SkeletonProps {
@@ -112,7 +35,12 @@ interface SkeletonProps {
   delay?: number;
 }
 
-function Skeleton({ width = '100%', height = 16, className = '', delay = 0 }: SkeletonProps) {
+function Skeleton({
+  width = "100%",
+  height = 16,
+  className = "",
+  delay = 0,
+}: SkeletonProps) {
   const shimmerPosition = useSharedValue(0);
 
   useEffect(() => {
@@ -121,13 +49,17 @@ function Skeleton({ width = '100%', height = 16, className = '', delay = 0 }: Sk
       withRepeat(
         withTiming(1, { duration: 1500, easing: Easing.linear }),
         -1,
-        false
-      )
+        false,
+      ),
     );
   }, [delay]);
 
   const shimmerStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(shimmerPosition.value, [0, 0.5, 1], [0.3, 0.7, 0.3]);
+    const opacity = interpolate(
+      shimmerPosition.value,
+      [0, 0.5, 1],
+      [0.3, 0.7, 0.3],
+    );
     return { opacity };
   });
 
@@ -139,13 +71,19 @@ function Skeleton({ width = '100%', height = 16, className = '', delay = 0 }: Sk
   );
 }
 
-function SkeletonReportCard({ height = 120, delay = 0 }: { height?: number; delay?: number }) {
+function SkeletonReportCard({
+  height = 120,
+  delay = 0,
+}: {
+  height?: number;
+  delay?: number;
+}) {
   return (
     <View
       className="bg-white dark:bg-gray-800 rounded-[24px] p-5 mx-5 mb-4"
       style={{
         height,
-        shadowColor: '#000',
+        shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.06,
         shadowRadius: 12,
@@ -167,7 +105,7 @@ function SkeletonOverviewCards({ delay = 0 }: { delay?: number }) {
           key={i}
           className="flex-1 bg-white dark:bg-gray-800 rounded-[20px] p-4"
           style={{
-            shadowColor: '#000',
+            shadowColor: "#000",
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.06,
             shadowRadius: 12,
@@ -175,7 +113,12 @@ function SkeletonOverviewCards({ delay = 0 }: { delay?: number }) {
           }}
         >
           <Skeleton width={50} height={12} delay={delay + i * 100} />
-          <Skeleton width="80%" height={24} className="mt-2" delay={delay + i * 100 + 50} />
+          <Skeleton
+            width="80%"
+            height={24}
+            className="mt-2"
+            delay={delay + i * 100 + 50}
+          />
         </View>
       ))}
     </View>
@@ -188,7 +131,7 @@ function SkeletonChart({ delay = 0 }: { delay?: number }) {
       className="bg-white dark:bg-gray-800 rounded-[24px] p-5 mx-5 mb-5"
       style={{
         height: 240,
-        shadowColor: '#000',
+        shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.06,
         shadowRadius: 12,
@@ -205,7 +148,12 @@ function SkeletonChart({ delay = 0 }: { delay?: number }) {
       <View className="flex-1 flex-row items-end justify-between px-2">
         {[0.4, 0.6, 0.5, 0.8, 0.65, 0.75, 0.7].map((h, i) => (
           <View key={i} className="items-center flex-1">
-            <Skeleton width={20} height={120 * h} delay={delay + 150 + i * 50} className="rounded-t-lg" />
+            <Skeleton
+              width={20}
+              height={120 * h}
+              delay={delay + 150 + i * 50}
+              className="rounded-t-lg"
+            />
           </View>
         ))}
       </View>
@@ -218,7 +166,7 @@ function SkeletonCategories({ delay = 0 }: { delay?: number }) {
     <View
       className="bg-white dark:bg-gray-800 rounded-[24px] p-5 mx-5 mb-5"
       style={{
-        shadowColor: '#000',
+        shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.06,
         shadowRadius: 12,
@@ -227,11 +175,24 @@ function SkeletonCategories({ delay = 0 }: { delay?: number }) {
     >
       <Skeleton width={140} height={18} delay={delay} className="mb-4" />
       {[0, 1, 2, 3].map((i) => (
-        <View key={i} className="flex-row items-center py-3 border-b border-gray-100 dark:border-gray-700 last:border-0">
-          <Skeleton width={40} height={40} delay={delay + i * 100} className="rounded-full" />
+        <View
+          key={i}
+          className="flex-row items-center py-3 border-b border-gray-100 dark:border-gray-700 last:border-0"
+        >
+          <Skeleton
+            width={40}
+            height={40}
+            delay={delay + i * 100}
+            className="rounded-full"
+          />
           <View className="flex-1 ml-3">
             <Skeleton width="50%" height={14} delay={delay + i * 100 + 25} />
-            <Skeleton width="30%" height={10} className="mt-2" delay={delay + i * 100 + 50} />
+            <Skeleton
+              width="30%"
+              height={10}
+              className="mt-2"
+              delay={delay + i * 100 + 50}
+            />
           </View>
           <Skeleton width={60} height={16} delay={delay + i * 100 + 75} />
         </View>
@@ -244,7 +205,7 @@ function SkeletonCategories({ delay = 0 }: { delay?: number }) {
 interface OverviewCardProps {
   title: string;
   value: number;
-  type: 'income' | 'expense' | 'savings';
+  type: "income" | "expense" | "savings";
   index: number;
 }
 
@@ -258,7 +219,7 @@ function OverviewCard({ title, value, type, index }: OverviewCardProps) {
     translateY.value = withDelay(index * 100, withSpring(0, { damping: 15 }));
     displayValue.value = withDelay(
       index * 100 + 200,
-      withTiming(value, { duration: 1000, easing: Easing.out(Easing.cubic) })
+      withTiming(value, { duration: 1000, easing: Easing.out(Easing.cubic) }),
     );
   }, [value, index]);
 
@@ -269,22 +230,22 @@ function OverviewCard({ title, value, type, index }: OverviewCardProps) {
 
   const colors = {
     income: {
-      bg: 'bg-emerald-50 dark:bg-emerald-500/10',
-      text: 'text-emerald-600 dark:text-emerald-400',
-      icon: 'trending-up' as const,
-      iconColor: '#10b981',
+      bg: "bg-emerald-50 dark:bg-emerald-500/10",
+      text: "text-emerald-600 dark:text-emerald-400",
+      icon: "trending-up" as const,
+      iconColor: "#10b981",
     },
     expense: {
-      bg: 'bg-rose-50 dark:bg-rose-500/10',
-      text: 'text-rose-600 dark:text-rose-400',
-      icon: 'trending-down' as const,
-      iconColor: '#f43f5e',
+      bg: "bg-rose-50 dark:bg-rose-500/10",
+      text: "text-rose-600 dark:text-rose-400",
+      icon: "trending-down" as const,
+      iconColor: "#f43f5e",
     },
     savings: {
-      bg: 'bg-blue-50 dark:bg-blue-500/10',
-      text: 'text-blue-600 dark:text-blue-400',
-      icon: 'wallet' as const,
-      iconColor: '#3b82f6',
+      bg: "bg-blue-50 dark:bg-blue-500/10",
+      text: "text-blue-600 dark:text-blue-400",
+      icon: "wallet" as const,
+      iconColor: "#3b82f6",
     },
   };
 
@@ -295,7 +256,7 @@ function OverviewCard({ title, value, type, index }: OverviewCardProps) {
       style={[
         cardStyle,
         {
-          shadowColor: '#000',
+          shadowColor: "#000",
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.06,
           shadowRadius: 12,
@@ -305,7 +266,9 @@ function OverviewCard({ title, value, type, index }: OverviewCardProps) {
       className={`flex-1 ${config.bg} rounded-[20px] p-4`}
     >
       <View className="flex-row items-center justify-between mb-2">
-        <Text className="text-gray-500 dark:text-gray-400 text-xs font-medium">{title}</Text>
+        <Text className="text-gray-500 dark:text-gray-400 text-xs font-medium">
+          {title}
+        </Text>
         <Ionicons name={config.icon} size={16} color={config.iconColor} />
       </View>
       <Text className={`${config.text} text-lg font-bold`}>
@@ -336,20 +299,34 @@ function ChartPlaceholder({ data, period }: ChartPlaceholderProps) {
   }));
 
   const maxValue = Math.max(...data);
-  const labels = period === 'week' 
-    ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-    : period === 'month'
-    ? ['W1', 'W2', 'W3', 'W4']
-    : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const labels =
+    period === "week"
+      ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+      : period === "month"
+        ? ["W1", "W2", "W3", "W4"]
+        : [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
+          ];
 
-  const displayData = period === 'month' ? data.slice(0, 4) : data;
+  const displayData = period === "month" ? data.slice(0, 4) : data;
 
   return (
     <Animated.View
       style={[
         cardStyle,
         {
-          shadowColor: '#000',
+          shadowColor: "#000",
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.06,
           shadowRadius: 12,
@@ -365,16 +342,23 @@ function ChartPlaceholder({ data, period }: ChartPlaceholderProps) {
         <View className="flex-row items-center gap-4">
           <View className="flex-row items-center">
             <View className="w-3 h-3 rounded-full bg-gray-900 dark:bg-white mr-2" />
-            <Text className="text-gray-500 dark:text-gray-400 text-xs">Expenses</Text>
+            <Text className="text-gray-500 dark:text-gray-400 text-xs">
+              Expenses
+            </Text>
           </View>
         </View>
       </View>
-      
+
       <View className="h-40 flex-row items-end justify-between">
         {displayData.map((value, index) => {
           const height = (value / maxValue) * 120;
           return (
-            <ChartBar key={index} height={height} label={labels[index]} index={index} />
+            <ChartBar
+              key={index}
+              height={height}
+              label={labels[index]}
+              index={index}
+            />
           );
         })}
       </View>
@@ -393,8 +377,14 @@ function ChartBar({ height, label, index }: ChartBarProps) {
   const opacity = useSharedValue(0);
 
   useEffect(() => {
-    animatedHeight.value = withDelay(400 + index * 80, withSpring(height, { damping: 12 }));
-    opacity.value = withDelay(400 + index * 80, withTiming(1, { duration: 300 }));
+    animatedHeight.value = withDelay(
+      400 + index * 80,
+      withSpring(height, { damping: 12 }),
+    );
+    opacity.value = withDelay(
+      400 + index * 80,
+      withTiming(1, { duration: 300 }),
+    );
   }, [height, index]);
 
   const barStyle = useAnimatedStyle(() => ({
@@ -408,7 +398,9 @@ function ChartBar({ height, label, index }: ChartBarProps) {
         style={barStyle}
         className="w-6 bg-gray-900 dark:bg-gray-200 rounded-t-lg"
       />
-      <Text className="text-gray-400 dark:text-gray-500 text-[10px] mt-2">{label}</Text>
+      <Text className="text-gray-400 dark:text-gray-500 text-[10px] mt-2">
+        {label}
+      </Text>
     </View>
   );
 }
@@ -432,9 +424,18 @@ function CategoryRow({ category, index }: CategoryRowProps) {
   const progressWidth = useSharedValue(0);
 
   useEffect(() => {
-    opacity.value = withDelay(500 + index * 100, withTiming(1, { duration: 400 }));
-    translateX.value = withDelay(500 + index * 100, withSpring(0, { damping: 15 }));
-    progressWidth.value = withDelay(600 + index * 100, withTiming(category.percent, { duration: 800 }));
+    opacity.value = withDelay(
+      500 + index * 100,
+      withTiming(1, { duration: 400 }),
+    );
+    translateX.value = withDelay(
+      500 + index * 100,
+      withSpring(0, { damping: 15 }),
+    );
+    progressWidth.value = withDelay(
+      600 + index * 100,
+      withTiming(category.percent, { duration: 800 }),
+    );
   }, [category.percent, index]);
 
   const rowStyle = useAnimatedStyle(() => ({
@@ -498,14 +499,17 @@ function ForecastCard({ value, currentBalance = 48250 }: ForecastCardProps) {
   useEffect(() => {
     opacity.value = withDelay(700, withTiming(1, { duration: 500 }));
     translateY.value = withDelay(700, withSpring(0, { damping: 15 }));
-    trendRotation.value = withDelay(900, withRepeat(
-      withSequence(
-        withTiming(-5, { duration: 500 }),
-        withTiming(5, { duration: 500 })
+    trendRotation.value = withDelay(
+      900,
+      withRepeat(
+        withSequence(
+          withTiming(-5, { duration: 500 }),
+          withTiming(5, { duration: 500 }),
+        ),
+        -1,
+        true,
       ),
-      -1,
-      true
-    ));
+    );
   }, []);
 
   const cardStyle = useAnimatedStyle(() => ({
@@ -522,7 +526,7 @@ function ForecastCard({ value, currentBalance = 48250 }: ForecastCardProps) {
       style={[
         cardStyle,
         {
-          shadowColor: '#000',
+          shadowColor: "#000",
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.06,
           shadowRadius: 12,
@@ -537,15 +541,17 @@ function ForecastCard({ value, currentBalance = 48250 }: ForecastCardProps) {
             <Ionicons name="analytics-outline" size={22} color="#3b82f6" />
           </View>
           <View>
-            <Text className="text-gray-400 text-sm font-medium">Future Balance</Text>
+            <Text className="text-gray-400 text-sm font-medium">
+              Future Balance
+            </Text>
             <Text className="text-gray-500 text-xs">In 30 days</Text>
           </View>
         </View>
         <Animated.View style={arrowStyle}>
           <Ionicons
-            name={isPositive ? 'arrow-up' : 'arrow-down'}
+            name={isPositive ? "arrow-up" : "arrow-down"}
             size={28}
-            color={isPositive ? '#10b981' : '#f43f5e'}
+            color={isPositive ? "#10b981" : "#f43f5e"}
           />
         </Animated.View>
       </View>
@@ -553,9 +559,14 @@ function ForecastCard({ value, currentBalance = 48250 }: ForecastCardProps) {
         ₱{value.toLocaleString()}
       </Text>
       <View className="flex-row items-center">
-        <View className={`px-2 py-1 rounded-full ${isPositive ? 'bg-emerald-500/20' : 'bg-rose-500/20'}`}>
-          <Text className={`text-xs font-semibold ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
-            {isPositive ? '+' : ''}{percentChange}%
+        <View
+          className={`px-2 py-1 rounded-full ${isPositive ? "bg-emerald-500/20" : "bg-rose-500/20"}`}
+        >
+          <Text
+            className={`text-xs font-semibold ${isPositive ? "text-emerald-400" : "text-rose-400"}`}
+          >
+            {isPositive ? "+" : ""}
+            {percentChange}%
           </Text>
         </View>
         <Text className="text-gray-500 text-xs ml-2">vs current balance</Text>
@@ -569,7 +580,7 @@ interface InsightCardProps {
   insights: Array<{
     id: string;
     text: string;
-    type: 'warning' | 'tip' | 'success';
+    type: "warning" | "tip" | "success";
   }>;
 }
 
@@ -587,28 +598,28 @@ function InsightCard({ insights }: InsightCardProps) {
     transform: [{ translateY: translateY.value }],
   }));
 
-  const getInsightConfig = (type: 'warning' | 'tip' | 'success') => {
+  const getInsightConfig = (type: "warning" | "tip" | "success") => {
     switch (type) {
-      case 'warning':
+      case "warning":
         return {
-          bg: 'bg-amber-50 dark:bg-amber-500/10',
-          border: 'border-amber-200 dark:border-amber-500/30',
-          icon: 'alert-circle-outline' as const,
-          iconColor: '#f59e0b',
+          bg: "bg-amber-50 dark:bg-amber-500/10",
+          border: "border-amber-200 dark:border-amber-500/30",
+          icon: "alert-circle-outline" as const,
+          iconColor: "#f59e0b",
         };
-      case 'success':
+      case "success":
         return {
-          bg: 'bg-emerald-50 dark:bg-emerald-500/10',
-          border: 'border-emerald-200 dark:border-emerald-500/30',
-          icon: 'checkmark-circle-outline' as const,
-          iconColor: '#10b981',
+          bg: "bg-emerald-50 dark:bg-emerald-500/10",
+          border: "border-emerald-200 dark:border-emerald-500/30",
+          icon: "checkmark-circle-outline" as const,
+          iconColor: "#10b981",
         };
-      case 'tip':
+      case "tip":
         return {
-          bg: 'bg-blue-50 dark:bg-blue-500/10',
-          border: 'border-blue-200 dark:border-blue-500/30',
-          icon: 'bulb-outline' as const,
-          iconColor: '#3b82f6',
+          bg: "bg-blue-50 dark:bg-blue-500/10",
+          border: "border-blue-200 dark:border-blue-500/30",
+          icon: "bulb-outline" as const,
+          iconColor: "#3b82f6",
         };
     }
   };
@@ -618,7 +629,7 @@ function InsightCard({ insights }: InsightCardProps) {
       style={[
         cardStyle,
         {
-          shadowColor: '#000',
+          shadowColor: "#000",
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.06,
           shadowRadius: 12,
@@ -631,15 +642,17 @@ function InsightCard({ insights }: InsightCardProps) {
         <View className="w-8 h-8 bg-purple-100 dark:bg-purple-500/20 rounded-full items-center justify-center mr-3">
           <Ionicons name="sparkles" size={18} color="#a855f7" />
         </View>
-        <Text className="text-gray-900 dark:text-white text-lg font-bold">AI Insights</Text>
+        <Text className="text-gray-900 dark:text-white text-lg font-bold">
+          AI Insights
+        </Text>
       </View>
-      
+
       {insights.map((insight, index) => {
         const config = getInsightConfig(insight.type);
         return (
           <View
             key={insight.id}
-            className={`${config.bg} border ${config.border} rounded-xl p-4 ${index < insights.length - 1 ? 'mb-3' : ''}`}
+            className={`${config.bg} border ${config.border} rounded-xl p-4 ${index < insights.length - 1 ? "mb-3" : ""}`}
           >
             <View className="flex-row">
               <Ionicons name={config.icon} size={20} color={config.iconColor} />
@@ -667,14 +680,15 @@ interface HeaderProps {
   onFilterPress?: () => void;
 }
 
-function Header({ selectedPeriod, onPeriodChange, onFilterPress }: HeaderProps) {
-  const periods: Period[] = ['week', 'month', 'year'];
+function Header({
+  selectedPeriod,
+  onPeriodChange,
+  onFilterPress,
+}: HeaderProps) {
+  const periods: Period[] = ["week", "month", "year"];
 
   return (
-    <Animated.View
-      entering={FadeIn.duration(400)}
-      className="px-5 pt-4 pb-5"
-    >
+    <Animated.View entering={FadeIn.duration(400)} className="px-5 pt-4 pb-5">
       <View className="flex-row items-center justify-between mb-5">
         <Text className="text-gray-900 dark:text-white text-3xl font-bold tracking-tight">
           Reports
@@ -686,7 +700,7 @@ function Header({ selectedPeriod, onPeriodChange, onFilterPress }: HeaderProps) 
           <Ionicons name="filter-outline" size={22} color="#6b7280" />
         </Pressable>
       </View>
-      
+
       <View className="flex-row bg-gray-100 dark:bg-gray-800 rounded-2xl p-1">
         {periods.map((period) => {
           const isSelected = selectedPeriod === period;
@@ -695,14 +709,12 @@ function Header({ selectedPeriod, onPeriodChange, onFilterPress }: HeaderProps) 
               key={period}
               onPress={() => onPeriodChange(period)}
               className={`flex-1 py-3 rounded-xl items-center ${
-                isSelected ? 'bg-gray-900 dark:bg-gray-600' : ''
+                isSelected ? "bg-gray-900 dark:bg-gray-600" : ""
               }`}
             >
               <Text
                 className={`text-sm font-semibold capitalize ${
-                  isSelected
-                    ? 'text-white'
-                    : 'text-gray-500 dark:text-gray-400'
+                  isSelected ? "text-white" : "text-gray-500 dark:text-gray-400"
                 }`}
               >
                 {period}
@@ -746,7 +758,7 @@ function CategoryBreakdown({ categories }: CategoryBreakdownProps) {
       style={[
         cardStyle,
         {
-          shadowColor: '#000',
+          shadowColor: "#000",
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.06,
           shadowRadius: 12,
@@ -765,7 +777,7 @@ function CategoryBreakdown({ categories }: CategoryBreakdownProps) {
           </Text>
         </Pressable>
       </View>
-      
+
       {categories.slice(0, 5).map((category, index) => (
         <CategoryRow key={category.id} category={category} index={index} />
       ))}
@@ -783,7 +795,12 @@ function SkeletonLoading() {
           <Skeleton width={120} height={32} />
           <Skeleton width={44} height={44} className="rounded-full" />
         </View>
-        <Skeleton width="100%" height={48} className="rounded-2xl" delay={100} />
+        <Skeleton
+          width="100%"
+          height={48}
+          className="rounded-2xl"
+          delay={100}
+        />
       </View>
 
       {/* Overview Cards Skeleton */}
@@ -806,39 +823,58 @@ function SkeletonLoading() {
 
 // ============ MAIN REPORTS SCREEN ============
 export default function ReportsScreen() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectedPeriod, setSelectedPeriod] = useState<Period>('month');
+  const dispatch = useAppDispatch();
+  const {
+    overview,
+    categories,
+    trends,
+    insights,
+    isLoading: reduxLoading,
+    period,
+  } = useAppSelector((state) => state.reports);
+  const [selectedPeriod, setSelectedPeriod] = useState<Period>(period);
 
-  // Simulate loading delay
+  // Fetch reports on mount and period change
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 2000);
+    dispatch(fetchAllReports({ period: selectedPeriod }));
+  }, [dispatch, selectedPeriod]);
 
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Reset loading when period changes
-  const handlePeriodChange = useCallback((period: Period) => {
-    setIsLoading(true);
-    setSelectedPeriod(period);
-    setTimeout(() => setIsLoading(false), 800);
-  }, []);
+  const handlePeriodChange = useCallback(
+    (newPeriod: Period) => {
+      setSelectedPeriod(newPeriod);
+      dispatch(setPeriod(newPeriod));
+    },
+    [dispatch],
+  );
 
   const handleFilterPress = () => {
-    console.log('Filter pressed');
+    console.log("Filter pressed");
   };
 
-  const currentData = MOCK_DATA[selectedPeriod];
+  const income = overview?.income ?? 0;
+  const expenses = overview?.expenses ?? 0;
+  const savings = overview?.savings ?? 0;
+  const chartData = trends?.chartData ?? [];
+  const categoryData = categories.map((c) => ({
+    ...c,
+    icon: (c.icon ||
+      "ellipsis-horizontal-outline") as keyof typeof Ionicons.glyphMap,
+  }));
+  const insightData = insights;
+  // Simple forecast: project savings over remaining days of period
+  const forecast = savings > 0 ? savings * 3 : 0;
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
+    <SafeAreaView
+      className="flex-1 bg-gray-50 dark:bg-gray-900"
+      edges={["top"]}
+    >
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 }}
       >
-        {isLoading ? (
+        {reduxLoading ? (
           <SkeletonLoading />
         ) : (
           <>
@@ -853,35 +889,35 @@ export default function ReportsScreen() {
             <View className="flex-row px-5 gap-3 mb-5">
               <OverviewCard
                 title="Income"
-                value={currentData.income}
+                value={income}
                 type="income"
                 index={0}
               />
               <OverviewCard
                 title="Expenses"
-                value={currentData.expenses}
+                value={expenses}
                 type="expense"
                 index={1}
               />
               <OverviewCard
                 title="Savings"
-                value={currentData.savings}
+                value={savings}
                 type="savings"
                 index={2}
               />
             </View>
 
             {/* Spending Trend Chart */}
-            <ChartPlaceholder data={currentData.chartData} period={selectedPeriod} />
+            <ChartPlaceholder data={chartData} period={selectedPeriod} />
 
             {/* Category Breakdown */}
-            <CategoryBreakdown categories={currentData.categories} />
+            <CategoryBreakdown categories={categoryData} />
 
             {/* Forecast Card */}
-            <ForecastCard value={currentData.forecast} />
+            <ForecastCard value={forecast} />
 
             {/* AI Insights */}
-            <InsightCard insights={currentData.insights} />
+            <InsightCard insights={insightData} />
           </>
         )}
       </ScrollView>

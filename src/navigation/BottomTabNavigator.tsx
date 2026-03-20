@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -9,6 +9,10 @@ import {
   TransactionsScreen,
 } from "../screens";
 import { AddTransactionModal } from "../components";
+import type { Transaction } from "../components";
+import { useAppDispatch } from "../store/hooks";
+import { createTransaction } from "../store/slices/transactionsSlice";
+import { CreateTransactionRequest } from "../api";
 
 export type RootTabParamList = {
   Home: undefined;
@@ -36,6 +40,25 @@ const getTabBarIcon = (routeName: string, focused: boolean): IconName => {
 
 export default function BottomTabNavigator() {
   const [showAddModal, setShowAddModal] = useState(false);
+  const dispatch = useAppDispatch();
+
+  const handleAddTransaction = useCallback(
+    async (transaction: Transaction) => {
+      const createRequest: CreateTransactionRequest = {
+        accountId: transaction.accountId,
+        categoryId: transaction.categoryId,
+        type: transaction.type,
+        amount: parseFloat(transaction.amount),
+        merchant: transaction.merchant,
+        notes: transaction.notes,
+        transactionDate: transaction.transactionDate,
+      };
+
+      await dispatch(createTransaction(createRequest));
+      setShowAddModal(false);
+    },
+    [dispatch],
+  );
 
   return (
     <>
@@ -88,10 +111,7 @@ export default function BottomTabNavigator() {
       <AddTransactionModal
         visible={showAddModal}
         onClose={() => setShowAddModal(false)}
-        onAdd={(transaction) => {
-          console.log(">>> New transaction added:", transaction);
-          setShowAddModal(false);
-        }}
+        onAdd={handleAddTransaction}
       />
     </>
   );

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -15,155 +15,29 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
+import { categoryService, accountService } from "../api/services";
+import { Category, Account } from "../api/types";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 // ============ TYPES ============
-export interface Account {
-  id: string;
-  name: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  color: string;
-  balance: number;
-}
-
 export interface Transaction {
-  id: string;
+  accountId: string;
   type: "income" | "expense";
-  category: string;
-  categoryIcon: keyof typeof Ionicons.glyphMap;
-  categoryColor: string;
+  amount: string;
+  transactionDate: string;
+  categoryId: string;
   merchant: string;
-  note?: string;
-  amount: number;
-  date: string;
-  isRecurring?: boolean;
-  hasReceipt?: boolean;
-  accountId?: string;
-  accountName?: string;
+  description?: string;
+  notes?: string;
+  isRecurring: boolean;
 }
-
-// ============ ACCOUNT OPTIONS ============
-const ACCOUNT_OPTIONS: Account[] = [
-  {
-    id: "cash",
-    name: "Cash",
-    icon: "cash-outline",
-    color: "#22c55e",
-    balance: 5000,
-  },
-  {
-    id: "gcash",
-    name: "GCash",
-    icon: "phone-portrait-outline",
-    color: "#007bff",
-    balance: 12500,
-  },
-  {
-    id: "maya",
-    name: "Maya",
-    icon: "wallet-outline",
-    color: "#6366f1",
-    balance: 8750,
-  },
-  {
-    id: "bpi",
-    name: "BPI Savings",
-    icon: "business-outline",
-    color: "#ef4444",
-    balance: 45000,
-  },
-  {
-    id: "bdo",
-    name: "BDO Checking",
-    icon: "card-outline",
-    color: "#f59e0b",
-    balance: 23000,
-  },
-  {
-    id: "credit",
-    name: "Credit Card",
-    icon: "card-outline",
-    color: "#8b5cf6",
-    balance: -15000,
-  },
-];
-
-// ============ CATEGORY OPTIONS ============
-const CATEGORY_OPTIONS = [
-  {
-    id: "food",
-    name: "Food & Dining",
-    icon: "restaurant-outline" as const,
-    color: "#f97316",
-  },
-  {
-    id: "transport",
-    name: "Transportation",
-    icon: "car-outline" as const,
-    color: "#3b82f6",
-  },
-  {
-    id: "shopping",
-    name: "Shopping",
-    icon: "bag-outline" as const,
-    color: "#ec4899",
-  },
-  {
-    id: "bills",
-    name: "Bills & Utilities",
-    icon: "flash-outline" as const,
-    color: "#f59e0b",
-  },
-  {
-    id: "entertainment",
-    name: "Entertainment",
-    icon: "game-controller-outline" as const,
-    color: "#8b5cf6",
-  },
-  {
-    id: "health",
-    name: "Health",
-    icon: "medical-outline" as const,
-    color: "#ef4444",
-  },
-  {
-    id: "groceries",
-    name: "Groceries",
-    icon: "cart-outline" as const,
-    color: "#10b981",
-  },
-  {
-    id: "salary",
-    name: "Salary",
-    icon: "briefcase-outline" as const,
-    color: "#22c55e",
-  },
-  {
-    id: "freelance",
-    name: "Freelance",
-    icon: "laptop-outline" as const,
-    color: "#06b6d4",
-  },
-  {
-    id: "investment",
-    name: "Investment",
-    icon: "trending-up-outline" as const,
-    color: "#22c55e",
-  },
-  {
-    id: "other",
-    name: "Other",
-    icon: "ellipsis-horizontal-outline" as const,
-    color: "#6b7280",
-  },
-];
 
 // ============ ADD TRANSACTION MODAL ============
 interface AddTransactionModalProps {
   visible: boolean;
   onClose: () => void;
-  onAdd?: (transaction: Transaction) => void;
+  onAdd?: (transaction: Transaction) => Promise<void>;
 }
 
 export default function AddTransactionModal({
@@ -172,21 +46,50 @@ export default function AddTransactionModal({
   onAdd,
 }: AddTransactionModalProps) {
   const [type, setType] = useState<"income" | "expense">("expense");
-  const [category, setCategory] = useState(CATEGORY_OPTIONS[0]);
-  const [account, setAccount] = useState(ACCOUNT_OPTIONS[0]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
+  const [category, setCategory] = useState<Category | null>(null);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [accountsLoading, setAccountsLoading] = useState(false);
+  const [account, setAccount] = useState<Account | null>(null);
   const [merchant, setMerchant] = useState("");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [isRecurring, setIsRecurring] = useState(false);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showAccountPicker, setShowAccountPicker] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const scale = useSharedValue(1);
 
+  useEffect(() => {
+    if (visible) {
+      setCategoriesLoading(true);
+      categoryService
+        .getAll()
+        .then((res) => {
+          if (res.success && res.data?.categories) {
+            setCategories(res.data.categories);
+          }
+        })
+        .finally(() => setCategoriesLoading(false));
+
+      setAccountsLoading(true);
+      accountService
+        .getAll()
+        .then((res) => {
+          if (res.success && res.data?.accounts) {
+            setAccounts(res.data.accounts);
+          }
+        })
+        .finally(() => setAccountsLoading(false));
+    }
+  }, [visible]);
+
   const resetForm = () => {
     setType("expense");
-    setCategory(CATEGORY_OPTIONS[0]);
-    setAccount(ACCOUNT_OPTIONS[0]);
+    setCategory(null);
+    setAccount(null);
     setMerchant("");
     setAmount("");
     setNote("");
@@ -200,31 +103,29 @@ export default function AddTransactionModal({
     onClose();
   };
 
-  const handleSubmit = () => {
-    if (!merchant.trim() || !amount.trim()) {
+  const handleSubmit = async () => {
+    if (!merchant.trim() || !amount.trim() || !category || !account) {
       return;
     }
 
     const newTransaction: Transaction = {
-      id: Date.now().toString(),
+      accountId: account.id.toString(),
       type,
-      category: category.name,
-      categoryIcon: category.icon,
-      categoryColor: category.color,
+      amount: amount.replace(/,/g, ""),
+      transactionDate: new Date().toISOString().split("T")[0],
+      categoryId: category.id,
       merchant: merchant.trim(),
-      note: note.trim() || undefined,
-      amount: parseFloat(amount.replace(/,/g, "")),
-      date: new Date().toISOString().split("T")[0],
+      notes: note.trim() || undefined,
       isRecurring,
-      hasReceipt: false,
-      accountId: account.id,
-      accountName: account.name,
     };
 
-    console.log(">>> New Transaction:", newTransaction);
-
-    onAdd?.(newTransaction);
-    handleClose();
+    setIsSubmitting(true);
+    try {
+      await onAdd?.(newTransaction);
+      handleClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const animatedButtonStyle = useAnimatedStyle(() => ({
@@ -239,12 +140,9 @@ export default function AddTransactionModal({
     scale.value = withSpring(1);
   };
 
-  const filteredCategories = CATEGORY_OPTIONS.filter((cat) => {
-    if (type === "income") {
-      return ["salary", "freelance", "investment", "other"].includes(cat.id);
-    }
-    return !["salary", "freelance", "investment"].includes(cat.id);
-  });
+  const filteredCategories = categories.filter((cat) =>
+    type === "income" ? cat.isIncomeCategory : !cat.isIncomeCategory,
+  );
 
   return (
     <Modal
@@ -279,7 +177,7 @@ export default function AddTransactionModal({
                 <Pressable
                   onPress={() => {
                     setType("expense");
-                    setCategory(CATEGORY_OPTIONS[0]);
+                    setCategory(null);
                   }}
                   className={`flex-1 py-3 rounded-xl items-center ${
                     type === "expense" ? "bg-white dark:bg-gray-700" : ""
@@ -316,10 +214,7 @@ export default function AddTransactionModal({
                 <Pressable
                   onPress={() => {
                     setType("income");
-                    setCategory(
-                      CATEGORY_OPTIONS.find((c) => c.id === "salary") ||
-                        CATEGORY_OPTIONS[0],
-                    );
+                    setCategory(null);
                   }}
                   className={`flex-1 py-3 rounded-xl items-center ${
                     type === "income" ? "bg-white dark:bg-gray-700" : ""
@@ -405,19 +300,27 @@ export default function AddTransactionModal({
                 }}
               >
                 <View className="flex-row items-center">
-                  <View
-                    className="w-10 h-10 rounded-xl items-center justify-center mr-3"
-                    style={{ backgroundColor: `${category.color}20` }}
-                  >
-                    <Ionicons
-                      name={category.icon}
-                      size={20}
-                      color={category.color}
-                    />
-                  </View>
-                  <Text className="text-gray-900 dark:text-white text-base font-semibold">
-                    {category.name}
-                  </Text>
+                  {category ? (
+                    <>
+                      <View
+                        className="w-10 h-10 rounded-xl items-center justify-center mr-3"
+                        style={{ backgroundColor: `${category.color}20` }}
+                      >
+                        <Ionicons
+                          name={category.icon as keyof typeof Ionicons.glyphMap}
+                          size={20}
+                          color={category.color}
+                        />
+                      </View>
+                      <Text className="text-gray-900 dark:text-white text-base font-semibold">
+                        {category.name}
+                      </Text>
+                    </>
+                  ) : (
+                    <Text className="text-gray-400 text-base">
+                      {categoriesLoading ? "Loading..." : "Select category"}
+                    </Text>
+                  )}
                 </View>
                 <Ionicons
                   name={showCategoryPicker ? "chevron-up" : "chevron-down"}
@@ -449,18 +352,22 @@ export default function AddTransactionModal({
                         index > 0
                           ? "border-t border-gray-100 dark:border-gray-700"
                           : ""
-                      } ${category.id === cat.id ? "bg-gray-50 dark:bg-gray-700" : ""}`}
+                      } ${category?.id === cat.id ? "bg-gray-50 dark:bg-gray-700" : ""}`}
                     >
                       <View
                         className="w-10 h-10 rounded-xl items-center justify-center mr-3"
                         style={{ backgroundColor: `${cat.color}20` }}
                       >
-                        <Ionicons name={cat.icon} size={20} color={cat.color} />
+                        <Ionicons
+                          name={cat.icon as keyof typeof Ionicons.glyphMap}
+                          size={20}
+                          color={cat.color}
+                        />
                       </View>
                       <Text className="text-gray-900 dark:text-white text-base font-medium flex-1">
                         {cat.name}
                       </Text>
-                      {category.id === cat.id && (
+                      {category?.id === cat.id && (
                         <Ionicons name="checkmark" size={20} color="#22c55e" />
                       )}
                     </Pressable>
@@ -489,24 +396,38 @@ export default function AddTransactionModal({
                 }}
               >
                 <View className="flex-row items-center flex-1">
-                  <View
-                    className="w-10 h-10 rounded-xl items-center justify-center mr-3"
-                    style={{ backgroundColor: `${account.color}20` }}
-                  >
-                    <Ionicons
-                      name={account.icon}
-                      size={20}
-                      color={account.color}
-                    />
-                  </View>
-                  <View className="flex-1">
-                    <Text className="text-gray-900 dark:text-white text-base font-semibold">
-                      {account.name}
+                  {account ? (
+                    <>
+                      <View
+                        className="w-10 h-10 rounded-xl items-center justify-center mr-3"
+                        style={{
+                          backgroundColor: account.iconBgColor ?? "#e5e7eb",
+                        }}
+                      >
+                        <Ionicons
+                          name={
+                            (account.icon ??
+                              "wallet-outline") as keyof typeof Ionicons.glyphMap
+                          }
+                          size={20}
+                          color={account.iconColor ?? "#6b7280"}
+                        />
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-gray-900 dark:text-white text-base font-semibold">
+                          {account.name}
+                        </Text>
+                        <Text className="text-gray-500 dark:text-gray-400 text-sm">
+                          Balance: ₱
+                          {parseFloat(account.balance).toLocaleString()}
+                        </Text>
+                      </View>
+                    </>
+                  ) : (
+                    <Text className="text-gray-400 text-base">
+                      {accountsLoading ? "Loading..." : "Select account"}
                     </Text>
-                    <Text className="text-gray-500 dark:text-gray-400 text-sm">
-                      Balance: ₱{account.balance.toLocaleString()}
-                    </Text>
-                  </View>
+                  )}
                 </View>
                 <Ionicons
                   name={showAccountPicker ? "chevron-up" : "chevron-down"}
@@ -527,7 +448,7 @@ export default function AddTransactionModal({
                     elevation: 2,
                   }}
                 >
-                  {ACCOUNT_OPTIONS.map((acc, index) => (
+                  {accounts.map((acc, index) => (
                     <Pressable
                       key={acc.id}
                       onPress={() => {
@@ -538,25 +459,38 @@ export default function AddTransactionModal({
                         index > 0
                           ? "border-t border-gray-100 dark:border-gray-700"
                           : ""
-                      } ${account.id === acc.id ? "bg-gray-50 dark:bg-gray-700" : ""}`}
+                      } ${account?.id === acc.id ? "bg-gray-50 dark:bg-gray-700" : ""}`}
                     >
                       <View
                         className="w-10 h-10 rounded-xl items-center justify-center mr-3"
-                        style={{ backgroundColor: `${acc.color}20` }}
+                        style={{
+                          backgroundColor: acc.iconBgColor ?? "#e5e7eb",
+                        }}
                       >
-                        <Ionicons name={acc.icon} size={20} color={acc.color} />
+                        <Ionicons
+                          name={
+                            (acc.icon ??
+                              "wallet-outline") as keyof typeof Ionicons.glyphMap
+                          }
+                          size={20}
+                          color={acc.iconColor ?? "#6b7280"}
+                        />
                       </View>
                       <View className="flex-1">
                         <Text className="text-gray-900 dark:text-white text-base font-medium">
                           {acc.name}
                         </Text>
                         <Text
-                          className={`text-sm ${acc.balance >= 0 ? "text-gray-500 dark:text-gray-400" : "text-red-500"}`}
+                          className={`text-sm ${
+                            parseFloat(acc.balance) >= 0
+                              ? "text-gray-500 dark:text-gray-400"
+                              : "text-red-500"
+                          }`}
                         >
-                          ₱{acc.balance.toLocaleString()}
+                          ₱{parseFloat(acc.balance).toLocaleString()}
                         </Text>
                       </View>
-                      {account.id === acc.id && (
+                      {account?.id === acc.id && (
                         <Ionicons name="checkmark" size={20} color="#22c55e" />
                       )}
                     </Pressable>
@@ -672,7 +606,13 @@ export default function AddTransactionModal({
               onPress={handleSubmit}
               onPressIn={handlePressIn}
               onPressOut={handlePressOut}
-              disabled={!merchant.trim() || !amount.trim()}
+              disabled={
+                !merchant.trim() ||
+                !amount.trim() ||
+                !category ||
+                !account ||
+                isSubmitting
+              }
               style={[
                 animatedButtonStyle,
                 {
@@ -684,19 +624,27 @@ export default function AddTransactionModal({
                 },
               ]}
               className={`py-4 rounded-2xl items-center ${
-                merchant.trim() && amount.trim()
+                merchant.trim() &&
+                amount.trim() &&
+                category &&
+                account &&
+                !isSubmitting
                   ? "bg-gray-900 dark:bg-white"
                   : "bg-gray-300 dark:bg-gray-700"
               }`}
             >
               <Text
                 className={`text-lg font-bold ${
-                  merchant.trim() && amount.trim()
+                  merchant.trim() &&
+                  amount.trim() &&
+                  category &&
+                  account &&
+                  !isSubmitting
                     ? "text-white dark:text-gray-900"
                     : "text-gray-500 dark:text-gray-400"
                 }`}
               >
-                Add Transaction
+                {isSubmitting ? "Adding..." : "Add Transaction"}
               </Text>
             </AnimatedPressable>
           </View>

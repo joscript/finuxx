@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import {
   transactionService,
   Transaction,
@@ -6,7 +6,7 @@ import {
   CreateTransactionRequest,
   UpdateTransactionRequest,
   TransactionFilters,
-} from '../../api';
+} from "../../api";
 
 // ============ STATE TYPE ============
 interface TransactionsState {
@@ -35,96 +35,109 @@ const initialState: TransactionsState = {
 // ============ ASYNC THUNKS ============
 
 export const fetchTransactions = createAsyncThunk(
-  'transactions/fetchTransactions',
+  "transactions/fetchTransactions",
   async (filters: TransactionFilters = {}, { rejectWithValue }) => {
     try {
       const response = await transactionService.getAll(filters);
-      
+
+      console.log(">>> Fetch Transactions Response data:", response.data);
+
       if (response.success && response.data) {
         return {
           transactions: response.data,
           pagination: response.pagination,
         };
       }
-      
-      return rejectWithValue(response.message || 'Failed to fetch transactions');
+
+      return rejectWithValue(
+        response.message || "Failed to fetch transactions",
+      );
     } catch (error: any) {
-      return rejectWithValue(error.message || 'An error occurred');
+      return rejectWithValue(error.message || "An error occurred");
     }
-  }
+  },
 );
 
 export const fetchTransactionSummary = createAsyncThunk(
-  'transactions/fetchSummary',
+  "transactions/fetchSummary",
   async (_, { rejectWithValue }) => {
     try {
       const response = await transactionService.getSummary();
-      
+
       if (response.success && response.data?.summary) {
         return response.data.summary;
       }
-      
-      return rejectWithValue(response.message || 'Failed to fetch summary');
+
+      return rejectWithValue(response.message || "Failed to fetch summary");
     } catch (error: any) {
-      return rejectWithValue(error.message || 'An error occurred');
+      return rejectWithValue(error.message || "An error occurred");
     }
-  }
+  },
 );
 
 export const createTransaction = createAsyncThunk(
-  'transactions/createTransaction',
+  "transactions/createTransaction",
   async (data: CreateTransactionRequest, { rejectWithValue }) => {
     try {
       const response = await transactionService.create(data);
-      
+
       if (response.success && response.data?.transaction) {
         return response.data.transaction;
       }
-      
-      return rejectWithValue(response.message || 'Failed to create transaction');
+
+      return rejectWithValue(
+        response.message || "Failed to create transaction",
+      );
     } catch (error: any) {
-      return rejectWithValue(error.message || 'An error occurred');
+      return rejectWithValue(error.message || "An error occurred");
     }
-  }
+  },
 );
 
 export const updateTransaction = createAsyncThunk(
-  'transactions/updateTransaction',
-  async ({ id, data }: { id: number; data: UpdateTransactionRequest }, { rejectWithValue }) => {
+  "transactions/updateTransaction",
+  async (
+    { id, data }: { id: number; data: UpdateTransactionRequest },
+    { rejectWithValue },
+  ) => {
     try {
       const response = await transactionService.update(id, data);
-      
+
       if (response.success && response.data?.transaction) {
         return response.data.transaction;
       }
-      
-      return rejectWithValue(response.message || 'Failed to update transaction');
+
+      return rejectWithValue(
+        response.message || "Failed to update transaction",
+      );
     } catch (error: any) {
-      return rejectWithValue(error.message || 'An error occurred');
+      return rejectWithValue(error.message || "An error occurred");
     }
-  }
+  },
 );
 
 export const deleteTransaction = createAsyncThunk(
-  'transactions/deleteTransaction',
+  "transactions/deleteTransaction",
   async (id: number, { rejectWithValue }) => {
     try {
       const response = await transactionService.delete(id);
-      
+
       if (response.success) {
         return id;
       }
-      
-      return rejectWithValue(response.message || 'Failed to delete transaction');
+
+      return rejectWithValue(
+        response.message || "Failed to delete transaction",
+      );
     } catch (error: any) {
-      return rejectWithValue(error.message || 'An error occurred');
+      return rejectWithValue(error.message || "An error occurred");
     }
-  }
+  },
 );
 
 // ============ SLICE ============
 const transactionsSlice = createSlice({
-  name: 'transactions',
+  name: "transactions",
   initialState,
   reducers: {
     clearTransactionsError: (state) => {
@@ -187,7 +200,9 @@ const transactionsSlice = createSlice({
     // Update Transaction
     builder
       .addCase(updateTransaction.fulfilled, (state, action) => {
-        const index = state.transactions.findIndex((t) => t.id === action.payload.id);
+        const index = state.transactions.findIndex(
+          (t) => t.id === action.payload.id,
+        );
         if (index !== -1) {
           state.transactions[index] = action.payload;
         }
@@ -199,7 +214,9 @@ const transactionsSlice = createSlice({
     // Delete Transaction
     builder
       .addCase(deleteTransaction.fulfilled, (state, action) => {
-        state.transactions = state.transactions.filter((t) => t.id !== action.payload);
+        state.transactions = state.transactions.filter(
+          (t) => t.id !== action.payload,
+        );
       })
       .addCase(deleteTransaction.rejected, (state, action) => {
         state.error = action.payload as string;
@@ -207,5 +224,6 @@ const transactionsSlice = createSlice({
   },
 });
 
-export const { clearTransactionsError, setFilters, resetTransactions } = transactionsSlice.actions;
+export const { clearTransactionsError, setFilters, resetTransactions } =
+  transactionsSlice.actions;
 export default transactionsSlice.reducer;

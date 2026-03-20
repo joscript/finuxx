@@ -63,78 +63,199 @@ function getGreeting(): string {
   return "Good evening";
 }
 
-// ============ HEADER COMPONENT ============
-interface HeaderProps {
+function getCoachInsight(
+  userName: string,
+  budgetSpent: number,
+  budgetTotal: number,
+): string {
+  if (budgetTotal === 0) {
+    return `Welcome back, ${userName}! Set up your monthly budget so I can give you personalized financial guidance.`;
+  }
+  const pct = Math.round((budgetSpent / budgetTotal) * 100);
+  const remaining = (budgetTotal - budgetSpent).toLocaleString();
+  if (pct >= 100) {
+    return `${userName}, you've exceeded your monthly budget. Let's review your spending together and get back on track.`;
+  }
+  if (pct >= 80) {
+    return `Heads up, ${userName}! You've used ${pct}% of your monthly budget — only ₱${remaining} left. Let's keep it tight.`;
+  }
+  if (pct >= 50) {
+    return `Good progress, ${userName}! You're halfway through your budget with ₱${remaining} remaining. You're on a good pace.`;
+  }
+  return `Great start, ${userName}! You've only spent ${pct}% of your monthly budget. Keep it going strong!`;
+}
+
+// ============ AI COACH INSIGHT HEADER ============
+interface AICoachInsightHeaderProps {
   userName: string;
   avatarUrl: string;
+  insight: string;
+  onPress: () => void;
   onNotificationPress?: () => void;
-  onProfilePress?: () => void;
   onSettingsPress?: () => void;
 }
 
-function Header({
+function AICoachInsightHeader({
   userName,
   avatarUrl,
+  insight,
+  onPress,
   onNotificationPress,
-  onProfilePress,
   onSettingsPress,
-}: HeaderProps) {
-  const scale = useSharedValue(1);
+}: AICoachInsightHeaderProps) {
+  const cardScale = useSharedValue(1);
+  const glowOpacity = useSharedValue(0.35);
+  const iconScale = useSharedValue(1);
+  const dotOpacity = useSharedValue(1);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
+  useEffect(() => {
+    glowOpacity.value = withRepeat(
+      withSequence(
+        withTiming(0.65, { duration: 2200 }),
+        withTiming(0.35, { duration: 2200 }),
+      ),
+      -1,
+      true,
+    );
+    iconScale.value = withRepeat(
+      withSequence(
+        withTiming(1.12, { duration: 1400 }),
+        withTiming(1, { duration: 1400 }),
+      ),
+      -1,
+      true,
+    );
+    dotOpacity.value = withRepeat(
+      withSequence(
+        withTiming(0.3, { duration: 900 }),
+        withTiming(1, { duration: 900 }),
+      ),
+      -1,
+      true,
+    );
+  }, []);
+
+  const cardStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: cardScale.value }],
   }));
 
-  const handlePressIn = () => {
-    scale.value = withSpring(0.95);
-  };
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: glowOpacity.value,
+  }));
 
-  const handlePressOut = () => {
-    scale.value = withSpring(1);
-  };
+  const iconStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: iconScale.value }],
+  }));
+
+  const dotStyle = useAnimatedStyle(() => ({
+    opacity: dotOpacity.value,
+  }));
 
   return (
-    <Animated.View
-      entering={FadeIn.duration(400)}
-      className="flex-row items-center justify-between px-5 py-4"
-    >
-      <View className="flex-row items-center flex-1">
-        <AnimatedPressable
-          onPress={onProfilePress}
-          onPressIn={handlePressIn}
-          onPressOut={handlePressOut}
-          style={animatedStyle}
-        >
+    <Animated.View entering={FadeIn.duration(500)} className="px-4 pt-3 pb-1">
+      {/* Top row: avatar + greeting + action buttons */}
+      <View className="flex-row items-center justify-between mb-4 px-1">
+        <View className="flex-row items-center flex-1">
           <Image
             source={{ uri: avatarUrl }}
-            className="w-14 h-14 rounded-full bg-gray-100"
+            className="w-11 h-11 rounded-full bg-gray-200"
           />
-        </AnimatedPressable>
-        <View className="ml-4 flex-1">
-          <Text className="text-gray-500 dark:text-gray-400 text-sm font-medium">
-            {getGreeting()}
-          </Text>
-          <Text className="text-gray-900 dark:text-white text-2xl font-bold tracking-tight">
-            {userName}
-          </Text>
+          <View className="ml-3">
+            <Text className="text-gray-400 dark:text-gray-500 text-xs font-medium">
+              {getGreeting()}
+            </Text>
+            <Text className="text-gray-900 dark:text-white text-xl font-bold tracking-tight">
+              {userName} 👋
+            </Text>
+          </View>
+        </View>
+        <View className="flex-row items-center gap-2">
+          <Pressable
+            onPress={onNotificationPress}
+            className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-full items-center justify-center active:bg-gray-200 dark:active:bg-gray-700"
+          >
+            <Ionicons name="notifications-outline" size={20} color="#374151" />
+            <View className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border border-white dark:border-gray-900" />
+          </Pressable>
+          <Pressable
+            onPress={onSettingsPress}
+            className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-full items-center justify-center active:bg-gray-200 dark:active:bg-gray-700"
+          >
+            <Ionicons name="menu-outline" size={20} color="#374151" />
+          </Pressable>
         </View>
       </View>
-      <View className="flex-row items-center gap-2">
-        <Pressable
-          onPress={onNotificationPress}
-          className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-full items-center justify-center active:bg-gray-200 dark:active:bg-gray-700"
-        >
-          <Ionicons name="notifications-outline" size={24} color="#374151" />
-          {/* Notification Badge */}
-          <View className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white dark:border-gray-900" />
-        </Pressable>
-        <Pressable
-          onPress={onSettingsPress}
-          className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-full items-center justify-center active:bg-gray-200 dark:active:bg-gray-700"
-        >
-          <Ionicons name="menu-outline" size={24} color="#374151" />
-        </Pressable>
-      </View>
+
+      {/* AI Coach Insight Card */}
+      <AnimatedPressable
+        onPress={onPress}
+        onPressIn={() => {
+          cardScale.value = withSpring(0.97);
+        }}
+        onPressOut={() => {
+          cardScale.value = withSpring(1);
+        }}
+        style={[
+          cardStyle,
+          {
+            shadowColor: "#7c3aed",
+            shadowOffset: { width: 0, height: 10 },
+            shadowOpacity: 0.3,
+            shadowRadius: 28,
+            elevation: 12,
+          },
+        ]}
+        className="rounded-[28px] overflow-hidden"
+      >
+        <View className="bg-gray-900 p-6">
+          {/* Ambient glow blobs */}
+          <Animated.View
+            style={glowStyle}
+            className="absolute -top-8 -right-8 w-48 h-48 bg-violet-600/40 rounded-full"
+          />
+          <Animated.View
+            style={glowStyle}
+            className="absolute -bottom-6 -left-6 w-32 h-32 bg-indigo-500/30 rounded-full"
+          />
+
+          {/* Header row: label + live dot */}
+          <View className="flex-row items-center justify-between mb-4">
+            <View className="flex-row items-center gap-2">
+              <Animated.View
+                style={iconStyle}
+                className="w-9 h-9 bg-violet-500/25 rounded-xl items-center justify-center"
+              >
+                <Ionicons name="sparkles" size={18} color="#a78bfa" />
+              </Animated.View>
+              <Text className="text-violet-400 text-xs font-bold tracking-widest uppercase">
+                AI Insight
+              </Text>
+            </View>
+          </View>
+
+          {/* Insight message */}
+          <Text className="text-white text-[15px] font-medium leading-relaxed mb-5">
+            {insight}
+          </Text>
+
+          {/* CTA row */}
+          <View className="flex-row items-center justify-between">
+            <View className="flex-row items-center bg-violet-500/20 rounded-full px-4 py-2 gap-2">
+              <Ionicons
+                name="chatbubble-ellipses-outline"
+                size={14}
+                color="#a78bfa"
+              />
+              <Text className="text-violet-300 text-xs font-bold">
+                Chat with AI Coach
+              </Text>
+            </View>
+            <View className="w-9 h-9 bg-white/10 rounded-full items-center justify-center">
+              <Ionicons name="arrow-forward" size={16} color="#fff" />
+            </View>
+          </View>
+        </View>
+      </AnimatedPressable>
     </Animated.View>
   );
 }
@@ -548,72 +669,85 @@ export default function HomeScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 32 }}
         >
-          {/* Header Section */}
-          <Header
+          {/* AI Coach Insight Header */}
+          <AICoachInsightHeader
             userName={userName}
             avatarUrl={userAvatar}
+            insight={getCoachInsight(userName, budgetSpent, budgetTotal)}
+            onPress={handleCoachPress}
             onNotificationPress={handleNotificationPress}
-            onProfilePress={handleProfilePress}
             onSettingsPress={handleSettingsPress}
           />
 
-          {/* Balance Card Section */}
-          <Animated.View entering={FadeInDown.duration(500).delay(100)}>
-            <BalanceCard balance={balance} onPress={handleBalancePress} />
-          </Animated.View>
-
-          {/* Budget Progress Section */}
-          <Animated.View
-            entering={FadeInDown.duration(500).delay(200)}
-            className="mt-5"
-          >
-            <BudgetProgressCard
-              spent={budgetSpent}
-              total={budgetTotal}
-              onPress={handleBudgetPress}
-            />
-          </Animated.View>
+          <View className="flex-row items-stretch justify-between px-4 pb-3 gap-2.5 mt-6">
+            {/* Balance Card */}
+            <Animated.View
+              entering={FadeInDown.duration(500).delay(100)}
+              className="flex-1"
+            >
+              <BalanceCard balance={balance} onPress={handleBalancePress} />
+            </Animated.View>
+            {/* Budget Progress Card */}
+            <Animated.View
+              entering={FadeInDown.duration(500).delay(200)}
+              className="flex-1"
+            >
+              <BudgetProgressCard
+                spent={budgetSpent}
+                total={budgetTotal}
+                onPress={handleBudgetPress}
+              />
+            </Animated.View>
+          </View>
 
           {/* Quick Stats Row - Horizontal Scroll */}
-          {/* <Animated.View entering={FadeInDown.duration(500).delay(300)} className="mt-6">
-          <SectionHeader title="Quick Stats" />
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingLeft: 20, paddingRight: 8, paddingBottom: 12, paddingTop: 8 }}
+          <Animated.View
+            entering={FadeInDown.duration(500).delay(300)}
+            className="mt-6"
           >
-            <StatItem
-              title="Today"
-              value={MOCK_STATS.todaySpending}
-              icon="wallet-outline"
-              iconColor="#ef4444"
-              iconBgColor="bg-red-50 dark:bg-red-500/20"
-              trend="up"
-              trendValue="15%"
-              onPress={() => handleStatPress('todaySpending')}
-            />
-            <StatItem
-              title="This Month"
-              value={MOCK_STATS.monthIncome}
-              icon="trending-up-outline"
-              iconColor="#22c55e"
-              iconBgColor="bg-emerald-50 dark:bg-emerald-500/20"
-              trend="up"
-              trendValue="8%"
-              onPress={() => handleStatPress('monthIncome')}
-            />
-            <StatItem
-              title="Savings"
-              value={MOCK_STATS.savings}
-              icon="pie-chart-outline"
-              iconColor="#8b5cf6"
-              iconBgColor="bg-violet-50 dark:bg-violet-500/20"
-              trend="up"
-              trendValue="12%"
-              onPress={() => handleStatPress('savings')}
-            />
-          </ScrollView>
-        </Animated.View> */}
+            <SectionHeader title="Quick Stats" />
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{
+                paddingLeft: 20,
+                paddingRight: 8,
+                paddingBottom: 12,
+                paddingTop: 8,
+              }}
+            >
+              <StatItem
+                title="Today"
+                value={todaySpending}
+                icon="wallet-outline"
+                iconColor="#ef4444"
+                iconBgColor="bg-red-50 dark:bg-red-500/20"
+                trend="up"
+                trendValue="15%"
+                onPress={() => handleStatPress("todaySpending")}
+              />
+              <StatItem
+                title="This Month"
+                value={monthIncome}
+                icon="trending-up-outline"
+                iconColor="#22c55e"
+                iconBgColor="bg-emerald-50 dark:bg-emerald-500/20"
+                trend="up"
+                trendValue="8%"
+                onPress={() => handleStatPress("monthIncome")}
+              />
+              <StatItem
+                title="Savings"
+                value={savings}
+                icon="pie-chart-outline"
+                iconColor="#8b5cf6"
+                iconBgColor="bg-violet-50 dark:bg-violet-500/20"
+                trend="up"
+                trendValue="12%"
+                onPress={() => handleStatPress("savings")}
+              />
+            </ScrollView>
+          </Animated.View>
 
           {/* AI Coach CTA Card */}
           {/* <Animated.View entering={FadeInDown.duration(500).delay(400)} className="mt-4">
@@ -685,45 +819,6 @@ export default function HomeScreen() {
             </Pressable>
           </Animated.View>
 
-          {/* Top Categories Section */}
-          {budgetCategories.length > 0 && (
-            <Animated.View
-              entering={FadeInDown.duration(500).delay(500)}
-              className="mt-8"
-            >
-              <SectionHeader
-                title="Top Categories"
-                actionLabel="See all"
-                onActionPress={handleViewAllCategories}
-              />
-              <View
-                className="bg-white dark:bg-gray-800 rounded-[28px] mx-5 px-6 py-2"
-                style={{
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.08,
-                  shadowRadius: 16,
-                  elevation: 6,
-                }}
-              >
-                {budgetCategories.map((category, index) => (
-                  <View key={category.id}>
-                    <CategoryItem
-                      name={category.name}
-                      spent={category.spent}
-                      budget={category.budget}
-                      color={category.color}
-                      onPress={() => handleCategoryPress(category.id)}
-                    />
-                    {index < budgetCategories.length - 1 && (
-                      <View className="h-px bg-gray-100 dark:bg-gray-700" />
-                    )}
-                  </View>
-                ))}
-              </View>
-            </Animated.View>
-          )}
-
           {/* Upcoming Bills Section */}
           <Animated.View
             entering={FadeInDown.duration(500).delay(600)}
@@ -774,6 +869,45 @@ export default function HomeScreen() {
               )}
             </View>
           </Animated.View>
+
+          {/* Top Categories Section */}
+          {budgetCategories.length > 0 && (
+            <Animated.View
+              entering={FadeInDown.duration(500).delay(500)}
+              className="mt-8"
+            >
+              <SectionHeader
+                title="Top Categories"
+                actionLabel="See all"
+                onActionPress={handleViewAllCategories}
+              />
+              <View
+                className="bg-white dark:bg-gray-800 rounded-[28px] mx-5 px-6 py-2"
+                style={{
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.08,
+                  shadowRadius: 16,
+                  elevation: 6,
+                }}
+              >
+                {budgetCategories.map((category, index) => (
+                  <View key={category.id}>
+                    <CategoryItem
+                      name={category.name}
+                      spent={category.spent}
+                      budget={category.budget}
+                      color={category.color}
+                      onPress={() => handleCategoryPress(category.id)}
+                    />
+                    {index < budgetCategories.length - 1 && (
+                      <View className="h-px bg-gray-100 dark:bg-gray-700" />
+                    )}
+                  </View>
+                ))}
+              </View>
+            </Animated.View>
+          )}
 
           {/* Net Worth Card */}
           <Animated.View

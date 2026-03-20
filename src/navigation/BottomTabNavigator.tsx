@@ -1,4 +1,5 @@
 import React, { useCallback, useState } from "react";
+import { TouchableOpacity, View, StyleSheet } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -87,13 +88,23 @@ export default function BottomTabNavigator() {
           name="Add"
           component={AddScreen}
           options={{
-            tabBarLabel: "Add",
-          }}
-          listeners={{
-            tabPress: (e) => {
-              e.preventDefault();
-              setShowAddModal(true);
-            },
+            tabBarLabel: () => null,
+            tabBarIcon: () => (
+              <View style={styles.addButtonContainer}>
+                <View style={styles.addButton}>
+                  <Ionicons name="add" size={32} color="#fff" />
+                </View>
+              </View>
+            ),
+            tabBarButton: ({ children }) => (
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setShowAddModal(true)}
+                style={styles.addButtonWrapper}
+              >
+                {children}
+              </TouchableOpacity>
+            ),
           }}
         />
         <Tab.Screen
@@ -116,3 +127,28 @@ export default function BottomTabNavigator() {
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  addButtonWrapper: {
+    top: -18,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  addButtonContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#272640",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 6,
+  },
+});

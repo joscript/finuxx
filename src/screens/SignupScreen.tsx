@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,10 +8,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import type { NavigationProp } from '@react-navigation/native';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
+import type { NavigationProp } from "@react-navigation/native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -19,11 +19,11 @@ import Animated, {
   FadeIn,
   FadeInDown,
   FadeInUp,
-} from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
-import { RootStackParamList } from '../navigation';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { register, clearError } from '../store/slices/authSlice';
+} from "react-native-reanimated";
+import { Ionicons } from "@expo/vector-icons";
+import { RootStackParamList } from "../navigation";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { register, clearError } from "../store/slices/authSlice";
 
 type SignupScreenNavigationProp = NavigationProp<RootStackParamList>;
 
@@ -37,8 +37,8 @@ interface AuthInputProps {
   value: string;
   onChangeText: (text: string) => void;
   secureTextEntry?: boolean;
-  keyboardType?: 'default' | 'email-address' | 'numeric';
-  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  keyboardType?: "default" | "email-address" | "numeric";
+  autoCapitalize?: "none" | "sentences" | "words" | "characters";
   showPasswordToggle?: boolean;
   disabled?: boolean;
   icon?: keyof typeof Ionicons.glyphMap;
@@ -52,8 +52,8 @@ function AuthInput({
   value,
   onChangeText,
   secureTextEntry = false,
-  keyboardType = 'default',
-  autoCapitalize = 'none',
+  keyboardType = "default",
+  autoCapitalize = "none",
   showPasswordToggle = false,
   disabled = false,
   icon,
@@ -79,10 +79,10 @@ function AuthInput({
   };
 
   const borderColor = error
-    ? 'border-red-400 dark:border-red-500'
+    ? "border-red-400 dark:border-red-500"
     : isFocused
-    ? 'border-gray-900 dark:border-white'
-    : 'border-gray-200 dark:border-gray-700';
+      ? "border-gray-900 dark:border-white"
+      : "border-gray-200 dark:border-gray-700";
 
   return (
     <Animated.View
@@ -96,7 +96,7 @@ function AuthInput({
         style={[
           animatedContainerStyle,
           {
-            shadowColor: isFocused ? '#111827' : '#000',
+            shadowColor: isFocused ? "#111827" : "#000",
             shadowOffset: { width: 0, height: isFocused ? 6 : 2 },
             shadowOpacity: isFocused ? 0.15 : 0.05,
             shadowRadius: isFocused ? 12 : 4,
@@ -104,14 +104,14 @@ function AuthInput({
           },
         ]}
         className={`flex-row items-center bg-white dark:bg-gray-800 rounded-2xl border-2 px-4 ${borderColor} ${
-          disabled ? 'opacity-50' : ''
+          disabled ? "opacity-50" : ""
         }`}
       >
         {icon && (
           <Ionicons
             name={icon}
             size={20}
-            color={error ? '#f87171' : isFocused ? '#111827' : '#9ca3af'}
+            color={error ? "#f87171" : isFocused ? "#111827" : "#9ca3af"}
             style={{ marginRight: 12 }}
           />
         )}
@@ -131,7 +131,7 @@ function AuthInput({
         {showPasswordToggle && (
           <Pressable onPress={() => setIsSecure(!isSecure)} hitSlop={8}>
             <Ionicons
-              name={isSecure ? 'eye-off-outline' : 'eye-outline'}
+              name={isSecure ? "eye-off-outline" : "eye-outline"}
               size={22}
               color="#6b7280"
             />
@@ -152,7 +152,7 @@ interface PrimaryButtonProps {
   onPress: () => void;
   loading?: boolean;
   disabled?: boolean;
-  variant?: 'primary' | 'secondary';
+  variant?: "primary" | "secondary";
   icon?: keyof typeof Ionicons.glyphMap;
 }
 
@@ -161,7 +161,7 @@ function PrimaryButton({
   onPress,
   loading = false,
   disabled = false,
-  variant = 'primary',
+  variant = "primary",
   icon,
 }: PrimaryButtonProps) {
   const scale = useSharedValue(1);
@@ -181,14 +181,10 @@ function PrimaryButton({
   };
 
   const bgClass =
-    variant === 'primary'
-      ? 'bg-gray-900 dark:bg-white'
-      : 'bg-gray-100 dark:bg-gray-800';
+    variant === "primary" ? "bg-primary-500" : "bg-gray-100 dark:bg-gray-800";
 
   const textClass =
-    variant === 'primary'
-      ? 'text-white dark:text-gray-900'
-      : 'text-gray-900 dark:text-white';
+    variant === "primary" ? "text-white" : "text-gray-900 dark:text-white";
 
   return (
     <AnimatedPressable
@@ -199,21 +195,21 @@ function PrimaryButton({
       style={[
         animatedStyle,
         {
-          shadowColor: variant === 'primary' ? '#111827' : 'transparent',
+          shadowColor: variant === "primary" ? "#FF5A5F" : "transparent",
           shadowOffset: { width: 0, height: 8 },
           shadowOpacity: 0.3,
           shadowRadius: 16,
-          elevation: variant === 'primary' ? 8 : 0,
+          elevation: variant === "primary" ? 8 : 0,
         },
       ]}
       className={`${bgClass} rounded-2xl py-5 px-8 flex-row items-center justify-center ${
-        disabled || loading ? 'opacity-60' : ''
+        disabled || loading ? "opacity-60" : ""
       }`}
     >
       {loading ? (
         <ActivityIndicator
           size="small"
-          color={variant === 'primary' ? '#fff' : '#111827'}
+          color={variant === "primary" ? "#fff" : "#484848"}
         />
       ) : (
         <>
@@ -221,7 +217,7 @@ function PrimaryButton({
             <Ionicons
               name={icon}
               size={20}
-              color={variant === 'primary' ? '#fff' : '#374151'}
+              color={variant === "primary" ? "#fff" : "#374151"}
               style={{ marginRight: 8 }}
             />
           )}
@@ -241,7 +237,7 @@ interface PasswordStrengthProps {
 
 function PasswordStrength({ password }: PasswordStrengthProps) {
   const strength = useMemo(() => {
-    if (!password) return { level: 0, label: '', color: '' };
+    if (!password) return { level: 0, label: "", color: "" };
 
     let score = 0;
     if (password.length >= 8) score++;
@@ -251,24 +247,23 @@ function PasswordStrength({ password }: PasswordStrengthProps) {
     if (/[0-9]/.test(password)) score++;
     if (/[^A-Za-z0-9]/.test(password)) score++;
 
-    if (score <= 2) return { level: 1, label: 'Weak', color: 'bg-red-400' };
-    if (score <= 4) return { level: 2, label: 'Medium', color: 'bg-amber-400' };
-    return { level: 3, label: 'Strong', color: 'bg-green-500' };
+    if (score <= 2) return { level: 1, label: "Weak", color: "bg-red-400" };
+    if (score <= 4) return { level: 2, label: "Medium", color: "bg-amber-400" };
+    return { level: 3, label: "Strong", color: "bg-green-500" };
   }, [password]);
 
   if (!password) return null;
 
   return (
-    <Animated.View
-      entering={FadeIn.duration(300)}
-      className="mb-4 -mt-2"
-    >
+    <Animated.View entering={FadeIn.duration(300)} className="mb-4 -mt-2">
       <View className="flex-row gap-1 mb-1">
         {[1, 2, 3].map((level) => (
           <View
             key={level}
             className={`flex-1 h-1 rounded-full ${
-              level <= strength.level ? strength.color : 'bg-gray-200 dark:bg-gray-700'
+              level <= strength.level
+                ? strength.color
+                : "bg-gray-200 dark:bg-gray-700"
             }`}
           />
         ))}
@@ -276,10 +271,10 @@ function PasswordStrength({ password }: PasswordStrengthProps) {
       <Text
         className={`text-xs ml-1 ${
           strength.level === 1
-            ? 'text-red-500'
+            ? "text-red-500"
             : strength.level === 2
-            ? 'text-amber-500'
-            : 'text-green-500'
+              ? "text-amber-500"
+              : "text-green-500"
         }`}
       >
         {strength.label} password
@@ -293,13 +288,15 @@ function PasswordStrength({ password }: PasswordStrengthProps) {
 export default function SignupScreen() {
   const navigation = useNavigation<SignupScreenNavigationProp>();
   const dispatch = useAppDispatch();
-  const { isLoading: authLoading, error: authError } = useAppSelector((state) => state.auth);
+  const { isLoading: authLoading, error: authError } = useAppSelector(
+    (state) => state.auth,
+  );
 
   // Form State
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   // Sync auth error to local state
@@ -312,10 +309,12 @@ export default function SignupScreen() {
 
   // Validation
   const isNameValid = name.trim().length >= 2;
-  const isEmailValid = email.includes('@') && email.includes('.');
+  const isEmailValid = email.includes("@") && email.includes(".");
   const isPasswordValid = password.length >= 8;
-  const isConfirmPasswordValid = confirmPassword === password && confirmPassword.length > 0;
-  const isFormValid = isNameValid && isEmailValid && isPasswordValid && isConfirmPasswordValid;
+  const isConfirmPasswordValid =
+    confirmPassword === password && confirmPassword.length > 0;
+  const isFormValid =
+    isNameValid && isEmailValid && isPasswordValid && isConfirmPasswordValid;
 
   // Field-level errors (shown after blur)
   const [touched, setTouched] = useState({
@@ -329,14 +328,16 @@ export default function SignupScreen() {
     if (!touched[field]) return undefined;
 
     switch (field) {
-      case 'name':
-        return !isNameValid ? 'Name must be at least 2 characters' : undefined;
-      case 'email':
-        return !isEmailValid ? 'Please enter a valid email' : undefined;
-      case 'password':
-        return !isPasswordValid ? 'Password must be at least 8 characters' : undefined;
-      case 'confirmPassword':
-        return !isConfirmPasswordValid ? 'Passwords do not match' : undefined;
+      case "name":
+        return !isNameValid ? "Name must be at least 2 characters" : undefined;
+      case "email":
+        return !isEmailValid ? "Please enter a valid email" : undefined;
+      case "password":
+        return !isPasswordValid
+          ? "Password must be at least 8 characters"
+          : undefined;
+      case "confirmPassword":
+        return !isConfirmPasswordValid ? "Passwords do not match" : undefined;
       default:
         return undefined;
     }
@@ -352,7 +353,7 @@ export default function SignupScreen() {
     });
 
     if (!isFormValid) {
-      setError('Please fix the errors above');
+      setError("Please fix the errors above");
       return;
     }
 
@@ -362,13 +363,13 @@ export default function SignupScreen() {
   };
 
   const navigateToLogin = () => {
-    navigation.navigate('Login');
+    navigation.navigate("Login");
   };
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900">
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
         <ScrollView
@@ -384,7 +385,7 @@ export default function SignupScreen() {
                 hitSlop={12}
                 className="w-12 h-12 rounded-2xl bg-white dark:bg-gray-800 items-center justify-center mb-4"
                 style={{
-                  shadowColor: '#000',
+                  shadowColor: "#000",
                   shadowOffset: { width: 0, height: 2 },
                   shadowOpacity: 0.06,
                   shadowRadius: 8,
@@ -422,7 +423,7 @@ export default function SignupScreen() {
                 icon="person-outline"
                 disabled={authLoading}
                 delay={300}
-                error={getFieldError('name')}
+                error={getFieldError("name")}
               />
 
               <AuthInput
@@ -438,7 +439,7 @@ export default function SignupScreen() {
                 icon="mail-outline"
                 disabled={authLoading}
                 delay={400}
-                error={getFieldError('email')}
+                error={getFieldError("email")}
               />
 
               <AuthInput
@@ -454,7 +455,7 @@ export default function SignupScreen() {
                 icon="lock-closed-outline"
                 disabled={authLoading}
                 delay={500}
-                error={getFieldError('password')}
+                error={getFieldError("password")}
               />
 
               {/* Password Strength */}
@@ -473,7 +474,7 @@ export default function SignupScreen() {
                 icon="shield-checkmark-outline"
                 disabled={authLoading}
                 delay={600}
-                error={getFieldError('confirmPassword')}
+                error={getFieldError("confirmPassword")}
               />
 
               {/* Error Message */}
@@ -505,11 +506,11 @@ export default function SignupScreen() {
               className="mt-4 px-4"
             >
               <Text className="text-gray-400 dark:text-gray-500 text-xs text-center leading-5">
-                By creating an account, you agree to our{' '}
+                By creating an account, you agree to our{" "}
                 <Text className="text-gray-600 dark:text-gray-300 font-semibold">
                   Terms of Service
-                </Text>{' '}
-                and{' '}
+                </Text>{" "}
+                and{" "}
                 <Text className="text-gray-600 dark:text-gray-300 font-semibold">
                   Privacy Policy
                 </Text>
@@ -522,7 +523,7 @@ export default function SignupScreen() {
               className="flex-row items-center justify-center mt-6"
             >
               <Text className="text-gray-500 dark:text-gray-400 text-base">
-                Already have an account?{' '}
+                Already have an account?{" "}
               </Text>
               <Pressable onPress={navigateToLogin} hitSlop={8}>
                 <Text className="text-gray-900 dark:text-white text-base font-bold">

@@ -64,10 +64,10 @@ export function BalanceCard({
           elevation: 12,
         },
       ]}
-      className="bg-gray-900 dark:bg-gray-800 rounded-[28px] p-5 flex-1"
+      className="bg-white dark:bg-gray-800 rounded-[28px] p-4 flex-1"
     >
       <View className="flex-row items-center justify-between mb-4">
-        <Text className="text-gray-400 text-xs font-medium tracking-wide">
+        <Text className="text-gray-500 dark:text-gray-400 text-xs font-medium">
           Balance
         </Text>
         <View className="bg-emerald-500/15 rounded-full px-2.5 py-1">
@@ -79,7 +79,7 @@ export function BalanceCard({
           {currency}
         </Text>
         <Text
-          className="text-white text-3xl font-bold tracking-tight"
+          className="text-gray-900 dark:text-white text-3xl font-bold tracking-tight"
           numberOfLines={1}
           adjustsFontSizeToFit
           minimumFontScale={0.6}

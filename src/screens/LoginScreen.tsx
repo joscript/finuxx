@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,10 +8,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import type { NavigationProp } from '@react-navigation/native';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
+import type { NavigationProp } from "@react-navigation/native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -21,11 +21,11 @@ import Animated, {
   FadeInDown,
   FadeInUp,
   SlideInLeft,
-} from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
-import { RootStackParamList } from '../navigation';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { login, clearError } from '../store/slices/authSlice';
+} from "react-native-reanimated";
+import { Ionicons } from "@expo/vector-icons";
+import { RootStackParamList } from "../navigation";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { login, clearError } from "../store/slices/authSlice";
 
 type LoginScreenNavigationProp = NavigationProp<RootStackParamList>;
 
@@ -39,8 +39,8 @@ interface AuthInputProps {
   value: string;
   onChangeText: (text: string) => void;
   secureTextEntry?: boolean;
-  keyboardType?: 'default' | 'email-address' | 'numeric';
-  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  keyboardType?: "default" | "email-address" | "numeric";
+  autoCapitalize?: "none" | "sentences" | "words" | "characters";
   showPasswordToggle?: boolean;
   disabled?: boolean;
   icon?: keyof typeof Ionicons.glyphMap;
@@ -53,8 +53,8 @@ function AuthInput({
   value,
   onChangeText,
   secureTextEntry = false,
-  keyboardType = 'default',
-  autoCapitalize = 'none',
+  keyboardType = "default",
+  autoCapitalize = "none",
   showPasswordToggle = false,
   disabled = false,
   icon,
@@ -66,7 +66,7 @@ function AuthInput({
 
   const animatedContainerStyle = useAnimatedStyle(() => ({
     transform: [{ scale: focusScale.value }],
-    borderColor: isFocused ? '#111827' : '#e5e7eb',
+    borderColor: isFocused ? "#111827" : "#e5e7eb",
   }));
 
   const handleFocus = () => {
@@ -91,7 +91,7 @@ function AuthInput({
         style={[
           animatedContainerStyle,
           {
-            shadowColor: isFocused ? '#111827' : '#000',
+            shadowColor: isFocused ? "#111827" : "#000",
             shadowOffset: { width: 0, height: isFocused ? 6 : 2 },
             shadowOpacity: isFocused ? 0.15 : 0.05,
             shadowRadius: isFocused ? 12 : 4,
@@ -99,14 +99,16 @@ function AuthInput({
           },
         ]}
         className={`flex-row items-center bg-white dark:bg-gray-800 rounded-2xl border-2 px-4 ${
-          isFocused ? 'border-gray-900 dark:border-white' : 'border-gray-200 dark:border-gray-700'
-        } ${disabled ? 'opacity-50' : ''}`}
+          isFocused
+            ? "border-gray-900 dark:border-white"
+            : "border-gray-200 dark:border-gray-700"
+        } ${disabled ? "opacity-50" : ""}`}
       >
         {icon && (
           <Ionicons
             name={icon}
             size={20}
-            color={isFocused ? '#111827' : '#9ca3af'}
+            color={isFocused ? "#111827" : "#9ca3af"}
             style={{ marginRight: 12 }}
           />
         )}
@@ -126,7 +128,7 @@ function AuthInput({
         {showPasswordToggle && (
           <Pressable onPress={() => setIsSecure(!isSecure)} hitSlop={8}>
             <Ionicons
-              name={isSecure ? 'eye-off-outline' : 'eye-outline'}
+              name={isSecure ? "eye-off-outline" : "eye-outline"}
               size={22}
               color="#6b7280"
             />
@@ -142,7 +144,7 @@ interface PrimaryButtonProps {
   onPress: () => void;
   loading?: boolean;
   disabled?: boolean;
-  variant?: 'primary' | 'secondary';
+  variant?: "primary" | "secondary";
   icon?: keyof typeof Ionicons.glyphMap;
 }
 
@@ -151,7 +153,7 @@ function PrimaryButton({
   onPress,
   loading = false,
   disabled = false,
-  variant = 'primary',
+  variant = "primary",
   icon,
 }: PrimaryButtonProps) {
   const scale = useSharedValue(1);
@@ -171,14 +173,10 @@ function PrimaryButton({
   };
 
   const bgClass =
-    variant === 'primary'
-      ? 'bg-gray-900 dark:bg-white'
-      : 'bg-gray-100 dark:bg-gray-800';
+    variant === "primary" ? "bg-primary-500" : "bg-gray-100 dark:bg-gray-800";
 
   const textClass =
-    variant === 'primary'
-      ? 'text-white dark:text-gray-900'
-      : 'text-gray-900 dark:text-white';
+    variant === "primary" ? "text-white" : "text-gray-900 dark:text-white";
 
   return (
     <AnimatedPressable
@@ -189,21 +187,21 @@ function PrimaryButton({
       style={[
         animatedStyle,
         {
-          shadowColor: variant === 'primary' ? '#111827' : 'transparent',
+          shadowColor: variant === "primary" ? "#FF5A5F" : "transparent",
           shadowOffset: { width: 0, height: 8 },
           shadowOpacity: 0.3,
           shadowRadius: 16,
-          elevation: variant === 'primary' ? 8 : 0,
+          elevation: variant === "primary" ? 8 : 0,
         },
       ]}
       className={`${bgClass} rounded-2xl py-5 px-8 flex-row items-center justify-center ${
-        disabled || loading ? 'opacity-60' : ''
+        disabled || loading ? "opacity-60" : ""
       }`}
     >
       {loading ? (
         <ActivityIndicator
           size="small"
-          color={variant === 'primary' ? '#fff' : '#111827'}
+          color={variant === "primary" ? "#fff" : "#484848"}
         />
       ) : (
         <>
@@ -211,7 +209,7 @@ function PrimaryButton({
             <Ionicons
               name={icon}
               size={20}
-              color={variant === 'primary' ? '#fff' : '#374151'}
+              color={variant === "primary" ? "#fff" : "#374151"}
               style={{ marginRight: 8 }}
             />
           )}
@@ -231,7 +229,12 @@ interface SocialButtonProps {
   disabled?: boolean;
 }
 
-function SocialButton({ label, icon, onPress, disabled = false }: SocialButtonProps) {
+function SocialButton({
+  label,
+  icon,
+  onPress,
+  disabled = false,
+}: SocialButtonProps) {
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -257,7 +260,7 @@ function SocialButton({ label, icon, onPress, disabled = false }: SocialButtonPr
       style={[
         animatedStyle,
         {
-          shadowColor: '#000',
+          shadowColor: "#000",
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.06,
           shadowRadius: 8,
@@ -265,10 +268,15 @@ function SocialButton({ label, icon, onPress, disabled = false }: SocialButtonPr
         },
       ]}
       className={`flex-1 bg-white dark:bg-gray-800 rounded-2xl py-4 px-6 flex-row items-center justify-center border border-gray-200 dark:border-gray-700 ${
-        disabled ? 'opacity-50' : ''
+        disabled ? "opacity-50" : ""
       }`}
     >
-      <Ionicons name={icon} size={22} color="#374151" style={{ marginRight: 8 }} />
+      <Ionicons
+        name={icon}
+        size={22}
+        color="#374151"
+        style={{ marginRight: 8 }}
+      />
       <Text className="text-gray-700 dark:text-gray-300 text-base font-semibold">
         {label}
       </Text>
@@ -281,11 +289,13 @@ function SocialButton({ label, icon, onPress, disabled = false }: SocialButtonPr
 export default function LoginScreen() {
   const navigation = useNavigation<LoginScreenNavigationProp>();
   const dispatch = useAppDispatch();
-  const { isLoading: authLoading, error: authError } = useAppSelector((state) => state.auth);
-  
+  const { isLoading: authLoading, error: authError } = useAppSelector(
+    (state) => state.auth,
+  );
+
   // Form State
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   // Sync auth error to local state
@@ -297,13 +307,13 @@ export default function LoginScreen() {
   }, [authError, dispatch]);
 
   // Simple validation
-  const isEmailValid = email.includes('@') && email.includes('.');
+  const isEmailValid = email.includes("@") && email.includes(".");
   const isPasswordValid = password.length >= 6;
   const isFormValid = isEmailValid && isPasswordValid;
 
   const handleLogin = async () => {
     if (!isFormValid) {
-      setError('Please enter valid credentials');
+      setError("Please enter valid credentials");
       return;
     }
 
@@ -314,27 +324,27 @@ export default function LoginScreen() {
 
   const handleForgotPassword = () => {
     // TODO: Navigate to forgot password screen
-    console.log('Forgot password pressed');
+    console.log("Forgot password pressed");
   };
 
   const handleGoogleLogin = () => {
     // TODO: Implement Google login
-    console.log('Google login pressed');
+    console.log("Google login pressed");
   };
 
   const handleAppleLogin = () => {
     // TODO: Implement Apple login
-    console.log('Apple login pressed');
+    console.log("Apple login pressed");
   };
 
   const navigateToSignup = () => {
-    navigation.navigate('Signup');
+    navigation.navigate("Signup");
   };
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900">
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
         <ScrollView
@@ -350,7 +360,7 @@ export default function LoginScreen() {
             >
               <View
                 style={{
-                  shadowColor: '#111827',
+                  shadowColor: "#111827",
                   shadowOffset: { width: 0, height: 8 },
                   shadowOpacity: 0.15,
                   shadowRadius: 20,
@@ -365,11 +375,7 @@ export default function LoginScreen() {
                   className="dark:color-gray-900"
                 />
                 <View className="absolute">
-                  <Ionicons
-                    name="wallet-outline"
-                    size={40}
-                    color="#fff"
-                  />
+                  <Ionicons name="wallet-outline" size={40} color="#fff" />
                 </View>
               </View>
             </Animated.View>
@@ -454,7 +460,9 @@ export default function LoginScreen() {
               className="flex-row items-center my-6"
             >
               <View className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
-              <Text className="text-gray-400 dark:text-gray-500 text-sm px-4">or</Text>
+              <Text className="text-gray-400 dark:text-gray-500 text-sm px-4">
+                or
+              </Text>
               <View className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
             </Animated.View>
 
@@ -483,7 +491,7 @@ export default function LoginScreen() {
               className="flex-row items-center justify-center mt-8"
             >
               <Text className="text-gray-500 dark:text-gray-400 text-base">
-                Don't have an account?{' '}
+                Don't have an account?{" "}
               </Text>
               <Pressable onPress={navigateToSignup} hitSlop={8}>
                 <Text className="text-gray-900 dark:text-white text-base font-bold">

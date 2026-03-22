@@ -334,7 +334,7 @@ function MessageBubble({ message, onSuggestionPress }: MessageBubbleProps) {
           </Text>
 
           {/* Inline Suggestions */}
-          {message.suggestions && message.suggestions.length > 0 && (
+          {/* {message.suggestions && message.suggestions.length > 0 && (
             <View className="flex-row flex-wrap mt-3">
               {message.suggestions.map((suggestion, index) => (
                 <SuggestionChip
@@ -345,7 +345,7 @@ function MessageBubble({ message, onSuggestionPress }: MessageBubbleProps) {
                 />
               ))}
             </View>
-          )}
+          )} */}
         </View>
       </View>
     </Animated.View>

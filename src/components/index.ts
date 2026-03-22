@@ -25,3 +25,6 @@ export * from "./transactions";
 
 // Bills components
 export * from "./bills";
+
+// Home components
+export * from "./home";

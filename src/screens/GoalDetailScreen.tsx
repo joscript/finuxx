@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -6,9 +6,12 @@ import {
   ScrollView,
   FlatList,
   ActivityIndicator,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+  Alert,
+  ActionSheetIOS,
+  Platform,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -19,14 +22,25 @@ import Animated, {
   FadeIn,
   FadeInDown,
   FadeInUp,
-} from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
-import type { Goal as LocalGoal, GoalContribution as LocalGoalContribution } from '../types';
-import AddContributionModal from '../components/AddContributionModal';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { fetchGoal, addContribution } from '../store/slices/goalsSlice';
-import { AddContributionRequest } from '../api';
-import type { RootStackParamList } from '../navigation';
+} from "react-native-reanimated";
+import { Ionicons } from "@expo/vector-icons";
+import type {
+  Goal as LocalGoal,
+  GoalContribution as LocalGoalContribution,
+} from "../types";
+import AddContributionModal from "../components/AddContributionModal";
+import EditGoalModal from "../components/EditGoalModal";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import {
+  fetchGoalById,
+  addContribution,
+  updateGoal,
+  deleteGoal,
+  fetchGoalContributions,
+} from "../store/slices/goalsSlice";
+import { fetchAccounts } from "../store/slices/accountsSlice";
+import { AddContributionRequest, UpdateGoalRequest } from "../api";
+import type { RootStackParamList } from "../navigation";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const AnimatedView = Animated.createAnimatedComponent(View);
@@ -38,13 +52,20 @@ interface AnimatedProgressBarProps {
   height?: number;
 }
 
-function AnimatedProgressBar({ percentage, color, height = 12 }: AnimatedProgressBarProps) {
+function AnimatedProgressBar({
+  percentage,
+  color,
+  height = 12,
+}: AnimatedProgressBarProps) {
   const width = useSharedValue(0);
 
   useEffect(() => {
     width.value = withDelay(
       300,
-      withTiming(Math.min(percentage, 100), { duration: 1000, easing: Easing.out(Easing.cubic) })
+      withTiming(Math.min(percentage, 100), {
+        duration: 1000,
+        easing: Easing.out(Easing.cubic),
+      }),
     );
   }, [percentage]);
 
@@ -75,41 +96,61 @@ interface StatCardProps {
   index: number;
 }
 
-function StatCard({ label, value, icon, iconColor, iconBgColor, index }: StatCardProps) {
+function StatCard({
+  label,
+  value,
+  icon,
+  iconColor,
+  iconBgColor,
+  index,
+}: StatCardProps) {
   return (
     <Animated.View
       entering={FadeInUp.duration(400).delay(200 + index * 80)}
       className="flex-1 bg-white dark:bg-gray-800 rounded-2xl p-4"
       style={{
-        shadowColor: '#000',
+        shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.05,
         shadowRadius: 8,
         elevation: 2,
       }}
     >
-      <View className={`w-10 h-10 rounded-xl items-center justify-center mb-3 ${iconBgColor}`}>
+      <View
+        className={`w-10 h-10 rounded-xl items-center justify-center mb-3 ${iconBgColor}`}
+      >
         <Ionicons name={icon} size={20} color={iconColor} />
       </View>
-      <Text className="text-gray-400 dark:text-gray-500 text-xs mb-1">{label}</Text>
-      <Text className="text-gray-900 dark:text-white text-lg font-bold">{value}</Text>
+      <Text className="text-gray-400 dark:text-gray-500 text-xs mb-1">
+        {label}
+      </Text>
+      <Text className="text-gray-900 dark:text-white text-lg font-bold">
+        {value}
+      </Text>
     </Animated.View>
   );
 }
 
 // ============ CONTRIBUTION ITEM ============
 interface ContributionItemProps {
-  contribution: GoalContribution;
+  contribution: LocalGoalContribution;
   index: number;
   goalColor: string;
 }
 
-function ContributionItem({ contribution, index, goalColor }: ContributionItemProps) {
-  const formattedDate = new Date(contribution.date).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
+function ContributionItem({
+  contribution,
+  index,
+  goalColor,
+}: ContributionItemProps) {
+  const formattedDate = new Date(contribution.date).toLocaleDateString(
+    "en-US",
+    {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    },
+  );
 
   return (
     <Animated.View
@@ -131,7 +172,7 @@ function ContributionItem({ contribution, index, goalColor }: ContributionItemPr
         </Text>
         <View className="flex-row items-center mt-1">
           <Text className="text-gray-500 dark:text-gray-400 text-sm">
-            {contribution.accountName || 'Unknown'}
+            {contribution.accountName || "Unknown"}
           </Text>
           <View className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600 mx-2" />
           <Text className="text-gray-400 dark:text-gray-500 text-sm">
@@ -154,44 +195,85 @@ function ContributionItem({ contribution, index, goalColor }: ContributionItemPr
 // ============ MAIN GOAL DETAIL SCREEN ============
 export default function GoalDetailScreen() {
   const navigation = useNavigation();
-  const route = useRoute<RouteProp<RootStackParamList, 'GoalDetail'>>();
-  const goalId = route.params?.goalId ? parseInt(route.params.goalId) : 1;
-  
+  const route = useRoute<RouteProp<RootStackParamList, "GoalDetail">>();
+  const goalId = route.params?.goalId || "";
+
   // Redux
   const dispatch = useAppDispatch();
-  const { selectedGoal: apiGoal, loading: isLoading } = useAppSelector((state) => state.goals);
+  const {
+    selectedGoal: apiGoal,
+    isLoading,
+    contributions: apiContributions,
+    contributionsPagination,
+  } = useAppSelector((state) => state.goals);
+  const { accounts } = useAppSelector((state) => state.accounts);
   const [showContributionModal, setShowContributionModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
 
-  // Fetch goal on mount
+  // Fetch goal and accounts on mount
   useEffect(() => {
-    dispatch(fetchGoal(goalId));
+    dispatch(fetchGoalById(goalId));
+    dispatch(fetchAccounts());
   }, [dispatch, goalId]);
 
+  const handleLoadMoreContributions = useCallback(() => {
+    if (
+      contributionsPagination &&
+      contributionsPagination.page < contributionsPagination.totalPages
+    ) {
+      dispatch(
+        fetchGoalContributions({
+          goalId,
+          page: contributionsPagination.page + 1,
+        }),
+      );
+    }
+  }, [dispatch, goalId, contributionsPagination]);
+
   // Transform API goal to local format
-  const goal: LocalGoal | null = apiGoal ? {
-    id: apiGoal.id.toString(),
-    name: apiGoal.name,
-    emoji: apiGoal.icon || '🎯',
-    targetAmount: parseFloat(apiGoal.targetAmount),
-    currentAmount: parseFloat(apiGoal.currentAmount),
-    deadline: apiGoal.deadline ? new Date(apiGoal.deadline).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'No deadline',
-    monthsLeft: apiGoal.deadline ? Math.max(0, Math.ceil((new Date(apiGoal.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 30))) : 0,
-    monthlyContribution: 0,
-    color: apiGoal.iconColor || '#3b82f6',
-    iconBgColor: 'bg-blue-100 dark:bg-blue-500/20',
-    contributions: apiGoal.contributions?.map(c => ({
-      id: c.id.toString(),
-      goalId: c.goalId.toString(),
-      accountId: c.accountId?.toString(),
-      amount: parseFloat(c.amount),
-      date: new Date(c.contributionDate),
-      note: c.notes,
-    })) || [],
-  } : null;
+  const goal: LocalGoal | null = apiGoal
+    ? {
+        id: apiGoal.id.toString(),
+        name: apiGoal.name,
+        emoji: apiGoal.emoji || "🎯",
+        targetAmount: parseFloat(apiGoal.targetAmount),
+        currentAmount: parseFloat(apiGoal.currentAmount),
+        deadline: apiGoal.deadline
+          ? new Date(apiGoal.deadline).toLocaleDateString("en-US", {
+              month: "short",
+              year: "numeric",
+            })
+          : "No deadline",
+        monthsLeft: apiGoal.deadline
+          ? Math.max(
+              0,
+              Math.ceil(
+                (new Date(apiGoal.deadline).getTime() - Date.now()) /
+                  (1000 * 60 * 60 * 24 * 30),
+              ),
+            )
+          : 0,
+        monthlyContribution: 0,
+        color: apiGoal.color || "#3b82f6",
+        iconBgColor: apiGoal.iconBgColor || "bg-blue-100 dark:bg-blue-500/20",
+        contributions:
+          apiGoal.contributions?.map((c) => ({
+            id: c.id.toString(),
+            goalId: c.goalId.toString(),
+            accountId: c.accountId?.toString(),
+            amount: parseFloat(c.amount),
+            date: new Date(c.contributionDate),
+            note: c.note,
+          })) || [],
+      }
+    : null;
 
   if (isLoading || !goal) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900 items-center justify-center" edges={['top']}>
+      <SafeAreaView
+        className="flex-1 bg-gray-50 dark:bg-gray-900 items-center justify-center"
+        edges={["top"]}
+      >
         <ActivityIndicator size="large" color="#3b82f6" />
       </SafeAreaView>
     );
@@ -199,28 +281,117 @@ export default function GoalDetailScreen() {
 
   const percentage = (goal.currentAmount / goal.targetAmount) * 100;
   const remaining = goal.targetAmount - goal.currentAmount;
-  const isOnTrack = goal.monthsLeft > 0 ? (remaining / goal.monthsLeft) <= goal.monthlyContribution : true;
+  const isOnTrack =
+    goal.monthsLeft > 0
+      ? remaining / goal.monthsLeft <= goal.monthlyContribution
+      : true;
   const isComplete = goal.currentAmount >= goal.targetAmount;
 
-  const handleAddContribution = async (contribution: Omit<LocalGoalContribution, 'id'>) => {
+  const handleAddContribution = async (
+    contribution: Omit<LocalGoalContribution, "id">,
+  ) => {
     const request: AddContributionRequest = {
       amount: contribution.amount,
-      accountId: contribution.accountId ? parseInt(contribution.accountId) : undefined,
-      contributionDate: contribution.date.toISOString().split('T')[0],
-      notes: contribution.note,
+      accountId: contribution.accountId || undefined,
+      contributionDate: contribution.date.toISOString().split("T")[0],
+      note: contribution.note,
     };
-    
+
     await dispatch(addContribution({ goalId, data: request }));
+    dispatch(fetchGoalById(goalId));
     setShowContributionModal(false);
   };
 
+  const handleEditGoal = async (data: {
+    name: string;
+    emoji: string;
+    targetAmount: number;
+    deadline: string;
+  }) => {
+    const request: UpdateGoalRequest = {
+      name: data.name,
+      emoji: data.emoji,
+      targetAmount: data.targetAmount,
+      deadline: data.deadline,
+    };
+    await dispatch(updateGoal({ id: goalId, data: request }));
+    dispatch(fetchGoalById(goalId));
+  };
+
+  const handleDeleteGoal = () => {
+    Alert.alert(
+      "Delete Goal",
+      `Are you sure you want to delete "${goal.name}"? All contribution history for this goal will also be removed.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            await dispatch(deleteGoal(goalId));
+            navigation.goBack();
+          },
+        },
+      ],
+    );
+  };
+
+  const handleEllipsisPress = () => {
+    if (Platform.OS === "ios") {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ["Cancel", "Edit Goal", "Delete Goal"],
+          cancelButtonIndex: 0,
+          destructiveButtonIndex: 2,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) setShowEditModal(true);
+          if (buttonIndex === 2) handleDeleteGoal();
+        },
+      );
+    } else {
+      Alert.alert("Goal Options", "", [
+        { text: "Edit Goal", onPress: () => setShowEditModal(true) },
+        {
+          text: "Delete Goal",
+          style: "destructive",
+          onPress: handleDeleteGoal,
+        },
+        { text: "Cancel", style: "cancel" },
+      ]);
+    }
+  };
+
+  // Merge contributions from goal + paginated fetches
+  const mappedApiContributions: LocalGoalContribution[] = apiContributions.map(
+    (c) => ({
+      id: c.id.toString(),
+      goalId: c.goalId.toString(),
+      accountId: c.accountId?.toString(),
+      amount: parseFloat(c.amount),
+      date: new Date(c.contributionDate),
+      note: c.note,
+    }),
+  );
+  const allContributions =
+    mappedApiContributions.length > 0
+      ? mappedApiContributions
+      : goal.contributions;
+
   // Sort contributions by date (most recent first)
-  const sortedContributions = [...goal.contributions].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  const sortedContributions = [...allContributions].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
   );
 
+  const hasMoreContributions = contributionsPagination
+    ? contributionsPagination.page < contributionsPagination.totalPages
+    : false;
+
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
+    <SafeAreaView
+      className="flex-1 bg-gray-50 dark:bg-gray-900"
+      edges={["top"]}
+    >
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <Animated.View
@@ -235,6 +406,7 @@ export default function GoalDetailScreen() {
               <Ionicons name="chevron-back" size={22} color="#374151" />
             </Pressable>
             <Pressable
+              onPress={handleEllipsisPress}
               className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-full items-center justify-center active:bg-gray-200 dark:active:bg-gray-700"
             >
               <Ionicons name="ellipsis-horizontal" size={22} color="#374151" />
@@ -246,7 +418,7 @@ export default function GoalDetailScreen() {
             entering={FadeInDown.duration(500).delay(100)}
             className="bg-white dark:bg-gray-800 rounded-[28px] p-6"
             style={{
-              shadowColor: '#000',
+              shadowColor: "#000",
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.08,
               shadowRadius: 16,
@@ -268,27 +440,43 @@ export default function GoalDetailScreen() {
                   <View
                     className={`rounded-full px-2.5 py-1 flex-row items-center ${
                       isComplete
-                        ? 'bg-emerald-500'
+                        ? "bg-emerald-500"
                         : isOnTrack
-                        ? 'bg-emerald-100 dark:bg-emerald-500/20'
-                        : 'bg-amber-100 dark:bg-amber-500/20'
+                          ? "bg-emerald-100 dark:bg-emerald-500/20"
+                          : "bg-amber-100 dark:bg-amber-500/20"
                     }`}
                   >
                     <Ionicons
-                      name={isComplete ? 'trophy' : isOnTrack ? 'checkmark-circle' : 'time'}
+                      name={
+                        isComplete
+                          ? "trophy"
+                          : isOnTrack
+                            ? "checkmark-circle"
+                            : "time"
+                      }
                       size={12}
-                      color={isComplete ? '#ffffff' : isOnTrack ? '#22c55e' : '#f59e0b'}
+                      color={
+                        isComplete
+                          ? "#ffffff"
+                          : isOnTrack
+                            ? "#22c55e"
+                            : "#f59e0b"
+                      }
                     />
                     <Text
                       className={`text-xs font-bold ml-1 ${
                         isComplete
-                          ? 'text-white'
+                          ? "text-white"
                           : isOnTrack
-                          ? 'text-emerald-600 dark:text-emerald-400'
-                          : 'text-amber-600 dark:text-amber-400'
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-amber-600 dark:text-amber-400"
                       }`}
                     >
-                      {isComplete ? 'Complete!' : isOnTrack ? 'On Track' : 'Behind'}
+                      {isComplete
+                        ? "Complete!"
+                        : isOnTrack
+                          ? "On Track"
+                          : "Behind"}
                     </Text>
                   </View>
                   <Text className="text-gray-400 dark:text-gray-500 text-sm ml-3">
@@ -397,7 +585,7 @@ export default function GoalDetailScreen() {
             entering={FadeInDown.duration(500).delay(450)}
             className="bg-white dark:bg-gray-800 rounded-[24px] px-5"
             style={{
-              shadowColor: '#000',
+              shadowColor: "#000",
               shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.05,
               shadowRadius: 8,
@@ -405,14 +593,26 @@ export default function GoalDetailScreen() {
             }}
           >
             {sortedContributions.length > 0 ? (
-              sortedContributions.map((contribution, index) => (
-                <ContributionItem
-                  key={contribution.id}
-                  contribution={contribution}
-                  index={index}
-                  goalColor={goal.color}
-                />
-              ))
+              <>
+                {sortedContributions.map((contribution, index) => (
+                  <ContributionItem
+                    key={contribution.id}
+                    contribution={contribution}
+                    index={index}
+                    goalColor={goal.color}
+                  />
+                ))}
+                {hasMoreContributions && (
+                  <Pressable
+                    onPress={handleLoadMoreContributions}
+                    className="py-4 items-center"
+                  >
+                    <Text className="text-blue-500 font-semibold text-sm">
+                      Load More
+                    </Text>
+                  </Pressable>
+                )}
+              </>
             ) : (
               <View className="py-10 items-center">
                 <Ionicons name="wallet-outline" size={48} color="#9ca3af" />
@@ -432,8 +632,17 @@ export default function GoalDetailScreen() {
       <AddContributionModal
         visible={showContributionModal}
         goal={goal}
+        accounts={accounts}
         onClose={() => setShowContributionModal(false)}
         onAddContribution={handleAddContribution}
+      />
+
+      {/* Edit Goal Modal */}
+      <EditGoalModal
+        visible={showEditModal}
+        goal={goal}
+        onClose={() => setShowEditModal(false)}
+        onSave={handleEditGoal}
       />
     </SafeAreaView>
   );

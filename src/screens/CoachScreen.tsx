@@ -334,18 +334,19 @@ function MessageBubble({ message, onSuggestionPress }: MessageBubbleProps) {
           </Text>
 
           {/* Inline Suggestions */}
-          {/* {message.suggestions && message.suggestions.length > 0 && (
-            <View className="flex-row flex-wrap mt-3">
-              {message.suggestions.map((suggestion, index) => (
-                <SuggestionChip
-                  key={index}
-                  text={suggestion}
-                  onPress={() => onSuggestionPress?.(suggestion)}
-                  variant={index === 0 ? "primary" : "secondary"}
-                />
-              ))}
-            </View>
-          )} */}
+          {Array.isArray(message.suggestions) &&
+            message.suggestions.length > 0 && (
+              <View className="flex-row flex-wrap mt-3">
+                {message.suggestions.map((suggestion, index) => (
+                  <SuggestionChip
+                    key={index}
+                    text={suggestion}
+                    onPress={() => onSuggestionPress?.(suggestion)}
+                    variant={index === 0 ? "primary" : "secondary"}
+                  />
+                ))}
+              </View>
+            )}
         </View>
       </View>
     </Animated.View>

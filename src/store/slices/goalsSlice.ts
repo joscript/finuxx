@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import {
   goalService,
   Goal,
@@ -6,12 +6,21 @@ import {
   CreateGoalRequest,
   UpdateGoalRequest,
   AddContributionRequest,
-} from '../../api';
+} from "../../api";
 
 // ============ STATE TYPE ============
+interface ContributionsPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 interface GoalsState {
   goals: Goal[];
   selectedGoal: Goal | null;
+  contributions: GoalContribution[];
+  contributionsPagination: ContributionsPagination | null;
   isLoading: boolean;
   error: string | null;
 }
@@ -19,6 +28,8 @@ interface GoalsState {
 const initialState: GoalsState = {
   goals: [],
   selectedGoal: null,
+  contributions: [],
+  contributionsPagination: null,
   isLoading: false,
   error: null,
 };
@@ -26,110 +37,150 @@ const initialState: GoalsState = {
 // ============ ASYNC THUNKS ============
 
 export const fetchGoals = createAsyncThunk(
-  'goals/fetchGoals',
+  "goals/fetchGoals",
   async (_, { rejectWithValue }) => {
     try {
       const response = await goalService.getAll();
-      
+
       if (response.success && response.data) {
         return response.data.goals || response.data;
       }
-      
-      return rejectWithValue(response.message || 'Failed to fetch goals');
+
+      return rejectWithValue(response.message || "Failed to fetch goals");
     } catch (error: any) {
-      return rejectWithValue(error.message || 'An error occurred');
+      return rejectWithValue(error.message || "An error occurred");
     }
-  }
+  },
 );
 
 export const fetchGoalById = createAsyncThunk(
-  'goals/fetchGoalById',
-  async (id: number, { rejectWithValue }) => {
+  "goals/fetchGoalById",
+  async (id: string, { rejectWithValue }) => {
     try {
       const response = await goalService.getById(id);
-      
+
       if (response.success && response.data?.goal) {
         return response.data.goal;
       }
-      
-      return rejectWithValue(response.message || 'Failed to fetch goal');
+
+      return rejectWithValue(response.message || "Failed to fetch goal");
     } catch (error: any) {
-      return rejectWithValue(error.message || 'An error occurred');
+      return rejectWithValue(error.message || "An error occurred");
     }
-  }
+  },
 );
 
 export const createGoal = createAsyncThunk(
-  'goals/createGoal',
+  "goals/createGoal",
   async (data: CreateGoalRequest, { rejectWithValue }) => {
     try {
       const response = await goalService.create(data);
-      
+
       if (response.success && response.data?.goal) {
         return response.data.goal;
       }
-      
-      return rejectWithValue(response.message || 'Failed to create goal');
+
+      return rejectWithValue(response.message || "Failed to create goal");
     } catch (error: any) {
-      return rejectWithValue(error.message || 'An error occurred');
+      return rejectWithValue(error.message || "An error occurred");
     }
-  }
+  },
 );
 
 export const updateGoal = createAsyncThunk(
-  'goals/updateGoal',
-  async ({ id, data }: { id: number; data: UpdateGoalRequest }, { rejectWithValue }) => {
+  "goals/updateGoal",
+  async (
+    { id, data }: { id: string; data: UpdateGoalRequest },
+    { rejectWithValue },
+  ) => {
     try {
       const response = await goalService.update(id, data);
-      
+
       if (response.success && response.data?.goal) {
         return response.data.goal;
       }
-      
-      return rejectWithValue(response.message || 'Failed to update goal');
+
+      return rejectWithValue(response.message || "Failed to update goal");
     } catch (error: any) {
-      return rejectWithValue(error.message || 'An error occurred');
+      return rejectWithValue(error.message || "An error occurred");
     }
-  }
+  },
 );
 
 export const deleteGoal = createAsyncThunk(
-  'goals/deleteGoal',
-  async (id: number, { rejectWithValue }) => {
+  "goals/deleteGoal",
+  async (id: string, { rejectWithValue }) => {
     try {
       const response = await goalService.delete(id);
-      
+
       if (response.success) {
         return id;
       }
-      
-      return rejectWithValue(response.message || 'Failed to delete goal');
+
+      return rejectWithValue(response.message || "Failed to delete goal");
     } catch (error: any) {
-      return rejectWithValue(error.message || 'An error occurred');
+      return rejectWithValue(error.message || "An error occurred");
     }
-  }
+  },
 );
 
 export const addContribution = createAsyncThunk(
-  'goals/addContribution',
-  async ({ goalId, data }: { goalId: number; data: AddContributionRequest }, { rejectWithValue }) => {
+  "goals/addContribution",
+  async (
+    { goalId, data }: { goalId: string; data: AddContributionRequest },
+    { rejectWithValue },
+  ) => {
     try {
       const response = await goalService.addContribution(goalId, data);
-      
+
       if (response.success && response.data) {
-        return { goalId, goal: response.data.goal, contribution: response.data.contribution };
+        return {
+          goalId,
+          goal: response.data.goal,
+          contribution: response.data.contribution,
+        };
       }
-      
-      return rejectWithValue(response.message || 'Failed to add contribution');
+
+      return rejectWithValue(response.message || "Failed to add contribution");
     } catch (error: any) {
-      return rejectWithValue(error.message || 'An error occurred');
+      return rejectWithValue(error.message || "An error occurred");
     }
-  }
+  },
+);
+
+export const fetchGoalContributions = createAsyncThunk(
+  "goals/fetchGoalContributions",
+  async (
+    {
+      goalId,
+      page = 1,
+      limit = 20,
+    }: { goalId: string; page?: number; limit?: number },
+    { rejectWithValue },
+  ) => {
+    try {
+      const response = await goalService.getContributions(goalId, page, limit);
+
+      if (response.success) {
+        return {
+          contributions: response.data || [],
+          pagination: response.pagination,
+          page,
+        };
+      }
+
+      return rejectWithValue(
+        response.message || "Failed to fetch contributions",
+      );
+    } catch (error: any) {
+      return rejectWithValue(error.message || "An error occurred");
+    }
+  },
 );
 
 // ============ SLICE ============
 const goalsSlice = createSlice({
-  name: 'goals',
+  name: "goals",
   initialState,
   reducers: {
     clearGoalsError: (state) => {
@@ -144,6 +195,8 @@ const goalsSlice = createSlice({
     resetGoals: (state) => {
       state.goals = [];
       state.selectedGoal = null;
+      state.contributions = [];
+      state.contributionsPagination = null;
       state.error = null;
     },
   },
@@ -239,8 +292,35 @@ const goalsSlice = createSlice({
       .addCase(addContribution.rejected, (state, action) => {
         state.error = action.payload as string;
       });
+
+    // Fetch Goal Contributions (paginated)
+    builder
+      .addCase(fetchGoalContributions.fulfilled, (state, action) => {
+        const { contributions, pagination, page } = action.payload;
+        if (page === 1) {
+          state.contributions = contributions;
+        } else {
+          // Append, avoiding duplicates
+          const existingIds = new Set(state.contributions.map((c) => c.id));
+          const newContributions = contributions.filter(
+            (c: GoalContribution) => !existingIds.has(c.id),
+          );
+          state.contributions = [...state.contributions, ...newContributions];
+        }
+        if (pagination) {
+          state.contributionsPagination = pagination;
+        }
+      })
+      .addCase(fetchGoalContributions.rejected, (state, action) => {
+        state.error = action.payload as string;
+      });
   },
 });
 
-export const { clearGoalsError, setSelectedGoal, clearSelectedGoal, resetGoals } = goalsSlice.actions;
+export const {
+  clearGoalsError,
+  setSelectedGoal,
+  clearSelectedGoal,
+  resetGoals,
+} = goalsSlice.actions;
 export default goalsSlice.reducer;

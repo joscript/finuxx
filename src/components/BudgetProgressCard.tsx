@@ -101,38 +101,41 @@ export function BudgetProgressCard({
         containerStyle,
         {
           shadowColor: "#000",
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.08,
-          shadowRadius: 16,
-          elevation: 6,
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.15,
+          shadowRadius: 24,
+          elevation: 12,
         },
       ]}
       className="bg-white dark:bg-gray-800 rounded-[28px] p-4 flex-1"
     >
-      <View className="mb-3">
-        <View className="flex-row items-center justify-between mb-1">
-          <Text className="text-gray-500 dark:text-gray-400 text-xs font-medium">
-            Budget
+      <View className="flex-row items-center justify-between mb-4">
+        <Text className="text-gray-500 dark:text-gray-400 text-xs font-medium">
+          Budget
+        </Text>
+        <View className={`${getStatusBgColor()} rounded-full px-2.5 py-1`}>
+          <Text className={`${getStatusTextColor()} text-[10px] font-bold`}>
+            {getStatusText()}
           </Text>
-          <View className={`${getStatusBgColor()} rounded-full px-2 py-0.5`}>
-            <Text className={`${getStatusTextColor()} text-[10px] font-bold`}>
-              {getStatusText()}
-            </Text>
-          </View>
         </View>
+      </View>
+      <View className="flex-row items-baseline flex-wrap">
+        <Text className="text-gray-400 text-lg font-medium mr-1">
+          {currency}
+        </Text>
         <Text
-          className="text-gray-900 dark:text-white text-lg font-bold tracking-tight"
+          className="text-gray-900 dark:text-white text-3xl font-bold tracking-tight"
           numberOfLines={1}
           adjustsFontSizeToFit
-          minimumFontScale={0.7}
+          minimumFontScale={0.6}
         >
-          {currency}
           {(total - spent).toLocaleString()}
         </Text>
-        <Text className="text-gray-400 dark:text-gray-500 text-xs mt-0.5">
-          remaining
-        </Text>
       </View>
+      <Text className="text-gray-500 text-xs mt-3">remaining</Text>
+
+      {/* Divider */}
+      <View className="h-px bg-gray-100 dark:bg-gray-700 my-3" />
 
       {/* Progress Bar */}
       <View className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden mb-3">

@@ -144,15 +144,16 @@ export interface UpdateCategoryRequest {
 
 // ============ GOAL TYPES ============
 export interface Goal {
-  id: number;
-  userId: number;
+  id: string;
+  userId: string;
   name: string;
   targetAmount: string;
   currentAmount: string;
   deadline?: string;
-  icon?: string;
-  iconColor?: string;
-  linkedAccountId?: number;
+  emoji: string;
+  color: string;
+  iconBgColor: string;
+  linkedAccountId?: string;
   description?: string;
   progress: number;
   createdAt: string;
@@ -161,12 +162,12 @@ export interface Goal {
 }
 
 export interface GoalContribution {
-  id: number;
-  goalId: number;
-  accountId?: number;
+  id: string;
+  goalId: string;
+  accountId?: string;
   amount: string;
   contributionDate: string;
-  notes?: string;
+  note?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -175,10 +176,11 @@ export interface CreateGoalRequest {
   name: string;
   targetAmount: number;
   currentAmount?: number;
-  deadline?: string;
-  icon?: string;
-  iconColor?: string;
-  linkedAccountId?: number;
+  deadline: string;
+  emoji: string;
+  color: string;
+  iconBgColor: string;
+  linkedAccountId?: string;
   description?: string;
 }
 
@@ -186,9 +188,9 @@ export interface UpdateGoalRequest extends Partial<CreateGoalRequest> {}
 
 export interface AddContributionRequest {
   amount: number;
-  accountId?: number;
+  accountId?: string;
   contributionDate?: string;
-  notes?: string;
+  note?: string;
 }
 
 // ============ BUDGET TYPES ============

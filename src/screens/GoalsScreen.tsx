@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -10,13 +10,16 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '../navigation/RootNavigator';
-import type { Goal as LocalGoal, GoalContribution as LocalGoalContribution } from '../types';
-import AddContributionModal from '../components/AddContributionModal';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../navigation/RootNavigator";
+import type {
+  Goal as LocalGoal,
+  GoalContribution as LocalGoalContribution,
+} from "../types";
+import AddContributionModal from "../components/AddContributionModal";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -32,31 +35,40 @@ import Animated, {
   interpolate,
   Extrapolation,
   runOnJS,
-} from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
-import Slider from '@react-native-community/slider';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { fetchGoals, createGoal, addContribution } from '../store/slices/goalsSlice';
-import { CreateGoalRequest, AddContributionRequest, Goal as ApiGoal } from '../api';
+} from "react-native-reanimated";
+import { Ionicons } from "@expo/vector-icons";
+import Slider from "@react-native-community/slider";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import {
+  fetchGoals,
+  createGoal,
+  addContribution,
+} from "../store/slices/goalsSlice";
+import { fetchAccounts } from "../store/slices/accountsSlice";
+import {
+  CreateGoalRequest,
+  AddContributionRequest,
+  Goal as ApiGoal,
+} from "../api";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const AnimatedView = Animated.createAnimatedComponent(View);
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 // ============ AI SUGGESTIONS (mock for now as no AI API exists) ============
 const MOCK_AI_SUGGESTIONS = [
   {
-    id: '1',
-    text: 'Add ₱500/month to reach your Japan trip goal 2 weeks sooner.',
-    icon: 'trending-up-outline',
-    action: 'Adjust',
+    id: "1",
+    text: "Add ₱500/month to reach your Japan trip goal 2 weeks sooner.",
+    icon: "trending-up-outline",
+    action: "Adjust",
   },
   {
-    id: '2',
-    text: 'Pause your ₱549 Netflix subscription to boost savings by ₱6,588/year.',
-    icon: 'pause-circle-outline',
-    action: 'Review',
+    id: "2",
+    text: "Pause your ₱549 Netflix subscription to boost savings by ₱6,588/year.",
+    icon: "pause-circle-outline",
+    action: "Review",
   },
 ];
 
@@ -70,10 +82,10 @@ interface SkeletonShimmerProps {
 }
 
 function SkeletonShimmer({
-  width = '100%',
+  width = "100%",
   height = 16,
   borderRadius = 8,
-  className = '',
+  className = "",
   delay = 0,
 }: SkeletonShimmerProps) {
   const shimmerValue = useSharedValue(0);
@@ -84,16 +96,21 @@ function SkeletonShimmer({
       withRepeat(
         withSequence(
           withTiming(1, { duration: 1000 }),
-          withTiming(0, { duration: 1000 })
+          withTiming(0, { duration: 1000 }),
         ),
         -1,
-        false
-      )
+        false,
+      ),
     );
   }, [delay]);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(shimmerValue.value, [0, 1], [0.3, 0.7], Extrapolation.CLAMP),
+    opacity: interpolate(
+      shimmerValue.value,
+      [0, 1],
+      [0.3, 0.7],
+      Extrapolation.CLAMP,
+    ),
   }));
 
   return (
@@ -101,11 +118,11 @@ function SkeletonShimmer({
       style={[
         animatedStyle,
         {
-          width: typeof width === 'number' ? width : undefined,
+          width: typeof width === "number" ? width : undefined,
           height,
           borderRadius,
         },
-        typeof width === 'string' ? { flex: 1 } : {},
+        typeof width === "string" ? { flex: 1 } : {},
       ]}
       className={`bg-gray-200 dark:bg-gray-700 ${className}`}
     />
@@ -118,7 +135,7 @@ function SkeletonGoalCard({ delay = 0 }: { delay?: number }) {
     <View
       className="bg-white dark:bg-gray-800 rounded-[24px] mx-5 p-5 mb-4"
       style={{
-        shadowColor: '#000',
+        shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.05,
         shadowRadius: 8,
@@ -126,14 +143,47 @@ function SkeletonGoalCard({ delay = 0 }: { delay?: number }) {
       }}
     >
       <View className="flex-row items-start">
-        <SkeletonShimmer width={56} height={56} borderRadius={16} delay={delay} />
+        <SkeletonShimmer
+          width={56}
+          height={56}
+          borderRadius={16}
+          delay={delay}
+        />
         <View className="flex-1 ml-4">
-          <SkeletonShimmer width={140} height={18} borderRadius={9} delay={delay + 50} className="mb-2" />
-          <SkeletonShimmer width={100} height={14} borderRadius={7} delay={delay + 100} className="mb-3" />
-          <SkeletonShimmer width="100%" height={10} borderRadius={5} delay={delay + 150} className="mb-2" />
+          <SkeletonShimmer
+            width={140}
+            height={18}
+            borderRadius={9}
+            delay={delay + 50}
+            className="mb-2"
+          />
+          <SkeletonShimmer
+            width={100}
+            height={14}
+            borderRadius={7}
+            delay={delay + 100}
+            className="mb-3"
+          />
+          <SkeletonShimmer
+            width="100%"
+            height={10}
+            borderRadius={5}
+            delay={delay + 150}
+            className="mb-2"
+          />
           <View className="flex-row justify-between">
-            <SkeletonShimmer width={80} height={12} borderRadius={6} delay={delay + 200} />
-            <SkeletonShimmer width={60} height={22} borderRadius={11} delay={delay + 250} />
+            <SkeletonShimmer
+              width={80}
+              height={12}
+              borderRadius={6}
+              delay={delay + 200}
+            />
+            <SkeletonShimmer
+              width={60}
+              height={22}
+              borderRadius={11}
+              delay={delay + 250}
+            />
           </View>
         </View>
       </View>
@@ -147,7 +197,7 @@ function SkeletonOverviewCard() {
     <View
       className="bg-white dark:bg-gray-800 rounded-[28px] mx-5 p-7"
       style={{
-        shadowColor: '#000',
+        shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.08,
         shadowRadius: 16,
@@ -156,19 +206,51 @@ function SkeletonOverviewCard() {
     >
       <View className="flex-row items-center justify-between mb-6">
         <View className="flex-1">
-          <SkeletonShimmer width={100} height={12} borderRadius={6} className="mb-2" />
-          <SkeletonShimmer width={150} height={28} borderRadius={14} delay={50} />
+          <SkeletonShimmer
+            width={100}
+            height={12}
+            borderRadius={6}
+            className="mb-2"
+          />
+          <SkeletonShimmer
+            width={150}
+            height={28}
+            borderRadius={14}
+            delay={50}
+          />
         </View>
         <SkeletonShimmer width={80} height={80} borderRadius={40} delay={100} />
       </View>
       <View className="flex-row justify-between">
         <View>
-          <SkeletonShimmer width={70} height={12} borderRadius={6} delay={150} className="mb-1" />
-          <SkeletonShimmer width={50} height={20} borderRadius={10} delay={200} />
+          <SkeletonShimmer
+            width={70}
+            height={12}
+            borderRadius={6}
+            delay={150}
+            className="mb-1"
+          />
+          <SkeletonShimmer
+            width={50}
+            height={20}
+            borderRadius={10}
+            delay={200}
+          />
         </View>
         <View className="items-end">
-          <SkeletonShimmer width={90} height={12} borderRadius={6} delay={250} className="mb-1" />
-          <SkeletonShimmer width={80} height={20} borderRadius={10} delay={300} />
+          <SkeletonShimmer
+            width={90}
+            height={12}
+            borderRadius={6}
+            delay={250}
+            className="mb-1"
+          />
+          <SkeletonShimmer
+            width={80}
+            height={20}
+            borderRadius={10}
+            delay={300}
+          />
         </View>
       </View>
     </View>
@@ -190,7 +272,7 @@ function CircularProgress({
   size = 80,
   strokeWidth = 8,
   color,
-  bgColor = '#e5e7eb',
+  bgColor = "#e5e7eb",
   showPercentage = true,
 }: CircularProgressProps) {
   const progress = useSharedValue(0);
@@ -198,7 +280,10 @@ function CircularProgress({
   useEffect(() => {
     progress.value = withDelay(
       300,
-      withTiming(percentage / 100, { duration: 1000, easing: Easing.out(Easing.cubic) })
+      withTiming(percentage / 100, {
+        duration: 1000,
+        easing: Easing.out(Easing.cubic),
+      }),
     );
   }, [percentage]);
 
@@ -207,11 +292,14 @@ function CircularProgress({
   }));
 
   return (
-    <View style={{ width: size, height: size }} className="items-center justify-center">
+    <View
+      style={{ width: size, height: size }}
+      className="items-center justify-center"
+    >
       {/* Background Circle */}
       <View
         style={{
-          position: 'absolute',
+          position: "absolute",
           width: size,
           height: size,
           borderRadius: size / 2,
@@ -224,17 +312,17 @@ function CircularProgress({
       {/* Progress indicator */}
       <View
         style={{
-          position: 'absolute',
+          position: "absolute",
           width: size,
           height: size,
-          transform: [{ rotate: '-90deg' }],
+          transform: [{ rotate: "-90deg" }],
         }}
       >
         <AnimatedView
           style={[
             animatedRotation,
             {
-              position: 'absolute',
+              position: "absolute",
               width: size,
               height: size,
             },
@@ -242,10 +330,10 @@ function CircularProgress({
         >
           <View
             style={{
-              position: 'absolute',
+              position: "absolute",
               width: size,
               height: size / 2,
-              overflow: 'hidden',
+              overflow: "hidden",
             }}
           >
             <View
@@ -255,8 +343,8 @@ function CircularProgress({
                 borderRadius: size / 2,
                 borderWidth: strokeWidth,
                 borderColor: color,
-                borderBottomColor: 'transparent',
-                borderRightColor: 'transparent',
+                borderBottomColor: "transparent",
+                borderRightColor: "transparent",
               }}
             />
           </View>
@@ -281,13 +369,21 @@ interface AnimatedProgressBarProps {
   height?: number;
 }
 
-function AnimatedProgressBar({ percentage, color, delay = 0, height = 10 }: AnimatedProgressBarProps) {
+function AnimatedProgressBar({
+  percentage,
+  color,
+  delay = 0,
+  height = 10,
+}: AnimatedProgressBarProps) {
   const width = useSharedValue(0);
 
   useEffect(() => {
     width.value = withDelay(
       delay,
-      withTiming(Math.min(percentage, 100), { duration: 800, easing: Easing.out(Easing.cubic) })
+      withTiming(Math.min(percentage, 100), {
+        duration: 800,
+        easing: Easing.out(Easing.cubic),
+      }),
     );
   }, [percentage, delay]);
 
@@ -329,11 +425,17 @@ function GoalsOverviewCard({
   useEffect(() => {
     countValue.value = withDelay(
       200,
-      withTiming(totalGoals, { duration: 800, easing: Easing.out(Easing.cubic) })
+      withTiming(totalGoals, {
+        duration: 800,
+        easing: Easing.out(Easing.cubic),
+      }),
     );
     contributionValue.value = withDelay(
       400,
-      withTiming(monthlyContribution, { duration: 1000, easing: Easing.out(Easing.cubic) })
+      withTiming(monthlyContribution, {
+        duration: 1000,
+        easing: Easing.out(Easing.cubic),
+      }),
     );
   }, [totalGoals, monthlyContribution]);
 
@@ -358,7 +460,7 @@ function GoalsOverviewCard({
         style={[
           animatedStyle,
           {
-            shadowColor: '#000',
+            shadowColor: "#000",
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.08,
             shadowRadius: 16,
@@ -411,7 +513,7 @@ function GoalsOverviewCard({
 
 // ============ GOAL ITEM COMPONENT ============
 interface GoalItemProps {
-  goal: Goal;
+  goal: LocalGoal;
   index: number;
   onPress?: () => void;
   onAddFunds?: () => void;
@@ -450,17 +552,17 @@ function GoalItem({ goal, index, onPress, onAddFunds }: GoalItemProps) {
   };
 
   const getStatusBgColor = () => {
-    if (isComplete) return 'bg-emerald-500';
+    if (isComplete) return "bg-emerald-500";
     return isOnTrack
-      ? 'bg-emerald-100 dark:bg-emerald-500/20'
-      : 'bg-amber-100 dark:bg-amber-500/20';
+      ? "bg-emerald-100 dark:bg-emerald-500/20"
+      : "bg-amber-100 dark:bg-amber-500/20";
   };
 
   const getStatusTextColor = () => {
-    if (isComplete) return 'text-white';
+    if (isComplete) return "text-white";
     return isOnTrack
-      ? 'text-emerald-600 dark:text-emerald-400'
-      : 'text-amber-600 dark:text-amber-400';
+      ? "text-emerald-600 dark:text-emerald-400"
+      : "text-amber-600 dark:text-amber-400";
   };
 
   return (
@@ -472,7 +574,7 @@ function GoalItem({ goal, index, onPress, onAddFunds }: GoalItemProps) {
         style={[
           animatedStyle,
           {
-            shadowColor: '#000',
+            shadowColor: "#000",
             shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.05,
             shadowRadius: 8,
@@ -505,7 +607,7 @@ function GoalItem({ goal, index, onPress, onAddFunds }: GoalItemProps) {
               </Text>
               <View className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600 mx-2" />
               <Text className="text-gray-400 dark:text-gray-500 text-sm">
-                {goal.monthsLeft} month{goal.monthsLeft !== 1 ? 's' : ''} left
+                {goal.monthsLeft} month{goal.monthsLeft !== 1 ? "s" : ""} left
               </Text>
             </View>
 
@@ -525,12 +627,22 @@ function GoalItem({ goal, index, onPress, onAddFunds }: GoalItemProps) {
                 className={`${getStatusBgColor()} rounded-full px-2.5 py-1 flex-row items-center`}
               >
                 <Ionicons
-                  name={isComplete ? 'trophy' : isOnTrack ? 'checkmark-circle' : 'time'}
+                  name={
+                    isComplete
+                      ? "trophy"
+                      : isOnTrack
+                        ? "checkmark-circle"
+                        : "time"
+                  }
                   size={12}
-                  color={isComplete ? '#ffffff' : isOnTrack ? '#22c55e' : '#f59e0b'}
+                  color={
+                    isComplete ? "#ffffff" : isOnTrack ? "#22c55e" : "#f59e0b"
+                  }
                 />
-                <Text className={`${getStatusTextColor()} text-xs font-bold ml-1`}>
-                  {isComplete ? 'Complete!' : isOnTrack ? 'On Track' : 'Behind'}
+                <Text
+                  className={`${getStatusTextColor()} text-xs font-bold ml-1`}
+                >
+                  {isComplete ? "Complete!" : isOnTrack ? "On Track" : "Behind"}
                 </Text>
               </View>
             </View>
@@ -562,7 +674,8 @@ function GoalItem({ goal, index, onPress, onAddFunds }: GoalItemProps) {
               <View className="flex-row items-center mt-3">
                 <Ionicons name="receipt-outline" size={14} color="#9ca3af" />
                 <Text className="text-gray-400 dark:text-gray-500 text-xs ml-1.5">
-                  {goal.contributions.length} contribution{goal.contributions.length !== 1 ? 's' : ''}
+                  {goal.contributions.length} contribution
+                  {goal.contributions.length !== 1 ? "s" : ""}
                 </Text>
               </View>
             )}
@@ -579,7 +692,10 @@ interface SimulationCardProps {
   onContributionChange?: (value: number) => void;
 }
 
-function SimulationCard({ currentContribution, onContributionChange }: SimulationCardProps) {
+function SimulationCard({
+  currentContribution,
+  onContributionChange,
+}: SimulationCardProps) {
   const [sliderValue, setSliderValue] = useState(currentContribution);
   const scale = useSharedValue(1);
   const monthsSaved = useSharedValue(0);
@@ -618,7 +734,7 @@ function SimulationCard({ currentContribution, onContributionChange }: Simulatio
         style={[
           animatedStyle,
           {
-            shadowColor: '#000',
+            shadowColor: "#000",
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.08,
             shadowRadius: 16,
@@ -645,13 +761,15 @@ function SimulationCard({ currentContribution, onContributionChange }: Simulatio
         {/* Slider */}
         <View className="mb-4">
           <View className="flex-row items-center justify-between mb-2">
-            <Text className="text-gray-400 dark:text-gray-500 text-sm">Monthly</Text>
+            <Text className="text-gray-400 dark:text-gray-500 text-sm">
+              Monthly
+            </Text>
             <Text className="text-gray-900 dark:text-white text-xl font-bold">
               ₱{sliderValue.toLocaleString()}
             </Text>
           </View>
           <Slider
-            style={{ width: '100%', height: 40 }}
+            style={{ width: "100%", height: 40 }}
             minimumValue={currentContribution}
             maximumValue={currentContribution * 2}
             value={sliderValue}
@@ -682,7 +800,7 @@ function SimulationCard({ currentContribution, onContributionChange }: Simulatio
                 You could reach your goal
               </Text>
               <Text className="text-violet-800 dark:text-violet-300 text-lg font-bold">
-                {weeksSaved} week{weeksSaved !== 1 ? 's' : ''} sooner!
+                {weeksSaved} week{weeksSaved !== 1 ? "s" : ""} sooner!
               </Text>
             </View>
           </Animated.View>
@@ -698,7 +816,10 @@ interface AISuggestionCardProps {
   onSuggestionPress?: (id: string) => void;
 }
 
-function AISuggestionCard({ suggestions, onSuggestionPress }: AISuggestionCardProps) {
+function AISuggestionCard({
+  suggestions,
+  onSuggestionPress,
+}: AISuggestionCardProps) {
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -721,7 +842,7 @@ function AISuggestionCard({ suggestions, onSuggestionPress }: AISuggestionCardPr
         style={[
           animatedStyle,
           {
-            shadowColor: '#000',
+            shadowColor: "#000",
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.08,
             shadowRadius: 16,
@@ -737,8 +858,12 @@ function AISuggestionCard({ suggestions, onSuggestionPress }: AISuggestionCardPr
               <Ionicons name="sparkles" size={20} color="#fff" />
             </View>
             <View className="ml-3">
-              <Text className="text-white text-lg font-bold">AI Coach Suggestions</Text>
-              <Text className="text-emerald-100 text-sm">Personalized tips for you</Text>
+              <Text className="text-white text-lg font-bold">
+                AI Coach Suggestions
+              </Text>
+              <Text className="text-emerald-100 text-sm">
+                Personalized tips for you
+              </Text>
             </View>
           </View>
 
@@ -747,7 +872,7 @@ function AISuggestionCard({ suggestions, onSuggestionPress }: AISuggestionCardPr
             <Animated.View
               key={suggestion.id}
               entering={FadeInUp.duration(300).delay(600 + index * 100)}
-              className={`bg-white/10 rounded-2xl p-4 ${index > 0 ? 'mt-3' : ''}`}
+              className={`bg-white/10 rounded-2xl p-4 ${index > 0 ? "mt-3" : ""}`}
             >
               <View className="flex-row items-start">
                 <Ionicons
@@ -764,7 +889,9 @@ function AISuggestionCard({ suggestions, onSuggestionPress }: AISuggestionCardPr
                 onPress={() => onSuggestionPress?.(suggestion.id)}
                 className="self-end mt-3 bg-white/20 rounded-full px-4 py-2 active:bg-white/30"
               >
-                <Text className="text-white text-xs font-bold">{suggestion.action}</Text>
+                <Text className="text-white text-xs font-bold">
+                  {suggestion.action}
+                </Text>
               </Pressable>
             </Animated.View>
           ))}
@@ -778,29 +905,42 @@ function AISuggestionCard({ suggestions, onSuggestionPress }: AISuggestionCardPr
 interface AddGoalModalProps {
   visible: boolean;
   onClose: () => void;
-  onAdd: (goal: Partial<Goal>) => void;
+  onAdd: (goal: Partial<LocalGoal>) => void;
 }
 
 function AddGoalModal({ visible, onClose, onAdd }: AddGoalModalProps) {
-  const [goalName, setGoalName] = useState('');
-  const [targetAmount, setTargetAmount] = useState('');
-  const [selectedEmoji, setSelectedEmoji] = useState('🎯');
-  const [months, setMonths] = useState('6');
+  const [goalName, setGoalName] = useState("");
+  const [targetAmount, setTargetAmount] = useState("");
+  const [selectedEmoji, setSelectedEmoji] = useState("🎯");
+  const [months, setMonths] = useState("6");
 
-  const emojis = ['🎯', '✈️', '🏠', '🚗', '💻', '📱', '🎓', '💍', '🛡️', '💰', '🏖️', '🎮'];
+  const emojis = [
+    "🎯",
+    "✈️",
+    "🏠",
+    "🚗",
+    "💻",
+    "📱",
+    "🎓",
+    "💍",
+    "🛡️",
+    "💰",
+    "🏖️",
+    "🎮",
+  ];
 
   const handleAdd = () => {
     if (goalName && targetAmount) {
       onAdd({
         name: goalName,
         emoji: selectedEmoji,
-        targetAmount: parseInt(targetAmount.replace(/,/g, '')),
+        targetAmount: parseInt(targetAmount.replace(/,/g, "")),
         monthsLeft: parseInt(months),
       });
-      setGoalName('');
-      setTargetAmount('');
-      setSelectedEmoji('🎯');
-      setMonths('6');
+      setGoalName("");
+      setTargetAmount("");
+      setSelectedEmoji("🎯");
+      setMonths("6");
       onClose();
     }
   };
@@ -808,7 +948,7 @@ function AddGoalModal({ visible, onClose, onAdd }: AddGoalModalProps) {
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
         <Pressable onPress={onClose} className="flex-1 bg-black/50 justify-end">
@@ -837,8 +977,8 @@ function AddGoalModal({ visible, onClose, onAdd }: AddGoalModalProps) {
                     onPress={() => setSelectedEmoji(emoji)}
                     className={`w-14 h-14 rounded-2xl items-center justify-center mr-3 ${
                       selectedEmoji === emoji
-                        ? 'bg-emerald-100 dark:bg-emerald-500/20 border-2 border-emerald-500'
-                        : 'bg-gray-100 dark:bg-gray-700'
+                        ? "bg-emerald-100 dark:bg-emerald-500/20 border-2 border-emerald-500"
+                        : "bg-gray-100 dark:bg-gray-700"
                     }`}
                   >
                     <Text className="text-2xl">{emoji}</Text>
@@ -910,9 +1050,20 @@ function SkeletonLoading() {
         <View className="flex-row items-center justify-between">
           <View>
             <SkeletonShimmer width={100} height={32} borderRadius={16} />
-            <SkeletonShimmer width={160} height={16} borderRadius={8} className="mt-2" delay={50} />
+            <SkeletonShimmer
+              width={160}
+              height={16}
+              borderRadius={8}
+              className="mt-2"
+              delay={50}
+            />
           </View>
-          <SkeletonShimmer width={44} height={44} borderRadius={22} delay={100} />
+          <SkeletonShimmer
+            width={44}
+            height={44}
+            borderRadius={22}
+            delay={100}
+          />
         </View>
       </View>
 
@@ -921,7 +1072,12 @@ function SkeletonLoading() {
 
       {/* Goals List Skeleton */}
       <View className="mt-8 mb-4 px-5">
-        <SkeletonShimmer width={100} height={20} borderRadius={10} delay={150} />
+        <SkeletonShimmer
+          width={100}
+          height={20}
+          borderRadius={10}
+          delay={150}
+        />
       </View>
       <SkeletonGoalCard delay={200} />
       <SkeletonGoalCard delay={280} />
@@ -932,7 +1088,7 @@ function SkeletonLoading() {
         <View
           className="bg-white dark:bg-gray-800 rounded-[28px] mx-5 p-6"
           style={{
-            shadowColor: '#000',
+            shadowColor: "#000",
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.08,
             shadowRadius: 16,
@@ -940,13 +1096,34 @@ function SkeletonLoading() {
           }}
         >
           <View className="flex-row items-center mb-4">
-            <SkeletonShimmer width={40} height={40} borderRadius={12} delay={440} />
+            <SkeletonShimmer
+              width={40}
+              height={40}
+              borderRadius={12}
+              delay={440}
+            />
             <View className="ml-3 flex-1">
-              <SkeletonShimmer width={160} height={18} borderRadius={9} delay={490} />
-              <SkeletonShimmer width={120} height={14} borderRadius={7} className="mt-2" delay={540} />
+              <SkeletonShimmer
+                width={160}
+                height={18}
+                borderRadius={9}
+                delay={490}
+              />
+              <SkeletonShimmer
+                width={120}
+                height={14}
+                borderRadius={7}
+                className="mt-2"
+                delay={540}
+              />
             </View>
           </View>
-          <SkeletonShimmer width="100%" height={40} borderRadius={20} delay={590} />
+          <SkeletonShimmer
+            width="100%"
+            height={40}
+            borderRadius={20}
+            delay={590}
+          />
         </View>
       </View>
 
@@ -955,7 +1132,7 @@ function SkeletonLoading() {
         <View
           className="bg-gray-200 dark:bg-gray-700 rounded-[28px] mx-5 p-6"
           style={{
-            shadowColor: '#000',
+            shadowColor: "#000",
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.08,
             shadowRadius: 16,
@@ -963,13 +1140,34 @@ function SkeletonLoading() {
           }}
         >
           <View className="flex-row items-center mb-4">
-            <SkeletonShimmer width={40} height={40} borderRadius={12} delay={640} />
+            <SkeletonShimmer
+              width={40}
+              height={40}
+              borderRadius={12}
+              delay={640}
+            />
             <View className="ml-3 flex-1">
-              <SkeletonShimmer width={140} height={18} borderRadius={9} delay={690} />
-              <SkeletonShimmer width={100} height={14} borderRadius={7} className="mt-2" delay={740} />
+              <SkeletonShimmer
+                width={140}
+                height={18}
+                borderRadius={9}
+                delay={690}
+              />
+              <SkeletonShimmer
+                width={100}
+                height={14}
+                borderRadius={7}
+                className="mt-2"
+                delay={740}
+              />
             </View>
           </View>
-          <SkeletonShimmer width="100%" height={80} borderRadius={16} delay={790} />
+          <SkeletonShimmer
+            width="100%"
+            height={80}
+            borderRadius={16}
+            delay={790}
+          />
         </View>
       </View>
     </ScrollView>
@@ -981,42 +1179,61 @@ export default function GoalsScreen() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showContributionModal, setShowContributionModal] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<LocalGoal | null>(null);
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
   // Redux
   const dispatch = useAppDispatch();
-  const { goals: apiGoals, loading: isLoading } = useAppSelector((state) => state.goals);
+  const { goals: apiGoals, isLoading } = useAppSelector((state) => state.goals);
+  const { accounts } = useAppSelector((state) => state.accounts);
 
-  // Fetch goals on mount
+  // Fetch goals and accounts on mount
   useEffect(() => {
     dispatch(fetchGoals());
+    dispatch(fetchAccounts());
   }, [dispatch]);
-  
+
   // Transform API goals to local format
   const goals: LocalGoal[] = useMemo(() => {
     if (!apiGoals) return [];
     return apiGoals.map((g: ApiGoal) => {
       const targetAmount = parseFloat(g.targetAmount);
       const currentAmount = parseFloat(g.currentAmount);
-      const monthsLeft = g.deadline ? Math.max(1, Math.ceil((new Date(g.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 30))) : 6;
+      const monthsLeft = g.deadline
+        ? Math.max(
+            1,
+            Math.ceil(
+              (new Date(g.deadline).getTime() - Date.now()) /
+                (1000 * 60 * 60 * 24 * 30),
+            ),
+          )
+        : 6;
       return {
         id: g.id.toString(),
         name: g.name,
-        emoji: g.icon || '🎯',
+        emoji: g.emoji || "🎯",
         targetAmount,
         currentAmount,
-        deadline: g.deadline ? new Date(g.deadline).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'No deadline',
+        deadline: g.deadline
+          ? new Date(g.deadline).toLocaleDateString("en-US", {
+              month: "short",
+              year: "numeric",
+            })
+          : "No deadline",
         monthsLeft,
-        monthlyContribution: Math.ceil((targetAmount - currentAmount) / monthsLeft),
-        color: g.iconColor || '#3b82f6',
-        iconBgColor: 'bg-blue-100 dark:bg-blue-500/20',
-        contributions: g.contributions?.map(c => ({
-          id: c.id.toString(),
-          goalId: c.goalId.toString(),
-          amount: parseFloat(c.amount),
-          date: new Date(c.contributionDate),
-          note: c.notes,
-        })) || [],
+        monthlyContribution: Math.ceil(
+          (targetAmount - currentAmount) / monthsLeft,
+        ),
+        color: g.color || "#3b82f6",
+        iconBgColor: g.iconBgColor || "bg-blue-100 dark:bg-blue-500/20",
+        contributions:
+          g.contributions?.map((c) => ({
+            id: c.id.toString(),
+            goalId: c.goalId.toString(),
+            amount: parseFloat(c.amount),
+            date: new Date(c.contributionDate),
+            note: c.note,
+          })) || [],
       };
     });
   }, [apiGoals]);
@@ -1025,7 +1242,9 @@ export default function GoalsScreen() {
 
   useEffect(() => {
     if (goals.length > 0) {
-      setSimulationContribution(goals.reduce((sum, goal) => sum + goal.monthlyContribution, 0));
+      setSimulationContribution(
+        goals.reduce((sum, goal) => sum + goal.monthlyContribution, 0),
+      );
     }
   }, [goals]);
 
@@ -1033,27 +1252,33 @@ export default function GoalsScreen() {
   const totalGoals = goals.length;
   const totalMonthlyContribution = goals.reduce(
     (sum, goal) => sum + goal.monthlyContribution,
-    0
+    0,
   );
   const totalTarget = goals.reduce((sum, goal) => sum + goal.targetAmount, 0);
   const totalSaved = goals.reduce((sum, goal) => sum + goal.currentAmount, 0);
-  const overallProgress = totalTarget > 0 ? (totalSaved / totalTarget) * 100 : 0;
+  const overallProgress =
+    totalTarget > 0 ? (totalSaved / totalTarget) * 100 : 0;
 
   const handleAddGoal = async (newGoal: Partial<LocalGoal>) => {
+    const monthsLeft = newGoal.monthsLeft || 6;
     const request: CreateGoalRequest = {
-      name: newGoal.name || 'New Goal',
+      name: newGoal.name || "New Goal",
       targetAmount: newGoal.targetAmount || 10000,
       currentAmount: 0,
-      icon: newGoal.emoji,
-      deadline: newGoal.monthsLeft ? new Date(Date.now() + newGoal.monthsLeft * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : undefined,
+      emoji: newGoal.emoji || "🎯",
+      color: newGoal.color || "#3b82f6",
+      iconBgColor: newGoal.iconBgColor || "bg-blue-100 dark:bg-blue-500/20",
+      deadline: new Date(Date.now() + monthsLeft * 30 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0],
     };
-    
+
     await dispatch(createGoal(request));
     setShowAddModal(false);
   };
 
   const handleGoalPress = (goalId: string) => {
-    navigation.navigate('GoalDetail', { goalId });
+    navigation.navigate("GoalDetail", { goalId });
   };
 
   const handleAddFunds = (goal: LocalGoal) => {
@@ -1061,17 +1286,19 @@ export default function GoalsScreen() {
     setShowContributionModal(true);
   };
 
-  const handleAddContribution = async (contribution: Omit<LocalGoalContribution, 'id'>) => {
+  const handleAddContribution = async (
+    contribution: Omit<LocalGoalContribution, "id">,
+  ) => {
     if (!selectedGoal) return;
-    
+
     const request: AddContributionRequest = {
       amount: contribution.amount,
-      accountId: contribution.accountId ? parseInt(contribution.accountId) : undefined,
-      contributionDate: contribution.date.toISOString().split('T')[0],
-      notes: contribution.note,
+      accountId: contribution.accountId || undefined,
+      contributionDate: contribution.date.toISOString().split("T")[0],
+      note: contribution.note,
     };
-    
-    await dispatch(addContribution({ goalId: parseInt(selectedGoal.id), data: request }));
+
+    await dispatch(addContribution({ goalId: selectedGoal.id, data: request }));
     setShowContributionModal(false);
     setSelectedGoal(null);
   };
@@ -1081,7 +1308,7 @@ export default function GoalsScreen() {
   };
 
   const renderGoalItem = useCallback(
-    ({ item, index }: { item: Goal; index: number }) => (
+    ({ item, index }: { item: LocalGoal; index: number }) => (
       <GoalItem
         goal={item}
         index={index}
@@ -1089,18 +1316,15 @@ export default function GoalsScreen() {
         onAddFunds={() => handleAddFunds(item)}
       />
     ),
-    []
+    [],
   );
 
-  const keyExtractor = useCallback((item: Goal) => item.id, []);
+  const keyExtractor = useCallback((item: LocalGoal) => item.id, []);
 
   const ListHeader = () => (
     <>
       {/* Header */}
-      <Animated.View
-        entering={FadeIn.duration(400)}
-        className="px-5 pt-4 pb-6"
-      >
+      <Animated.View entering={FadeIn.duration(400)} className="px-5 pt-4 pb-6">
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center flex-1">
             <Pressable
@@ -1171,14 +1395,20 @@ export default function GoalsScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
+      <SafeAreaView
+        className="flex-1 bg-gray-50 dark:bg-gray-900"
+        edges={["top"]}
+      >
         <SkeletonLoading />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
+    <SafeAreaView
+      className="flex-1 bg-gray-50 dark:bg-gray-900"
+      edges={["top"]}
+    >
       <FlatList
         data={goals}
         renderItem={renderGoalItem}
@@ -1200,6 +1430,7 @@ export default function GoalsScreen() {
       <AddContributionModal
         visible={showContributionModal}
         goal={selectedGoal}
+        accounts={accounts}
         onClose={() => {
           setShowContributionModal(false);
           setSelectedGoal(null);

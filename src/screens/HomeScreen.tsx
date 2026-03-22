@@ -102,7 +102,26 @@ export default function HomeScreen() {
   const monthIncome = `₱${transactionSummary?.totalIncome?.toLocaleString() || "0"}`;
   const savings = `₱${transactionSummary?.netFlow?.toLocaleString() || "0"}`;
 
+  const percentageChange =
+    transactionSummary?.totalIncome && transactionSummary.totalIncome > 0
+      ? parseFloat(
+          (
+            (transactionSummary.netFlow / transactionSummary.totalIncome) *
+            100
+          ).toFixed(1),
+        )
+      : undefined;
+
   const upcomingBills = bills?.slice(0, 3) || [];
+
+  const budgetHealthColor: "good" | "warning" | "danger" =
+    budgetTotal === 0
+      ? "good"
+      : budgetSpent / budgetTotal >= 1
+        ? "danger"
+        : budgetSpent / budgetTotal >= 0.8
+          ? "warning"
+          : "good";
 
   // Derive categories from budget data
   const budgetCategories = (currentBudget?.categories || [])
@@ -206,6 +225,7 @@ export default function HomeScreen() {
             userName={userName}
             avatarUrl={userAvatar}
             insight={getCoachInsight(userName, budgetSpent, budgetTotal)}
+            budgetHealthColor={budgetHealthColor}
             onPress={handleCoachPress}
             onNotificationPress={handleNotificationPress}
             onSettingsPress={handleSettingsPress}
@@ -217,7 +237,13 @@ export default function HomeScreen() {
               entering={FadeInDown.duration(500).delay(100)}
               className="flex-1"
             >
-              <BalanceCard balance={balance} onPress={handleBalancePress} />
+              <BalanceCard
+                balance={balance}
+                assets={totalAssets}
+                liabilities={totalLiabilities}
+                percentageChange={percentageChange}
+                onPress={handleBalancePress}
+              />
             </Animated.View>
             {/* Budget Progress Card */}
             <Animated.View

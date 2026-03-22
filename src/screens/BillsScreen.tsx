@@ -38,7 +38,7 @@ type FilterTab = "all" | "unpaid" | "paid";
 
 // ============ SKELETON SHIMMER ============
 function SkeletonShimmer({
-  width = "100%",
+  width = "100%" as any,
   height = 16,
   borderRadius = 8,
   delay = 0,
@@ -75,7 +75,7 @@ function SkeletonShimmer({
 
   return (
     <AnimatedView
-      style={[animatedStyle, { width, height, borderRadius }]}
+      style={[animatedStyle, { width: width as number, height, borderRadius }]}
       className="bg-gray-200 dark:bg-gray-700"
     />
   );
@@ -249,12 +249,12 @@ export default function BillsScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    dispatch(fetchBills());
+    dispatch(fetchBills({}));
   }, [dispatch]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await dispatch(fetchBills());
+    await dispatch(fetchBills({}));
     setRefreshing(false);
   }, [dispatch]);
 
@@ -277,11 +277,11 @@ export default function BillsScreen() {
     dispatch(createBill(data));
   };
 
-  const handleUpdateBill = (id: number, data: UpdateBillRequest) => {
+  const handleUpdateBill = (id: string, data: UpdateBillRequest) => {
     dispatch(updateBill({ id, data }));
   };
 
-  const handleDeleteBill = (id: number) => {
+  const handleDeleteBill = (id: string) => {
     dispatch(deleteBill(id));
   };
 

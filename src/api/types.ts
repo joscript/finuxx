@@ -252,7 +252,7 @@ export interface UpdateBudgetRequest {
 }
 
 // ============ BILL TYPES ============
-export type BillFrequency =
+export type BillRecurrence =
   | "once"
   | "weekly"
   | "biweekly"
@@ -261,18 +261,18 @@ export type BillFrequency =
   | "yearly";
 
 export interface Bill {
-  id: number;
-  userId: number;
+  id: string;
+  userId: string;
   name: string;
   amount: string;
   dueDate: string;
-  frequency: BillFrequency;
-  accountId?: number;
+  recurrence: BillRecurrence;
+  accountId?: string;
   isPaid: boolean;
   isAutoPay: boolean;
-  reminderDays?: number;
+  reminderDaysBefore?: number;
   notes?: string;
-  paidDate?: string;
+  paidAt?: string;
   paidAmount?: string;
   createdAt: string;
   updatedAt: string;
@@ -284,6 +284,7 @@ export interface BillSummary {
   paid: number;
   unpaid: number;
   overdue: number;
+  totalAmount: number;
   paidAmount: number;
   unpaidAmount: number;
 }
@@ -292,18 +293,17 @@ export interface CreateBillRequest {
   name: string;
   amount: number;
   dueDate: string;
-  frequency: BillFrequency;
-  accountId?: number;
+  recurrence: BillRecurrence;
+  accountId?: string;
   isPaid?: boolean;
   isAutoPay?: boolean;
-  reminderDays?: number;
+  reminderDaysBefore?: number;
   notes?: string;
 }
 
 export interface UpdateBillRequest extends Partial<CreateBillRequest> {}
 
 export interface PayBillRequest {
-  paidDate?: string;
   paidAmount?: number;
 }
 

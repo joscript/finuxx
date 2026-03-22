@@ -59,7 +59,7 @@ export const createBill = createAsyncThunk(
 export const updateBill = createAsyncThunk(
   "bills/updateBill",
   async (
-    { id, data }: { id: number; data: UpdateBillRequest },
+    { id, data }: { id: string; data: UpdateBillRequest },
     { rejectWithValue },
   ) => {
     try {
@@ -78,7 +78,7 @@ export const updateBill = createAsyncThunk(
 
 export const deleteBill = createAsyncThunk(
   "bills/deleteBill",
-  async (id: number, { rejectWithValue }) => {
+  async (id: string, { rejectWithValue }) => {
     try {
       const response = await billService.delete(id);
 
@@ -95,7 +95,7 @@ export const deleteBill = createAsyncThunk(
 
 export const markBillAsPaid = createAsyncThunk(
   "bills/markAsPaid",
-  async (id: number, { rejectWithValue }) => {
+  async (id: string, { rejectWithValue }) => {
     try {
       const response = await billService.markAsPaid(id);
 
@@ -112,7 +112,7 @@ export const markBillAsPaid = createAsyncThunk(
 
 export const markBillAsUnpaid = createAsyncThunk(
   "bills/markAsUnpaid",
-  async (id: number, { rejectWithValue }) => {
+  async (id: string, { rejectWithValue }) => {
     try {
       const response = await billService.markAsUnpaid(id);
 

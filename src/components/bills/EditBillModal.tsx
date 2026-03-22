@@ -17,11 +17,14 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
-import { Bill, UpdateBillRequest, BillFrequency } from "../../api";
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
+import { Bill, UpdateBillRequest, BillRecurrence } from "../../api";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-const FREQUENCY_OPTIONS: { value: BillFrequency; label: string }[] = [
+const RECURRENCE_OPTIONS: { value: BillRecurrence; label: string }[] = [
   { value: "once", label: "One-time" },
   { value: "weekly", label: "Weekly" },
   { value: "biweekly", label: "Biweekly" },
@@ -34,8 +37,8 @@ interface EditBillModalProps {
   visible: boolean;
   bill: Bill | null;
   onClose: () => void;
-  onUpdateBill: (id: number, data: UpdateBillRequest) => void;
-  onDeleteBill: (id: number) => void;
+  onUpdateBill: (id: string, data: UpdateBillRequest) => void;
+  onDeleteBill: (id: string) => void;
 }
 
 export function EditBillModal({
@@ -47,10 +50,11 @@ export function EditBillModal({
 }: EditBillModalProps) {
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
-  const [dueDate, setDueDate] = useState("");
-  const [frequency, setFrequency] = useState<BillFrequency>("monthly");
+  const [dueDate, setDueDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [recurrence, setRecurrence] = useState<BillRecurrence>("monthly");
   const [isAutoPay, setIsAutoPay] = useState(false);
-  const [reminderDays, setReminderDays] = useState("3");
+  const [reminderDaysBefore, setReminderDaysBefore] = useState("3");
   const [notes, setNotes] = useState("");
 
   const scale = useSharedValue(1);
@@ -62,10 +66,10 @@ export function EditBillModal({
     if (bill) {
       setName(bill.name);
       setAmount(parseFloat(bill.amount).toString());
-      setDueDate(bill.dueDate.split("T")[0]);
-      setFrequency(bill.frequency);
+      setDueDate(new Date(bill.dueDate));
+      setRecurrence(bill.recurrence);
       setIsAutoPay(bill.isAutoPay);
-      setReminderDays(bill.reminderDays?.toString() || "3");
+      setReminderDaysBefore(bill.reminderDaysBefore?.toString() || "3");
       setNotes(bill.notes || "");
     }
   }, [bill]);
@@ -73,13 +77,15 @@ export function EditBillModal({
   const handleSubmit = () => {
     if (!bill || !name.trim() || !amount.trim()) return;
 
+    const formattedDate = dueDate.toISOString().split("T")[0];
+
     const updates: UpdateBillRequest = {
       name: name.trim(),
       amount: parseFloat(amount.replace(/,/g, "")) || 0,
-      dueDate: dueDate.trim(),
-      frequency,
+      dueDate: formattedDate,
+      recurrence,
       isAutoPay,
-      reminderDays: parseInt(reminderDays, 10) || 3,
+      reminderDaysBefore: parseInt(reminderDaysBefore, 10) || 3,
       notes: notes.trim() || undefined,
     };
 
@@ -107,6 +113,15 @@ export function EditBillModal({
   };
 
   const isFormValid = name.trim() && amount.trim();
+
+  const onDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    if (Platform.OS === "android") {
+      setShowDatePicker(false);
+    }
+    if (selectedDate) {
+      setDueDate(selectedDate);
+    }
+  };
 
   if (!bill) return null;
 
@@ -175,15 +190,81 @@ export function EditBillModal({
             {/* Due Date */}
             <View className="mb-5">
               <Text className="text-gray-700 dark:text-gray-300 text-sm font-semibold mb-2">
-                Due Date (YYYY-MM-DD)
+                Due Date
               </Text>
-              <TextInput
-                value={dueDate}
-                onChangeText={setDueDate}
-                placeholder="2026-04-01"
-                placeholderTextColor="#9ca3af"
-                className="bg-white dark:bg-gray-800 rounded-2xl px-4 py-4 text-gray-900 dark:text-white text-base border border-gray-200 dark:border-gray-700"
-              />
+              <Pressable
+                onPress={() => setShowDatePicker(!showDatePicker)}
+                className={`bg-white dark:bg-gray-800 rounded-2xl px-4 py-4 border flex-row items-center justify-between ${
+                  showDatePicker
+                    ? "border-blue-400 dark:border-blue-500"
+                    : "border-gray-200 dark:border-gray-700"
+                }`}
+              >
+                <View className="flex-row items-center">
+                  <View
+                    className={`w-9 h-9 rounded-xl items-center justify-center mr-3 ${
+                      showDatePicker
+                        ? "bg-blue-100 dark:bg-blue-900/30"
+                        : "bg-gray-100 dark:bg-gray-700"
+                    }`}
+                  >
+                    <Ionicons
+                      name="calendar-outline"
+                      size={18}
+                      color={showDatePicker ? "#3b82f6" : "#6b7280"}
+                    />
+                  </View>
+                  <View>
+                    <Text className="text-gray-500 dark:text-gray-400 text-xs mb-0.5">
+                      Due Date
+                    </Text>
+                    <Text className="text-gray-900 dark:text-white text-base font-medium">
+                      {dueDate.toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </Text>
+                  </View>
+                </View>
+                <Ionicons
+                  name={showDatePicker ? "chevron-up" : "chevron-down"}
+                  size={18}
+                  color={showDatePicker ? "#3b82f6" : "#9ca3af"}
+                />
+              </Pressable>
+              {showDatePicker && (
+                <View
+                  className="mt-2 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+                  style={{
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.06,
+                    shadowRadius: 8,
+                    elevation: 2,
+                  }}
+                >
+                  <DateTimePicker
+                    value={dueDate}
+                    mode="date"
+                    display={Platform.OS === "ios" ? "inline" : "default"}
+                    onChange={onDateChange}
+                    accentColor="#3b82f6"
+                  />
+                  {Platform.OS === "ios" && (
+                    <View className="border-t border-gray-100 dark:border-gray-700 px-4 py-3 items-end">
+                      <Pressable
+                        onPress={() => setShowDatePicker(false)}
+                        className="bg-blue-500 rounded-xl px-5 py-2.5"
+                      >
+                        <Text className="text-white text-sm font-semibold">
+                          Done
+                        </Text>
+                      </Pressable>
+                    </View>
+                  )}
+                </View>
+              )}
             </View>
 
             {/* Frequency */}
@@ -192,19 +273,19 @@ export function EditBillModal({
                 Frequency
               </Text>
               <View className="flex-row flex-wrap gap-2">
-                {FREQUENCY_OPTIONS.map((opt) => (
+                {RECURRENCE_OPTIONS.map((opt) => (
                   <Pressable
                     key={opt.value}
-                    onPress={() => setFrequency(opt.value)}
+                    onPress={() => setRecurrence(opt.value)}
                     className={`px-4 py-2.5 rounded-xl ${
-                      frequency === opt.value
+                      recurrence === opt.value
                         ? "bg-gray-900 dark:bg-white"
                         : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
                     }`}
                   >
                     <Text
                       className={`text-sm font-semibold ${
-                        frequency === opt.value
+                        recurrence === opt.value
                           ? "text-white dark:text-gray-900"
                           : "text-gray-700 dark:text-gray-300"
                       }`}
@@ -246,8 +327,8 @@ export function EditBillModal({
                 Remind me (days before)
               </Text>
               <TextInput
-                value={reminderDays}
-                onChangeText={setReminderDays}
+                value={reminderDaysBefore}
+                onChangeText={setReminderDaysBefore}
                 keyboardType="number-pad"
                 className="bg-white dark:bg-gray-800 rounded-2xl px-4 py-4 text-gray-900 dark:text-white text-base border border-gray-200 dark:border-gray-700"
               />

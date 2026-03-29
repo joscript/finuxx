@@ -338,9 +338,18 @@ function NotificationItem({
                 {badge.label}
               </Text>
             </View>
-            <Text className="text-xs text-gray-400 dark:text-gray-500">
-              {notification.timestamp}
-            </Text>
+            <View className="flex-row items-center gap-3">
+              <Text className="text-xs text-gray-400 dark:text-gray-500">
+                {notification.timestamp}
+              </Text>
+              <Pressable
+                onPress={() => onDelete(notification.id)}
+                hitSlop={8}
+                className="active:opacity-50"
+              >
+                <Ionicons name="trash-outline" size={14} color="#9ca3af" />
+              </Pressable>
+            </View>
           </View>
         </View>
       </AnimatedPressable>
@@ -497,13 +506,10 @@ export default function NotificationsScreen() {
   const notifications: Notification[] = useMemo(() => {
     if (!apiNotifications) return [];
     return apiNotifications.map((n: ApiNotification) => {
-      const typeMap: Record<string, NotificationType> = {
-        bill_reminder: "bill",
-        budget_alert: "alert",
-        goal_update: "ai",
-        general: "system",
-      };
-      const notifType = typeMap[n.type] || "system";
+      const notifType: NotificationType =
+        (n.type as NotificationType) in { bill: 1, alert: 1, ai: 1, system: 1 }
+          ? (n.type as NotificationType)
+          : "system";
 
       const iconMap: Record<
         NotificationType,
@@ -551,9 +557,9 @@ export default function NotificationsScreen() {
         message: n.message,
         timestamp,
         isRead: n.isRead,
-        icon: iconInfo.icon,
-        iconColor: iconInfo.color,
-        iconBgColor: iconInfo.bgColor,
+        icon: (n.icon as keyof typeof Ionicons.glyphMap) ?? iconInfo.icon,
+        iconColor: n.iconColor ?? iconInfo.color,
+        iconBgColor: n.iconBgColor ?? iconInfo.bgColor,
       };
     });
   }, [apiNotifications]);

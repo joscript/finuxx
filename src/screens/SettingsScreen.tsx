@@ -52,6 +52,10 @@ const DEFAULT_SETTINGS = {
   goalUpdates: true,
   emailNotifications: true,
   pushNotifications: true,
+  lowBalanceAlerts: true,
+  goalReminders: true,
+  transactionAlerts: true,
+  lowBalanceThreshold: 500,
   biometricLogin: true,
   autoLockTime: "1 minute",
   connectedDevices: 1,
@@ -484,6 +488,17 @@ export default function SettingsScreen() {
       apiSettings?.notifications?.email ?? DEFAULT_SETTINGS.emailNotifications,
     pushNotifications:
       apiSettings?.notifications?.push ?? DEFAULT_SETTINGS.pushNotifications,
+    lowBalanceAlerts:
+      apiSettings?.notifications?.lowBalanceAlerts ??
+      DEFAULT_SETTINGS.lowBalanceAlerts,
+    goalReminders:
+      apiSettings?.notifications?.goalReminders ??
+      DEFAULT_SETTINGS.goalReminders,
+    transactionAlerts:
+      apiSettings?.notifications?.transactionAlerts ??
+      DEFAULT_SETTINGS.transactionAlerts,
+    lowBalanceThreshold:
+      apiSettings?.lowBalanceThreshold ?? DEFAULT_SETTINGS.lowBalanceThreshold,
     appVersion: DEFAULT_SETTINGS.appVersion,
   };
 
@@ -505,7 +520,15 @@ export default function SettingsScreen() {
   // Notification toggle handler — sends full nested notifications object
   const handleNotificationToggle = useCallback(
     (
-      key: "budgetAlerts" | "billReminders" | "goalUpdates" | "email" | "push",
+      key:
+        | "budgetAlerts"
+        | "billReminders"
+        | "goalUpdates"
+        | "email"
+        | "push"
+        | "lowBalanceAlerts"
+        | "goalReminders"
+        | "transactionAlerts",
     ) =>
       async (value: boolean) => {
         await dispatch(
@@ -516,6 +539,9 @@ export default function SettingsScreen() {
               billReminders: settings.billReminders,
               budgetAlerts: settings.budgetAlerts,
               goalUpdates: settings.goalUpdates,
+              lowBalanceAlerts: settings.lowBalanceAlerts,
+              goalReminders: settings.goalReminders,
+              transactionAlerts: settings.transactionAlerts,
               [key]: value,
             },
           }),
@@ -771,6 +797,33 @@ export default function SettingsScreen() {
               hasToggle
               toggleValue={settings.goalUpdates}
               onToggleChange={handleNotificationToggle("goalUpdates")}
+            />
+            <SettingRow
+              icon="flag-outline"
+              iconColor="#8b5cf6"
+              iconBgColor="bg-violet-50 dark:bg-violet-500/20"
+              title="Goal Reminders"
+              hasToggle
+              toggleValue={settings.goalReminders}
+              onToggleChange={handleNotificationToggle("goalReminders")}
+            />
+            <SettingRow
+              icon="alert-circle-outline"
+              iconColor="#f59e0b"
+              iconBgColor="bg-amber-50 dark:bg-amber-500/20"
+              title="Low Balance Alerts"
+              hasToggle
+              toggleValue={settings.lowBalanceAlerts}
+              onToggleChange={handleNotificationToggle("lowBalanceAlerts")}
+            />
+            <SettingRow
+              icon="trending-up-outline"
+              iconColor="#ef4444"
+              iconBgColor="bg-red-50 dark:bg-red-500/20"
+              title="Transaction Alerts"
+              hasToggle
+              toggleValue={settings.transactionAlerts}
+              onToggleChange={handleNotificationToggle("transactionAlerts")}
               isLast
             />
           </SectionCard>

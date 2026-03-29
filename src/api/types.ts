@@ -317,6 +317,9 @@ export interface Notification {
   title: string;
   message: string;
   isRead: boolean;
+  icon?: string;
+  iconColor?: string;
+  iconBgColor?: string;
   data?: Record<string, any>;
   createdAt: string;
 }
@@ -328,6 +331,9 @@ export interface NotificationSettings {
   billReminders: boolean;
   budgetAlerts: boolean;
   goalUpdates: boolean;
+  lowBalanceAlerts: boolean;
+  goalReminders: boolean;
+  transactionAlerts: boolean;
 }
 
 export interface Settings {
@@ -339,6 +345,7 @@ export interface Settings {
   notifications: NotificationSettings;
   dateFormat: string;
   startOfWeek: "sunday" | "monday";
+  lowBalanceThreshold: number;
   incomeType?: "salary" | "freelance" | "mixed" | null;
   financialGoals?: string[] | null;
   createdAt: string;

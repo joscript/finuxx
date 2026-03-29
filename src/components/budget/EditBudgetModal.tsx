@@ -1,22 +1,42 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, Pressable, Modal, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { UIBudgetCategory } from './types';
-import { QUICK_AMOUNT_OPTIONS } from './constants';
-import { useCurrencySymbol } from '../../hooks/useCurrency';
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  Pressable,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { UIBudgetCategory } from "./types";
+import { QUICK_AMOUNT_OPTIONS } from "./constants";
+import { useCurrencySymbol } from "../../hooks/useCurrency";
 
 interface EditBudgetModalProps {
   visible: boolean;
   category: UIBudgetCategory | null;
   onClose: () => void;
-  onSave: (categoryId: string, newBudget: number, apiCategoryId?: string) => void;
+  onSave: (
+    categoryId: string,
+    newBudget: number,
+    apiCategoryId?: string,
+  ) => void;
   onDelete: (categoryId: string, apiCategoryId?: string) => void;
   isLoading?: boolean;
 }
 
-export function EditBudgetModal({ visible, category, onClose, onSave, onDelete, isLoading = false }: EditBudgetModalProps) {
+export function EditBudgetModal({
+  visible,
+  category,
+  onClose,
+  onSave,
+  onDelete,
+  isLoading = false,
+}: EditBudgetModalProps) {
   const symbol = useCurrencySymbol();
-  const [budgetAmount, setBudgetAmount] = useState('');
+  const [budgetAmount, setBudgetAmount] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
@@ -27,7 +47,7 @@ export function EditBudgetModal({ visible, category, onClose, onSave, onDelete, 
   }, [category, visible]);
 
   const handleSave = () => {
-    const amount = parseFloat(budgetAmount.replace(/,/g, ''));
+    const amount = parseFloat(budgetAmount.replace(/,/g, ""));
     if (!isNaN(amount) && amount > 0 && category) {
       onSave(category.id, amount, category.categoryId);
     }
@@ -40,18 +60,19 @@ export function EditBudgetModal({ visible, category, onClose, onSave, onDelete, 
   };
 
   const formatInput = (text: string) => {
-    const numericValue = text.replace(/[^0-9]/g, '');
+    const numericValue = text.replace(/[^0-9]/g, "");
     if (numericValue) {
       const formatted = parseInt(numericValue, 10).toLocaleString();
       setBudgetAmount(formatted);
     } else {
-      setBudgetAmount('');
+      setBudgetAmount("");
     }
   };
 
   if (!category) return null;
 
-  const percentage = category.budget > 0 ? (category.spent / category.budget) * 100 : 0;
+  const percentage =
+    category.budget > 0 ? (category.spent / category.budget) * 100 : 0;
 
   return (
     <Modal
@@ -60,19 +81,16 @@ export function EditBudgetModal({ visible, category, onClose, onSave, onDelete, 
       animationType="slide"
       onRequestClose={onClose}
     >
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
-        <Pressable
-          onPress={onClose}
-          className="flex-1 bg-black/50 justify-end"
-        >
+        <Pressable onPress={onClose} className="flex-1 bg-black/50 justify-end">
           <Pressable
             onPress={(e) => e.stopPropagation()}
             className="bg-white dark:bg-gray-800 rounded-t-[32px] px-6 pt-4 pb-10"
             style={{
-              shadowColor: '#000',
+              shadowColor: "#000",
               shadowOffset: { width: 0, height: -4 },
               shadowOpacity: 0.15,
               shadowRadius: 24,
@@ -84,15 +102,23 @@ export function EditBudgetModal({ visible, category, onClose, onSave, onDelete, 
 
             {/* Header */}
             <View className="flex-row items-center mb-6">
-              <View className={`${category.iconBgColor} w-14 h-14 rounded-2xl items-center justify-center`}>
-                <Ionicons name={category.icon as any} size={26} color={category.color} />
+              <View
+                className={`${category.iconBgColor} w-14 h-14 rounded-2xl items-center justify-center`}
+              >
+                <Ionicons
+                  name={category.icon as any}
+                  size={26}
+                  color={category.color}
+                />
               </View>
               <View className="ml-4 flex-1">
                 <Text className="text-gray-900 dark:text-white text-xl font-bold">
                   {category.name}
                 </Text>
                 <Text className="text-gray-500 dark:text-gray-400 text-sm">
-                  {symbol}{category.spent.toLocaleString()} spent ({Math.round(percentage)}% used)
+                  {symbol}
+                  {category.spent.toLocaleString()} spent (
+                  {Math.round(percentage)}% used)
                 </Text>
               </View>
             </View>
@@ -103,7 +129,9 @@ export function EditBudgetModal({ visible, category, onClose, onSave, onDelete, 
                 Monthly Budget
               </Text>
               <View className="flex-row items-center bg-gray-100 dark:bg-gray-700 rounded-2xl px-5 py-4">
-                <Text className="text-gray-900 dark:text-white text-2xl font-bold mr-2">{symbol}</Text>
+                <Text className="text-gray-900 dark:text-white text-2xl font-bold mr-2">
+                  {symbol}
+                </Text>
                 <TextInput
                   value={budgetAmount}
                   onChangeText={formatInput}
@@ -124,7 +152,8 @@ export function EditBudgetModal({ visible, category, onClose, onSave, onDelete, 
                   className="bg-gray-100 dark:bg-gray-700 rounded-full px-4 py-2 active:bg-gray-200 dark:active:bg-gray-600"
                 >
                   <Text className="text-gray-700 dark:text-gray-300 text-sm font-medium">
-                    {symbol}{amount.toLocaleString()}
+                    {symbol}
+                    {amount.toLocaleString()}
                   </Text>
                 </Pressable>
               ))}
@@ -141,13 +170,17 @@ export function EditBudgetModal({ visible, category, onClose, onSave, onDelete, 
                     onPress={() => setShowDeleteConfirm(false)}
                     className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-xl py-3 items-center active:opacity-80"
                   >
-                    <Text className="text-gray-700 dark:text-gray-300 text-base font-semibold">Cancel</Text>
+                    <Text className="text-gray-700 dark:text-gray-300 text-base font-semibold">
+                      Cancel
+                    </Text>
                   </Pressable>
                   <Pressable
                     onPress={handleDelete}
                     className="flex-1 bg-red-500 rounded-xl py-3 items-center active:opacity-80"
                   >
-                    <Text className="text-white text-base font-semibold">Delete</Text>
+                    <Text className="text-white text-base font-semibold">
+                      Delete
+                    </Text>
                   </Pressable>
                 </View>
               </View>
@@ -158,7 +191,9 @@ export function EditBudgetModal({ visible, category, onClose, onSave, onDelete, 
                 className="flex-row items-center justify-center py-3 mb-4"
               >
                 <Ionicons name="trash-outline" size={18} color="#ef4444" />
-                <Text className="text-red-500 text-sm font-medium ml-2">Delete Budget</Text>
+                <Text className="text-red-500 text-sm font-medium ml-2">
+                  Delete Budget
+                </Text>
               </Pressable>
             )}
 
@@ -169,17 +204,21 @@ export function EditBudgetModal({ visible, category, onClose, onSave, onDelete, 
                 disabled={isLoading}
                 className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-2xl py-4 items-center active:opacity-80"
               >
-                <Text className="text-gray-700 dark:text-gray-300 text-base font-bold">Cancel</Text>
+                <Text className="text-gray-700 dark:text-gray-300 text-base font-bold">
+                  Cancel
+                </Text>
               </Pressable>
               <Pressable
                 onPress={handleSave}
                 disabled={isLoading}
-                className={`flex-1 rounded-2xl py-4 items-center active:opacity-80 ${isLoading ? 'bg-gray-400 dark:bg-gray-600' : 'bg-gray-900 dark:bg-white'}`}
+                className={`flex-1 rounded-2xl py-4 items-center active:opacity-80 ${isLoading ? "bg-gray-400 dark:bg-gray-600" : "bg-gray-900 dark:bg-white"}`}
               >
                 {isLoading ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Text className="text-white dark:text-gray-900 text-base font-bold">Save Changes</Text>
+                  <Text className="text-white dark:text-gray-900 text-base font-bold">
+                    Save Changes
+                  </Text>
                 )}
               </Pressable>
             </View>

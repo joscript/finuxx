@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,10 +6,10 @@ import {
   Modal,
   TextInput,
   ScrollView,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { FilterOptions, DEFAULT_FILTERS, CATEGORY_OPTIONS } from './types';
-import { useCurrencySymbol } from '../../hooks/useCurrency';
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { FilterOptions, DEFAULT_FILTERS, CATEGORY_OPTIONS } from "./types";
+import { useCurrencySymbol } from "../../hooks/useCurrency";
 
 interface FilterModalProps {
   visible: boolean;
@@ -19,7 +19,13 @@ interface FilterModalProps {
   onReset: () => void;
 }
 
-export default function FilterModal({ visible, onClose, filters, onApply, onReset }: FilterModalProps) {
+export default function FilterModal({
+  visible,
+  onClose,
+  filters,
+  onApply,
+  onReset,
+}: FilterModalProps) {
   const symbol = useCurrencySymbol();
   const [localFilters, setLocalFilters] = useState<FilterOptions>(filters);
 
@@ -48,11 +54,11 @@ export default function FilterModal({ visible, onClose, filters, onApply, onRese
   };
 
   const hasActiveFilters =
-    localFilters.type !== 'all' ||
+    localFilters.type !== "all" ||
     localFilters.categories.length > 0 ||
     localFilters.showRecurringOnly ||
-    localFilters.minAmount !== '' ||
-    localFilters.maxAmount !== '';
+    localFilters.minAmount !== "" ||
+    localFilters.maxAmount !== "";
 
   return (
     <Modal
@@ -85,17 +91,21 @@ export default function FilterModal({ visible, onClose, filters, onApply, onRese
                 Transaction Type
               </Text>
               <View className="flex-row bg-gray-100 dark:bg-gray-800 rounded-2xl p-1">
-                {(['all', 'expense', 'income'] as const).map((typeOption) => (
+                {(["all", "expense", "income"] as const).map((typeOption) => (
                   <Pressable
                     key={typeOption}
-                    onPress={() => setLocalFilters((prev) => ({ ...prev, type: typeOption }))}
+                    onPress={() =>
+                      setLocalFilters((prev) => ({ ...prev, type: typeOption }))
+                    }
                     className={`flex-1 py-3 rounded-xl items-center ${
-                      localFilters.type === typeOption ? 'bg-white dark:bg-gray-700' : ''
+                      localFilters.type === typeOption
+                        ? "bg-white dark:bg-gray-700"
+                        : ""
                     }`}
                     style={
                       localFilters.type === typeOption
                         ? {
-                            shadowColor: '#000',
+                            shadowColor: "#000",
                             shadowOffset: { width: 0, height: 2 },
                             shadowOpacity: 0.1,
                             shadowRadius: 4,
@@ -107,8 +117,8 @@ export default function FilterModal({ visible, onClose, filters, onApply, onRese
                     <Text
                       className={`font-semibold capitalize ${
                         localFilters.type === typeOption
-                          ? 'text-gray-900 dark:text-white'
-                          : 'text-gray-400 dark:text-gray-500'
+                          ? "text-gray-900 dark:text-white"
+                          : "text-gray-400 dark:text-gray-500"
                       }`}
                     >
                       {typeOption}
@@ -126,7 +136,7 @@ export default function FilterModal({ visible, onClose, filters, onApply, onRese
               <View
                 className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden"
                 style={{
-                  shadowColor: '#000',
+                  shadowColor: "#000",
                   shadowOffset: { width: 0, height: 2 },
                   shadowOpacity: 0.05,
                   shadowRadius: 8,
@@ -140,7 +150,9 @@ export default function FilterModal({ visible, onClose, filters, onApply, onRese
                       key={cat.id}
                       onPress={() => toggleCategory(cat.name)}
                       className={`flex-row items-center px-5 py-3 ${
-                        index > 0 ? 'border-t border-gray-100 dark:border-gray-700' : ''
+                        index > 0
+                          ? "border-t border-gray-100 dark:border-gray-700"
+                          : ""
                       }`}
                     >
                       <View
@@ -155,11 +167,13 @@ export default function FilterModal({ visible, onClose, filters, onApply, onRese
                       <View
                         className={`w-6 h-6 rounded-md border-2 items-center justify-center ${
                           isSelected
-                            ? 'bg-emerald-500 border-emerald-500'
-                            : 'border-gray-300 dark:border-gray-600'
+                            ? "bg-emerald-500 border-emerald-500"
+                            : "border-gray-300 dark:border-gray-600"
                         }`}
                       >
-                        {isSelected && <Ionicons name="checkmark" size={16} color="#fff" />}
+                        {isSelected && (
+                          <Ionicons name="checkmark" size={16} color="#fff" />
+                        )}
                       </View>
                     </Pressable>
                   );
@@ -176,7 +190,7 @@ export default function FilterModal({ visible, onClose, filters, onApply, onRese
                 <View
                   className="flex-1 bg-white dark:bg-gray-800 rounded-2xl px-4 py-3 flex-row items-center"
                   style={{
-                    shadowColor: '#000',
+                    shadowColor: "#000",
                     shadowOffset: { width: 0, height: 2 },
                     shadowOpacity: 0.05,
                     shadowRadius: 8,
@@ -201,7 +215,7 @@ export default function FilterModal({ visible, onClose, filters, onApply, onRese
                 <View
                   className="flex-1 bg-white dark:bg-gray-800 rounded-2xl px-4 py-3 flex-row items-center"
                   style={{
-                    shadowColor: '#000',
+                    shadowColor: "#000",
                     shadowOffset: { width: 0, height: 2 },
                     shadowOpacity: 0.05,
                     shadowRadius: 8,
@@ -226,11 +240,14 @@ export default function FilterModal({ visible, onClose, filters, onApply, onRese
             {/* Recurring Only Toggle */}
             <Pressable
               onPress={() =>
-                setLocalFilters((prev) => ({ ...prev, showRecurringOnly: !prev.showRecurringOnly }))
+                setLocalFilters((prev) => ({
+                  ...prev,
+                  showRecurringOnly: !prev.showRecurringOnly,
+                }))
               }
               className="bg-white dark:bg-gray-800 rounded-2xl px-5 py-4 flex-row items-center justify-between mb-8"
               style={{
-                shadowColor: '#000',
+                shadowColor: "#000",
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.05,
                 shadowRadius: 8,
@@ -252,15 +269,17 @@ export default function FilterModal({ visible, onClose, filters, onApply, onRese
               </View>
               <View
                 className={`w-12 h-7 rounded-full p-0.5 ${
-                  localFilters.showRecurringOnly ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'
+                  localFilters.showRecurringOnly
+                    ? "bg-emerald-500"
+                    : "bg-gray-300 dark:bg-gray-600"
                 }`}
               >
                 <View
                   className={`w-6 h-6 rounded-full bg-white ${
-                    localFilters.showRecurringOnly ? 'ml-auto' : ''
+                    localFilters.showRecurringOnly ? "ml-auto" : ""
                   }`}
                   style={{
-                    shadowColor: '#000',
+                    shadowColor: "#000",
                     shadowOffset: { width: 0, height: 2 },
                     shadowOpacity: 0.2,
                     shadowRadius: 2,
@@ -275,7 +294,7 @@ export default function FilterModal({ visible, onClose, filters, onApply, onRese
               onPress={handleApply}
               className="py-4 rounded-2xl items-center bg-gray-900 dark:bg-white"
               style={{
-                shadowColor: '#000',
+                shadowColor: "#000",
                 shadowOffset: { width: 0, height: 4 },
                 shadowOpacity: 0.2,
                 shadowRadius: 8,
@@ -283,7 +302,10 @@ export default function FilterModal({ visible, onClose, filters, onApply, onRese
               }}
             >
               <Text className="text-white dark:text-gray-900 text-lg font-bold">
-                Apply Filters{hasActiveFilters ? ` (${localFilters.categories.length > 0 ? localFilters.categories.length + ' categories' : ''})` : ''}
+                Apply Filters
+                {hasActiveFilters
+                  ? ` (${localFilters.categories.length > 0 ? localFilters.categories.length + " categories" : ""})`
+                  : ""}
               </Text>
             </Pressable>
           </View>

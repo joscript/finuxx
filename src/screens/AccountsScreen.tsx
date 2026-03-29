@@ -1,11 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { FlatList, RefreshControl } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Animated, { FadeInDown } from 'react-native-reanimated';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { fetchAccounts, createAccount, updateAccount } from '../store/slices/accountsSlice';
-import { Account, CreateAccountRequest, UpdateAccountRequest } from '../api';
-import { useCurrencySymbol } from '../hooks/useCurrency';
+import React, { useState, useEffect, useCallback } from "react";
+import { FlatList, RefreshControl } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Animated, { FadeInDown } from "react-native-reanimated";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import {
+  fetchAccounts,
+  createAccount,
+  updateAccount,
+} from "../store/slices/accountsSlice";
+import { Account, CreateAccountRequest, UpdateAccountRequest } from "../api";
+import { useCurrencySymbol } from "../hooks/useCurrency";
 import {
   AccountsHeader,
   AccountsNetWorthCard,
@@ -15,7 +19,7 @@ import {
   AddAccountModal,
   EditAccountModal,
   AccountsSkeletonLoading,
-} from '../components/accounts';
+} from "../components/accounts";
 
 // ============ MAIN ACCOUNTS SCREEN ============
 export default function AccountsScreen() {
@@ -24,10 +28,12 @@ export default function AccountsScreen() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
-  
+
   // Redux
   const dispatch = useAppDispatch();
-  const { accounts, totals, isLoading } = useAppSelector((state) => state.accounts);
+  const { accounts, totals, isLoading } = useAppSelector(
+    (state) => state.accounts,
+  );
   const currencySymbol = useCurrencySymbol();
 
   // Fetch data on mount
@@ -39,8 +45,8 @@ export default function AccountsScreen() {
   const assets = totals?.totalAssets || 0;
   const liabilities = totals?.totalLiabilities || 0;
 
-  const assetAccounts = accounts.filter((a) => a.category === 'asset');
-  const liabilityAccounts = accounts.filter((a) => a.category === 'liability');
+  const assetAccounts = accounts.filter((a) => a.category === "asset");
+  const liabilityAccounts = accounts.filter((a) => a.category === "liability");
 
   // Handlers
   const handleSync = useCallback(async () => {
@@ -57,7 +63,7 @@ export default function AccountsScreen() {
   }, [dispatch]);
 
   const handleNetWorthPress = () => {
-    console.log('Net worth pressed');
+    console.log("Net worth pressed");
   };
 
   const handleAccountPress = (accountId: number) => {
@@ -84,7 +90,10 @@ export default function AccountsScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-white dark:bg-gray-900" edges={['top']}>
+      <SafeAreaView
+        className="flex-1 bg-white dark:bg-gray-900"
+        edges={["top"]}
+      >
         <AccountsSkeletonLoading />
       </SafeAreaView>
     );
@@ -117,7 +126,10 @@ export default function AccountsScreen() {
     <>
       {/* Liabilities Section */}
       <Animated.View entering={FadeInDown.duration(500).delay(300)}>
-        <AccountsSectionHeader title="Liabilities" count={liabilityAccounts.length} />
+        <AccountsSectionHeader
+          title="Liabilities"
+          count={liabilityAccounts.length}
+        />
       </Animated.View>
       {liabilityAccounts.map((account, index) => (
         <AccountItem
@@ -129,14 +141,17 @@ export default function AccountsScreen() {
       ))}
 
       {/* Add Account CTA */}
-      <Animated.View entering={FadeInDown.duration(500).delay(400)} className="mt-6">
+      <Animated.View
+        entering={FadeInDown.duration(500).delay(400)}
+        className="mt-6"
+      >
         <AddAccountCard onPress={handleAddAccount} />
       </Animated.View>
     </>
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-gray-900" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-white dark:bg-gray-900" edges={["top"]}>
       <FlatList
         data={assetAccounts}
         keyExtractor={(item) => item.id.toString()}
@@ -156,7 +171,7 @@ export default function AccountsScreen() {
             refreshing={isRefreshing}
             onRefresh={handleRefresh}
             tintColor="#111827"
-            colors={['#111827']}
+            colors={["#111827"]}
           />
         }
       />

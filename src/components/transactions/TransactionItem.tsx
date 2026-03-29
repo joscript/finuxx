@@ -1,15 +1,15 @@
-import React from 'react';
-import { View, Text, Pressable } from 'react-native';
+import React from "react";
+import { View, Text, Pressable } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
   FadeInDown,
   Layout,
-} from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
-import { Transaction } from './types';
-import { useCurrency } from '../../hooks/useCurrency';
+} from "react-native-reanimated";
+import { Ionicons } from "@expo/vector-icons";
+import { Transaction } from "./types";
+import { useCurrency } from "../../hooks/useCurrency";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -30,7 +30,7 @@ export default function TransactionItem({
 }: TransactionItemProps) {
   const fmt = useCurrency();
   const scale = useSharedValue(1);
-  const isIncome = transaction.type === 'income';
+  const isIncome = transaction.type === "income";
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -46,7 +46,9 @@ export default function TransactionItem({
 
   return (
     <Animated.View
-      entering={FadeInDown.delay(index * 50).duration(400).springify()}
+      entering={FadeInDown.delay(index * 50)
+        .duration(400)
+        .springify()}
       layout={Layout.springify()}
     >
       <AnimatedPressable
@@ -112,11 +114,11 @@ export default function TransactionItem({
         <Text
           className={`text-base font-bold ${
             isIncome
-              ? 'text-emerald-500 dark:text-emerald-400'
-              : 'text-gray-900 dark:text-white'
+              ? "text-emerald-500 dark:text-emerald-400"
+              : "text-gray-900 dark:text-white"
           }`}
         >
-          {isIncome ? '+' : '-'}
+          {isIncome ? "+" : "-"}
           {fmt(transaction.amount)}
         </Text>
       </AnimatedPressable>

@@ -448,7 +448,8 @@ export default function TransactionAddModal({
                       {account.name}
                     </Text>
                     <Text className="text-gray-500 dark:text-gray-400 text-sm">
-                      Balance: {symbol}{account.balance.toLocaleString()}
+                      Balance: {symbol}
+                      {account.balance.toLocaleString()}
                     </Text>
                   </View>
                 </View>
@@ -497,7 +498,8 @@ export default function TransactionAddModal({
                         <Text
                           className={`text-sm ${acc.balance >= 0 ? "text-gray-500 dark:text-gray-400" : "text-red-500"}`}
                         >
-                          {symbol}{acc.balance.toLocaleString()}
+                          {symbol}
+                          {acc.balance.toLocaleString()}
                         </Text>
                       </View>
                       {account.id === acc.id && (

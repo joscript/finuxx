@@ -1,14 +1,14 @@
-import React from 'react';
-import { View, Text, Pressable } from 'react-native';
+import React from "react";
+import { View, Text, Pressable } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
   FadeInUp,
-} from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
-import { AnimatedProgressBar } from './AnimatedProgressBar';
-import { useCurrency } from '../../hooks/useCurrency';
+} from "react-native-reanimated";
+import { Ionicons } from "@expo/vector-icons";
+import { AnimatedProgressBar } from "./AnimatedProgressBar";
+import { useCurrency } from "../../hooks/useCurrency";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -54,21 +54,21 @@ export function BudgetCategoryItem({
   };
 
   const getProgressColor = () => {
-    if (isOverLimit) return '#ef4444';
-    if (isNearLimit) return '#f59e0b';
+    if (isOverLimit) return "#ef4444";
+    if (isNearLimit) return "#f59e0b";
     return color;
   };
 
   const getPercentageBgColor = () => {
-    if (isOverLimit) return 'bg-red-100 dark:bg-red-500/20';
-    if (isNearLimit) return 'bg-amber-100 dark:bg-amber-500/20';
-    return 'bg-gray-100 dark:bg-gray-700';
+    if (isOverLimit) return "bg-red-100 dark:bg-red-500/20";
+    if (isNearLimit) return "bg-amber-100 dark:bg-amber-500/20";
+    return "bg-gray-100 dark:bg-gray-700";
   };
 
   const getPercentageTextColor = () => {
-    if (isOverLimit) return 'text-red-600 dark:text-red-400';
-    if (isNearLimit) return 'text-amber-600 dark:text-amber-400';
-    return 'text-gray-600 dark:text-gray-400';
+    if (isOverLimit) return "text-red-600 dark:text-red-400";
+    if (isNearLimit) return "text-amber-600 dark:text-amber-400";
+    return "text-gray-600 dark:text-gray-400";
   };
 
   return (
@@ -80,7 +80,7 @@ export function BudgetCategoryItem({
         style={[
           animatedStyle,
           {
-            shadowColor: '#000',
+            shadowColor: "#000",
             shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.05,
             shadowRadius: 8,
@@ -91,7 +91,9 @@ export function BudgetCategoryItem({
       >
         <View className="flex-row items-center">
           {/* Icon */}
-          <View className={`${iconBgColor} w-[52px] h-[52px] rounded-2xl items-center justify-center`}>
+          <View
+            className={`${iconBgColor} w-[52px] h-[52px] rounded-2xl items-center justify-center`}
+          >
             <Ionicons name={icon as any} size={24} color={color} />
           </View>
 
@@ -107,7 +109,7 @@ export function BudgetCategoryItem({
                   <Ionicons
                     name="alert-circle"
                     size={16}
-                    color={isOverLimit ? '#ef4444' : '#f59e0b'}
+                    color={isOverLimit ? "#ef4444" : "#f59e0b"}
                     style={{ marginLeft: 6 }}
                   />
                 )}
@@ -126,8 +128,12 @@ export function BudgetCategoryItem({
               <Text className="text-gray-500 dark:text-gray-400 text-sm">
                 {fmt(spent)} / {fmt(budget)}
               </Text>
-              <View className={`${getPercentageBgColor()} rounded-full px-2.5 py-1`}>
-                <Text className={`${getPercentageTextColor()} text-xs font-bold`}>
+              <View
+                className={`${getPercentageBgColor()} rounded-full px-2.5 py-1`}
+              >
+                <Text
+                  className={`${getPercentageTextColor()} text-xs font-bold`}
+                >
                   {Math.round(percentage)}%
                 </Text>
               </View>

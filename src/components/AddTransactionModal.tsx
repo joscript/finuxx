@@ -489,7 +489,8 @@ export default function AddTransactionModal({
                               : "text-red-500"
                           }`}
                         >
-                          {symbol}{parseFloat(acc.balance).toLocaleString()}
+                          {symbol}
+                          {parseFloat(acc.balance).toLocaleString()}
                         </Text>
                       </View>
                       {account?.id === acc.id && (

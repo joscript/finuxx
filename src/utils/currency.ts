@@ -14,7 +14,10 @@ export function getCurrencySymbol(code: string): string {
 }
 
 /** Formats a number as a currency string using the given currency code (e.g. 1500, "USD" → "$1,500"). */
-export function formatAmount(amount: number, currencyCode: string = "PHP"): string {
+export function formatAmount(
+  amount: number,
+  currencyCode: string = "PHP",
+): string {
   const symbol = getCurrencySymbol(currencyCode);
   return `${symbol}${amount.toLocaleString()}`;
 }

@@ -458,8 +458,8 @@ export default function AddContributionModal({
                       : "text-gray-400 dark:text-gray-500"
                   }`}
                 >
-                  Add {parsedAmount > 0 ? fmt(parsedAmount) : `${symbol}0`}{" "}
-                  to Goal
+                  Add {parsedAmount > 0 ? fmt(parsedAmount) : `${symbol}0`} to
+                  Goal
                 </Text>
               </View>
             </AnimatedPressable>

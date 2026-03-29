@@ -273,9 +273,7 @@ function OverviewCard({ title, value, type, index }: OverviewCardProps) {
         </Text>
         <Ionicons name={config.icon} size={16} color={config.iconColor} />
       </View>
-      <Text className={`${config.text} text-lg font-bold`}>
-        {fmt(value)}
-      </Text>
+      <Text className={`${config.text} text-lg font-bold`}>{fmt(value)}</Text>
     </AnimatedPressable>
   );
 }
@@ -559,9 +557,7 @@ function ForecastCard({ value, currentBalance = 48250 }: ForecastCardProps) {
           />
         </Animated.View>
       </View>
-      <Text className="text-white text-3xl font-bold mb-2">
-        {fmt(value)}
-      </Text>
+      <Text className="text-white text-3xl font-bold mb-2">{fmt(value)}</Text>
       <View className="flex-row items-center">
         <View
           className={`px-2 py-1 rounded-full ${isPositive ? "bg-emerald-500/20" : "bg-rose-500/20"}`}

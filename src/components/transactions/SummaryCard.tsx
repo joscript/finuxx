@@ -1,20 +1,23 @@
-import React, { useEffect } from 'react';
-import { View, Text } from 'react-native';
+import React, { useEffect } from "react";
+import { View, Text } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
   Easing,
-} from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
-import { useCurrency } from '../../hooks/useCurrency';
+} from "react-native-reanimated";
+import { Ionicons } from "@expo/vector-icons";
+import { useCurrency } from "../../hooks/useCurrency";
 
 interface SummaryCardProps {
   totalIncome: number;
   totalExpense: number;
 }
 
-export default function SummaryCard({ totalIncome, totalExpense }: SummaryCardProps) {
+export default function SummaryCard({
+  totalIncome,
+  totalExpense,
+}: SummaryCardProps) {
   const fmt = useCurrency();
   const netAmount = totalIncome - totalExpense;
   const isPositive = netAmount >= 0;
@@ -22,8 +25,14 @@ export default function SummaryCard({ totalIncome, totalExpense }: SummaryCardPr
   const translateY = useSharedValue(20);
 
   useEffect(() => {
-    opacity.value = withTiming(1, { duration: 600, easing: Easing.out(Easing.cubic) });
-    translateY.value = withTiming(0, { duration: 600, easing: Easing.out(Easing.cubic) });
+    opacity.value = withTiming(1, {
+      duration: 600,
+      easing: Easing.out(Easing.cubic),
+    });
+    translateY.value = withTiming(0, {
+      duration: 600,
+      easing: Easing.out(Easing.cubic),
+    });
   }, []);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -36,7 +45,7 @@ export default function SummaryCard({ totalIncome, totalExpense }: SummaryCardPr
       style={[
         animatedStyle,
         {
-          shadowColor: '#000',
+          shadowColor: "#000",
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.08,
           shadowRadius: 12,
@@ -88,14 +97,14 @@ export default function SummaryCard({ totalIncome, totalExpense }: SummaryCardPr
             <View
               className={`w-6 h-6 rounded-full items-center justify-center mr-2 ${
                 isPositive
-                  ? 'bg-emerald-100 dark:bg-emerald-500/20'
-                  : 'bg-red-100 dark:bg-red-500/20'
+                  ? "bg-emerald-100 dark:bg-emerald-500/20"
+                  : "bg-red-100 dark:bg-red-500/20"
               }`}
             >
               <Ionicons
-                name={isPositive ? 'trending-up' : 'trending-down'}
+                name={isPositive ? "trending-up" : "trending-down"}
                 size={14}
-                color={isPositive ? '#22c55e' : '#ef4444'}
+                color={isPositive ? "#22c55e" : "#ef4444"}
               />
             </View>
             <Text className="text-gray-500 dark:text-gray-400 text-sm font-medium">
@@ -105,11 +114,11 @@ export default function SummaryCard({ totalIncome, totalExpense }: SummaryCardPr
           <Text
             className={`text-lg font-bold ${
               isPositive
-                ? 'text-emerald-500 dark:text-emerald-400'
-                : 'text-red-500 dark:text-red-400'
+                ? "text-emerald-500 dark:text-emerald-400"
+                : "text-red-500 dark:text-red-400"
             }`}
           >
-            {isPositive ? '+' : ''}
+            {isPositive ? "+" : ""}
             {fmt(netAmount)}
           </Text>
         </View>

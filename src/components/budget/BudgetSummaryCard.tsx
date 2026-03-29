@@ -1,24 +1,29 @@
-import React from 'react';
-import { View, Text, Pressable } from 'react-native';
+import React from "react";
+import { View, Text, Pressable } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
-} from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
-import { CircularProgress } from './CircularProgress';
-import { useCurrency } from '../../hooks/useCurrency';
+} from "react-native-reanimated";
+import { Ionicons } from "@expo/vector-icons";
+import { CircularProgress } from "./CircularProgress";
+import { useCurrency } from "../../hooks/useCurrency";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 interface BudgetSummaryCardProps {
   totalBudget: number;
   totalSpent: number;
-  period: 'monthly' | 'weekly';
+  period: "monthly" | "weekly";
   onPress?: () => void;
 }
 
-export function BudgetSummaryCard({ totalBudget, totalSpent, period, onPress }: BudgetSummaryCardProps) {
+export function BudgetSummaryCard({
+  totalBudget,
+  totalSpent,
+  period,
+  onPress,
+}: BudgetSummaryCardProps) {
   const fmt = useCurrency();
   const scale = useSharedValue(1);
   const remaining = totalBudget - totalSpent;
@@ -39,27 +44,27 @@ export function BudgetSummaryCard({ totalBudget, totalSpent, period, onPress }: 
   };
 
   const getStatusText = () => {
-    if (isOverLimit) return 'Over Budget';
-    if (isNearLimit) return 'Near Limit';
-    return 'On Track';
+    if (isOverLimit) return "Over Budget";
+    if (isNearLimit) return "Near Limit";
+    return "On Track";
   };
 
   const getStatusBgColor = () => {
-    if (isOverLimit) return 'bg-red-100 dark:bg-red-500/20';
-    if (isNearLimit) return 'bg-amber-100 dark:bg-amber-500/20';
-    return 'bg-emerald-100 dark:bg-emerald-500/20';
+    if (isOverLimit) return "bg-red-100 dark:bg-red-500/20";
+    if (isNearLimit) return "bg-amber-100 dark:bg-amber-500/20";
+    return "bg-emerald-100 dark:bg-emerald-500/20";
   };
 
   const getStatusTextColor = () => {
-    if (isOverLimit) return 'text-red-600 dark:text-red-400';
-    if (isNearLimit) return 'text-amber-600 dark:text-amber-400';
-    return 'text-emerald-600 dark:text-emerald-400';
+    if (isOverLimit) return "text-red-600 dark:text-red-400";
+    if (isNearLimit) return "text-amber-600 dark:text-amber-400";
+    return "text-emerald-600 dark:text-emerald-400";
   };
 
   const getProgressColor = () => {
-    if (isOverLimit) return '#ef4444';
-    if (isNearLimit) return '#f59e0b';
-    return '#22c55e';
+    if (isOverLimit) return "#ef4444";
+    if (isNearLimit) return "#f59e0b";
+    return "#22c55e";
   };
 
   return (
@@ -70,7 +75,7 @@ export function BudgetSummaryCard({ totalBudget, totalSpent, period, onPress }: 
       style={[
         animatedStyle,
         {
-          shadowColor: '#000',
+          shadowColor: "#000",
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.08,
           shadowRadius: 16,
@@ -82,7 +87,7 @@ export function BudgetSummaryCard({ totalBudget, totalSpent, period, onPress }: 
       <View className="flex-row items-center justify-between mb-6">
         <View className="flex-1">
           <Text className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">
-            {period === 'monthly' ? 'Monthly' : 'Weekly'} Budget
+            {period === "monthly" ? "Monthly" : "Weekly"} Budget
           </Text>
           <Text className="text-gray-900 dark:text-white text-3xl font-bold tracking-tight">
             {fmt(remaining)}
@@ -103,11 +108,21 @@ export function BudgetSummaryCard({ totalBudget, totalSpent, period, onPress }: 
 
       {/* Status Badge */}
       <View className="flex-row items-center mb-5">
-        <View className={`${getStatusBgColor()} rounded-full px-3.5 py-1.5 flex-row items-center`}>
+        <View
+          className={`${getStatusBgColor()} rounded-full px-3.5 py-1.5 flex-row items-center`}
+        >
           <Ionicons
-            name={isOverLimit ? 'warning' : isNearLimit ? 'alert-circle' : 'checkmark-circle'}
+            name={
+              isOverLimit
+                ? "warning"
+                : isNearLimit
+                  ? "alert-circle"
+                  : "checkmark-circle"
+            }
             size={14}
-            color={isOverLimit ? '#ef4444' : isNearLimit ? '#f59e0b' : '#22c55e'}
+            color={
+              isOverLimit ? "#ef4444" : isNearLimit ? "#f59e0b" : "#22c55e"
+            }
           />
           <Text className={`${getStatusTextColor()} text-xs font-bold ml-1.5`}>
             {getStatusText()}
@@ -118,13 +133,17 @@ export function BudgetSummaryCard({ totalBudget, totalSpent, period, onPress }: 
       {/* Spent vs Budget Row */}
       <View className="flex-row justify-between items-center">
         <View>
-          <Text className="text-gray-400 dark:text-gray-500 text-xs mb-0.5">Spent</Text>
+          <Text className="text-gray-400 dark:text-gray-500 text-xs mb-0.5">
+            Spent
+          </Text>
           <Text className="text-gray-900 dark:text-white text-lg font-semibold">
             {fmt(totalSpent)}
           </Text>
         </View>
         <View className="items-end">
-          <Text className="text-gray-400 dark:text-gray-500 text-xs mb-0.5">Total Budget</Text>
+          <Text className="text-gray-400 dark:text-gray-500 text-xs mb-0.5">
+            Total Budget
+          </Text>
           <Text className="text-gray-900 dark:text-white text-lg font-semibold">
             {fmt(totalBudget)}
           </Text>

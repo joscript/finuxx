@@ -1,5 +1,10 @@
 import React, { useCallback, useState } from "react";
-import { TouchableOpacity, View, StyleSheet } from "react-native";
+import {
+  TouchableOpacity,
+  View,
+  StyleSheet,
+  useColorScheme,
+} from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -42,6 +47,8 @@ const getTabBarIcon = (routeName: string, focused: boolean): IconName => {
 export default function BottomTabNavigator() {
   const [showAddModal, setShowAddModal] = useState(false);
   const dispatch = useAppDispatch();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   const handleAddTransaction = useCallback(
     async (transaction: Transaction) => {
@@ -69,8 +76,14 @@ export default function BottomTabNavigator() {
             const iconName = getTabBarIcon(route.name, focused);
             return <Ionicons name={iconName} size={size} color={color} />;
           },
-          tabBarActiveTintColor: "oklch(21% 0.034 264.665)",
-          tabBarInactiveTintColor: "gray",
+          tabBarActiveTintColor: isDark
+            ? "#ffffff"
+            : "oklch(21% 0.034 264.665)",
+          tabBarInactiveTintColor: isDark ? "#6b7280" : "gray",
+          tabBarStyle: {
+            backgroundColor: isDark ? "#111827" : "#ffffff",
+            borderTopColor: isDark ? "#1f2937" : "#e5e7eb",
+          },
           headerShown: true,
         })}
       >

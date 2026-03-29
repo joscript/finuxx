@@ -7,6 +7,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { CircularProgress } from './CircularProgress';
+import { useCurrency } from '../../hooks/useCurrency';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -18,6 +19,7 @@ interface BudgetSummaryCardProps {
 }
 
 export function BudgetSummaryCard({ totalBudget, totalSpent, period, onPress }: BudgetSummaryCardProps) {
+  const fmt = useCurrency();
   const scale = useSharedValue(1);
   const remaining = totalBudget - totalSpent;
   const percentage = (totalSpent / totalBudget) * 100;
@@ -83,7 +85,7 @@ export function BudgetSummaryCard({ totalBudget, totalSpent, period, onPress }: 
             {period === 'monthly' ? 'Monthly' : 'Weekly'} Budget
           </Text>
           <Text className="text-gray-900 dark:text-white text-3xl font-bold tracking-tight">
-            ₱{remaining.toLocaleString()}
+            {fmt(remaining)}
           </Text>
           <Text className="text-gray-400 dark:text-gray-500 text-sm mt-1">
             remaining
@@ -118,13 +120,13 @@ export function BudgetSummaryCard({ totalBudget, totalSpent, period, onPress }: 
         <View>
           <Text className="text-gray-400 dark:text-gray-500 text-xs mb-0.5">Spent</Text>
           <Text className="text-gray-900 dark:text-white text-lg font-semibold">
-            ₱{totalSpent.toLocaleString()}
+            {fmt(totalSpent)}
           </Text>
         </View>
         <View className="items-end">
           <Text className="text-gray-400 dark:text-gray-500 text-xs mb-0.5">Total Budget</Text>
           <Text className="text-gray-900 dark:text-white text-lg font-semibold">
-            ₱{totalBudget.toLocaleString()}
+            {fmt(totalBudget)}
           </Text>
         </View>
       </View>

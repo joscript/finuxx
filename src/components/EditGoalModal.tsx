@@ -17,6 +17,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import type { Goal } from "../types";
+import { useCurrencySymbol } from "../hooks/useCurrency";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -53,6 +54,7 @@ export default function EditGoalModal({
   onClose,
   onSave,
 }: EditGoalModalProps) {
+  const symbol = useCurrencySymbol();
   const [goalName, setGoalName] = useState("");
   const [targetAmount, setTargetAmount] = useState("");
   const [selectedEmoji, setSelectedEmoji] = useState("🎯");
@@ -193,7 +195,7 @@ export default function EditGoalModal({
               </Text>
               <View className="flex-row items-center bg-gray-100 dark:bg-gray-800 rounded-2xl px-5 py-4">
                 <Text className="text-gray-500 dark:text-gray-400 text-xl font-medium mr-2">
-                  ₱
+                  {symbol}
                 </Text>
                 <TextInput
                   value={targetAmount}

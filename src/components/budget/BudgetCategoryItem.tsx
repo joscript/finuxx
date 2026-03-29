@@ -8,6 +8,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { AnimatedProgressBar } from './AnimatedProgressBar';
+import { useCurrency } from '../../hooks/useCurrency';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -34,6 +35,7 @@ export function BudgetCategoryItem({
   index,
   onPress,
 }: BudgetCategoryItemProps) {
+  const fmt = useCurrency();
   const scale = useSharedValue(1);
   const percentage = (spent / budget) * 100;
   const isNearLimit = percentage >= 80 && percentage < 100;
@@ -122,7 +124,7 @@ export function BudgetCategoryItem({
             {/* Amount and Percentage */}
             <View className="flex-row items-center justify-between mt-2">
               <Text className="text-gray-500 dark:text-gray-400 text-sm">
-                ₱{spent.toLocaleString()} / ₱{budget.toLocaleString()}
+                {fmt(spent)} / {fmt(budget)}
               </Text>
               <View className={`${getPercentageBgColor()} rounded-full px-2.5 py-1`}>
                 <Text className={`${getPercentageTextColor()} text-xs font-bold`}>

@@ -21,6 +21,7 @@ import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 import { Bill, UpdateBillRequest, BillRecurrence } from "../../api";
+import { useCurrencySymbol } from "../../hooks/useCurrency";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -48,6 +49,7 @@ export function EditBillModal({
   onUpdateBill,
   onDeleteBill,
 }: EditBillModalProps) {
+  const symbol = useCurrencySymbol();
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
   const [dueDate, setDueDate] = useState(new Date());
@@ -174,7 +176,7 @@ export function EditBillModal({
               </Text>
               <View className="flex-row items-center bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
                 <Text className="text-gray-500 dark:text-gray-400 text-lg font-bold pl-4">
-                  ₱
+                  {symbol}
                 </Text>
                 <TextInput
                   value={amount}

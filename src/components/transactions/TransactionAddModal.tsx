@@ -28,6 +28,7 @@ import {
 } from "../../api/types";
 import { fetchAccounts } from "../../store/slices/accountsSlice";
 import { fetchCategories } from "../../store/slices/categoriesSlice";
+import { useCurrencySymbol } from "../../hooks/useCurrency";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -53,6 +54,7 @@ export default function TransactionAddModal({
     isLoading: categoriesLoading,
     error: categoriesError,
   } = useAppSelector((state: any) => state.categories);
+  const symbol = useCurrencySymbol();
   // Map API accounts to picker format
   const accountOptions = useMemo(() => {
     if (accounts && accounts.length > 0) {
@@ -314,7 +316,7 @@ export default function TransactionAddModal({
                 }}
               >
                 <Text className="text-gray-400 text-2xl font-medium mr-2">
-                  ₱
+                  {symbol}
                 </Text>
                 <TextInput
                   value={amount}
@@ -446,7 +448,7 @@ export default function TransactionAddModal({
                       {account.name}
                     </Text>
                     <Text className="text-gray-500 dark:text-gray-400 text-sm">
-                      Balance: ₱{account.balance.toLocaleString()}
+                      Balance: {symbol}{account.balance.toLocaleString()}
                     </Text>
                   </View>
                 </View>
@@ -495,7 +497,7 @@ export default function TransactionAddModal({
                         <Text
                           className={`text-sm ${acc.balance >= 0 ? "text-gray-500 dark:text-gray-400" : "text-red-500"}`}
                         >
-                          ₱{acc.balance.toLocaleString()}
+                          {symbol}{acc.balance.toLocaleString()}
                         </Text>
                       </View>
                       {account.id === acc.id && (

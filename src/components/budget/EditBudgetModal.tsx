@@ -3,6 +3,7 @@ import { View, Text, Pressable, Modal, TextInput, KeyboardAvoidingView, Platform
 import { Ionicons } from '@expo/vector-icons';
 import { UIBudgetCategory } from './types';
 import { QUICK_AMOUNT_OPTIONS } from './constants';
+import { useCurrencySymbol } from '../../hooks/useCurrency';
 
 interface EditBudgetModalProps {
   visible: boolean;
@@ -14,6 +15,7 @@ interface EditBudgetModalProps {
 }
 
 export function EditBudgetModal({ visible, category, onClose, onSave, onDelete, isLoading = false }: EditBudgetModalProps) {
+  const symbol = useCurrencySymbol();
   const [budgetAmount, setBudgetAmount] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -90,7 +92,7 @@ export function EditBudgetModal({ visible, category, onClose, onSave, onDelete, 
                   {category.name}
                 </Text>
                 <Text className="text-gray-500 dark:text-gray-400 text-sm">
-                  ₱{category.spent.toLocaleString()} spent ({Math.round(percentage)}% used)
+                  {symbol}{category.spent.toLocaleString()} spent ({Math.round(percentage)}% used)
                 </Text>
               </View>
             </View>
@@ -101,7 +103,7 @@ export function EditBudgetModal({ visible, category, onClose, onSave, onDelete, 
                 Monthly Budget
               </Text>
               <View className="flex-row items-center bg-gray-100 dark:bg-gray-700 rounded-2xl px-5 py-4">
-                <Text className="text-gray-900 dark:text-white text-2xl font-bold mr-2">₱</Text>
+                <Text className="text-gray-900 dark:text-white text-2xl font-bold mr-2">{symbol}</Text>
                 <TextInput
                   value={budgetAmount}
                   onChangeText={formatInput}
@@ -122,7 +124,7 @@ export function EditBudgetModal({ visible, category, onClose, onSave, onDelete, 
                   className="bg-gray-100 dark:bg-gray-700 rounded-full px-4 py-2 active:bg-gray-200 dark:active:bg-gray-600"
                 >
                   <Text className="text-gray-700 dark:text-gray-300 text-sm font-medium">
-                    ₱{amount.toLocaleString()}
+                    {symbol}{amount.toLocaleString()}
                   </Text>
                 </Pressable>
               ))}

@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AvailableCategory } from './types';
 import { QUICK_AMOUNT_OPTIONS } from './constants';
 import { categoryService, Category } from '../../api';
+import { useCurrencySymbol } from '../../hooks/useCurrency';
 
 // Helper to get background color class based on category color
 function getIconBgColor(color?: string): string {
@@ -38,6 +39,7 @@ interface AddBudgetModalProps {
 }
 
 export function AddBudgetModal({ visible, existingCategories, onClose, onAdd, isLoading = false }: AddBudgetModalProps) {
+  const symbol = useCurrencySymbol();
   const [step, setStep] = useState<'category' | 'amount'>('category');
   const [selectedCategory, setSelectedCategory] = useState<AvailableCategory | null>(null);
   const [budgetAmount, setBudgetAmount] = useState('');
@@ -227,7 +229,7 @@ export function AddBudgetModal({ visible, existingCategories, onClose, onAdd, is
                     Monthly Budget
                   </Text>
                   <View className="flex-row items-center bg-gray-100 dark:bg-gray-700 rounded-2xl px-5 py-4">
-                    <Text className="text-gray-900 dark:text-white text-2xl font-bold mr-2">₱</Text>
+                    <Text className="text-gray-900 dark:text-white text-2xl font-bold mr-2">{symbol}</Text>
                     <TextInput
                       value={budgetAmount}
                       onChangeText={formatInput}
@@ -249,7 +251,7 @@ export function AddBudgetModal({ visible, existingCategories, onClose, onAdd, is
                       className="bg-gray-100 dark:bg-gray-700 rounded-full px-4 py-2 active:bg-gray-200 dark:active:bg-gray-600"
                     >
                       <Text className="text-gray-700 dark:text-gray-300 text-sm font-medium">
-                        ₱{amount.toLocaleString()}
+                        {symbol}{amount.toLocaleString()}
                       </Text>
                     </Pressable>
                   ))}

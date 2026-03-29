@@ -19,6 +19,7 @@ import Animated, {
 import { Ionicons } from "@expo/vector-icons";
 import type { Goal, GoalContribution } from "../types";
 import type { Account } from "../api/types";
+import { useCurrency, useCurrencySymbol } from "../hooks/useCurrency";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -38,6 +39,8 @@ export default function AddContributionModal({
   onClose,
   onAddContribution,
 }: AddContributionModalProps) {
+  const fmt = useCurrency();
+  const symbol = useCurrencySymbol();
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [selectedAccountId, setSelectedAccountId] = useState<number | null>(
@@ -161,7 +164,7 @@ export default function AddContributionModal({
                     {goal.name}
                   </Text>
                   <Text className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">
-                    ₱{remainingAmount.toLocaleString()} remaining
+                    {fmt(remainingAmount)} remaining
                   </Text>
                 </View>
               </View>
@@ -190,7 +193,7 @@ export default function AddContributionModal({
               {/* Progress Stats */}
               <View className="flex-row justify-between mt-3">
                 <Text className="text-gray-500 dark:text-gray-400 text-sm">
-                  ₱{goal.currentAmount.toLocaleString()} saved
+                  {fmt(goal.currentAmount)} saved
                 </Text>
                 <Text className="text-gray-500 dark:text-gray-400 text-sm">
                   {Math.round(percentage)}% →{" "}
@@ -215,7 +218,7 @@ export default function AddContributionModal({
                 }}
               >
                 <Text className="text-gray-500 dark:text-gray-400 text-2xl font-medium mr-2">
-                  ₱
+                  {symbol}
                 </Text>
                 <TextInput
                   value={amount}
@@ -242,7 +245,7 @@ export default function AddContributionModal({
                     className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-xl py-3 items-center active:bg-gray-200 dark:active:bg-gray-700"
                   >
                     <Text className="text-gray-700 dark:text-gray-300 font-semibold">
-                      +₱{quickAmount.toLocaleString()}
+                      +{fmt(quickAmount)}
                     </Text>
                   </Pressable>
                 ))}
@@ -261,7 +264,7 @@ export default function AddContributionModal({
                   className="mt-3 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl py-3 items-center active:bg-emerald-100 dark:active:bg-emerald-500/20"
                 >
                   <Text className="text-emerald-600 dark:text-emerald-400 font-semibold">
-                    Complete Goal (₱
+                    Complete Goal ({symbol}
                     {(selectedAccount
                       ? Math.min(remainingAmount, selectedBalance)
                       : remainingAmount
@@ -301,7 +304,7 @@ export default function AddContributionModal({
                           {selectedAccount.name}
                         </Text>
                         <Text className="text-gray-500 dark:text-gray-400 text-sm">
-                          Balance: ₱{selectedBalance.toLocaleString()}
+                          Balance: {fmt(selectedBalance)}
                         </Text>
                       </View>
                     </View>
@@ -355,7 +358,7 @@ export default function AddContributionModal({
                               {account.name}
                             </Text>
                             <Text className="text-gray-500 dark:text-gray-400 text-sm">
-                              ₱{accountBalance.toLocaleString()}
+                              {fmt(accountBalance)}
                             </Text>
                           </View>
                           {selectedAccount?.id === account.id && (
@@ -407,7 +410,7 @@ export default function AddContributionModal({
                     Amount
                   </Text>
                   <Text className="text-emerald-700 dark:text-emerald-300 font-bold">
-                    ₱{parsedAmount.toLocaleString()}
+                    {fmt(parsedAmount)}
                   </Text>
                 </View>
                 <View className="flex-row justify-between mb-2">
@@ -455,7 +458,7 @@ export default function AddContributionModal({
                       : "text-gray-400 dark:text-gray-500"
                   }`}
                 >
-                  Add ₱{parsedAmount > 0 ? parsedAmount.toLocaleString() : "0"}{" "}
+                  Add {parsedAmount > 0 ? fmt(parsedAmount) : `${symbol}0`}{" "}
                   to Goal
                 </Text>
               </View>

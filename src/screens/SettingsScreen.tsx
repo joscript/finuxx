@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,13 +7,21 @@ import {
   Image,
   Switch,
   Dimensions,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { logout } from '../store/slices/authSlice';
-import { fetchSettings, updateSettings } from '../store/slices/settingsSlice';
-import { Settings as ApiSettings } from '../api';
+  Alert,
+  Linking,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { logout } from "../store/slices/authSlice";
+import { fetchSettings, updateSettings } from "../store/slices/settingsSlice";
+import SelectionModal, {
+  SelectionOption,
+} from "../components/settings/SelectionModal";
+import EditProfileModal from "../components/settings/EditProfileModal";
+import ChangePasswordModal from "../components/settings/ChangePasswordModal";
+import DeleteAccountModal from "../components/settings/DeleteAccountModal";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -24,32 +32,76 @@ import Animated, {
   FadeIn,
   interpolate,
   Extrapolation,
-} from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
+} from "react-native-reanimated";
+import { Ionicons } from "@expo/vector-icons";
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 // Default avatar for users without profile picture
-const DEFAULT_AVATAR = 'https://ui-avatars.com/api/?name=User&background=random';
+const DEFAULT_AVATAR =
+  "https://ui-avatars.com/api/?name=User&background=random";
 
 // Default settings when API data is not available
 const DEFAULT_SETTINGS = {
-  currency: 'PHP',
-  language: 'en',
-  theme: 'system',
-  startOfWeek: 'monday',
+  currency: "PHP",
+  language: "en",
+  theme: "system",
+  startOfWeek: "monday",
   budgetAlerts: true,
   billReminders: true,
-  aiCoachNudges: true,
-  lowBalanceAlerts: false,
+  goalUpdates: true,
+  emailNotifications: true,
+  pushNotifications: true,
   biometricLogin: true,
-  autoLockTime: '1 minute',
+  autoLockTime: "1 minute",
   connectedDevices: 1,
-  appVersion: '1.0.0',
+  appVersion: "1.0.0",
 };
 
+// ============ SELECTION OPTIONS ============
+const CURRENCY_OPTIONS: SelectionOption[] = [
+  { label: "Philippine Peso (₱)", value: "PHP" },
+  { label: "US Dollar ($)", value: "USD" },
+  { label: "Euro (€)", value: "EUR" },
+  { label: "British Pound (£)", value: "GBP" },
+  { label: "Japanese Yen (¥)", value: "JPY" },
+  { label: "Australian Dollar (A$)", value: "AUD" },
+];
+
+const LANGUAGE_OPTIONS: SelectionOption[] = [
+  { label: "English", value: "en" },
+  { label: "Filipino", value: "fil" },
+  { label: "Spanish", value: "es" },
+  { label: "French", value: "fr" },
+  { label: "German", value: "de" },
+];
+
+const THEME_OPTIONS: SelectionOption[] = [
+  { label: "Light", value: "light" },
+  { label: "Dark", value: "dark" },
+  { label: "System", value: "system" },
+];
+
+const START_OF_WEEK_OPTIONS: SelectionOption[] = [
+  { label: "Sunday", value: "sunday" },
+  { label: "Monday", value: "monday" },
+];
+
+const AUTO_LOCK_OPTIONS: SelectionOption[] = [
+  { label: "Immediately", value: "immediately" },
+  { label: "1 minute", value: "1 minute" },
+  { label: "5 minutes", value: "5 minutes" },
+  { label: "15 minutes", value: "15 minutes" },
+  { label: "Never", value: "never" },
+];
+
 // ============ SKELETON SHIMMER COMPONENT ============
-function SkeletonShimmer({ width, height, borderRadius = 8, className = '' }: {
+function SkeletonShimmer({
+  width,
+  height,
+  borderRadius = 8,
+  className = "",
+}: {
   width: number | string;
   height: number;
   borderRadius?: number;
@@ -61,15 +113,20 @@ function SkeletonShimmer({ width, height, borderRadius = 8, className = '' }: {
     shimmerValue.value = withRepeat(
       withSequence(
         withTiming(1, { duration: 1000 }),
-        withTiming(0, { duration: 1000 })
+        withTiming(0, { duration: 1000 }),
       ),
       -1,
-      false
+      false,
     );
   }, []);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(shimmerValue.value, [0, 1], [0.3, 0.7], Extrapolation.CLAMP),
+    opacity: interpolate(
+      shimmerValue.value,
+      [0, 1],
+      [0.3, 0.7],
+      Extrapolation.CLAMP,
+    ),
   }));
 
   return (
@@ -77,11 +134,11 @@ function SkeletonShimmer({ width, height, borderRadius = 8, className = '' }: {
       style={[
         animatedStyle,
         {
-          width: typeof width === 'number' ? width : undefined,
+          width: typeof width === "number" ? width : undefined,
           height,
           borderRadius,
         },
-        typeof width === 'string' ? { flex: 1 } : {},
+        typeof width === "string" ? { flex: 1 } : {},
       ]}
       className={`bg-gray-200 dark:bg-gray-700 ${className}`}
     />
@@ -109,7 +166,7 @@ function SkeletonProfileCard() {
     <View
       className="bg-white dark:bg-gray-800 rounded-[28px] mx-5 p-6"
       style={{
-        shadowColor: '#000',
+        shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.08,
         shadowRadius: 16,
@@ -135,7 +192,7 @@ function SkeletonSectionCard({ rowCount = 3 }: { rowCount?: number }) {
     <View
       className="bg-white dark:bg-gray-800 rounded-[28px] mx-5 overflow-hidden"
       style={{
-        shadowColor: '#000',
+        shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.08,
         shadowRadius: 16,
@@ -197,13 +254,18 @@ interface ProfileCardProps {
   onEditPress?: () => void;
 }
 
-function ProfileCard({ name, email, avatarUrl, onEditPress }: ProfileCardProps) {
+function ProfileCard({
+  name,
+  email,
+  avatarUrl,
+  onEditPress,
+}: ProfileCardProps) {
   return (
     <Pressable
       onPress={onEditPress}
       className="bg-white dark:bg-gray-800 rounded-[28px] mx-5 p-6 active:opacity-90"
       style={{
-        shadowColor: '#000',
+        shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.08,
         shadowRadius: 16,
@@ -241,7 +303,7 @@ function SectionCard({ children }: SectionCardProps) {
     <View
       className="bg-white dark:bg-gray-800 rounded-[28px] mx-5 overflow-hidden"
       style={{
-        shadowColor: '#000',
+        shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.08,
         shadowRadius: 16,
@@ -333,9 +395,7 @@ function SettingRow({
             </View>
             <Text
               className={`ml-4 text-base font-medium ${
-                isDestructive
-                  ? 'text-red-500'
-                  : 'text-gray-900 dark:text-white'
+                isDestructive ? "text-red-500" : "text-gray-900 dark:text-white"
               }`}
             >
               {title}
@@ -351,7 +411,7 @@ function SettingRow({
               <Switch
                 value={toggleValue}
                 onValueChange={onToggleChange}
-                trackColor={{ false: '#e5e7eb', true: '#22c55e' }}
+                trackColor={{ false: "#e5e7eb", true: "#22c55e" }}
                 thumbColor="#ffffff"
                 ios_backgroundColor="#e5e7eb"
               />
@@ -372,111 +432,199 @@ function SettingRow({
 // ============ MAIN SETTINGS SCREEN ============
 export default function SettingsScreen() {
   const navigation = useNavigation();
-  
+
   // Redux
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
-  const { settings: apiSettings, loading: isLoading } = useAppSelector((state) => state.settings);
+  const { settings: apiSettings, isLoading } = useAppSelector(
+    (state) => state.settings,
+  );
 
-  // Fetch settings on mount
+  // Modal visibility state
+  const [editProfileVisible, setEditProfileVisible] = useState(false);
+  const [changePasswordVisible, setChangePasswordVisible] = useState(false);
+  const [deleteAccountVisible, setDeleteAccountVisible] = useState(false);
+  const [selectionModal, setSelectionModal] = useState<{
+    title: string;
+    options: SelectionOption[];
+    selectedValue: string;
+    onSelect: (value: string) => void;
+  } | null>(null);
+
+  // Local settings not stored on the server
+  const [biometricLogin, setBiometricLogin] = useState(
+    DEFAULT_SETTINGS.biometricLogin,
+  );
+  const [autoLockTime, setAutoLockTime] = useState(
+    DEFAULT_SETTINGS.autoLockTime,
+  );
+
+  // Fetch settings on mount + restore local preferences
   useEffect(() => {
     dispatch(fetchSettings());
+    AsyncStorage.getItem("autoLockTime").then((v) => {
+      if (v) setAutoLockTime(v);
+    });
   }, [dispatch]);
-  
+
   // Transform API settings to local format with defaults
   const settings = {
     currency: apiSettings?.currency || DEFAULT_SETTINGS.currency,
     language: apiSettings?.language || DEFAULT_SETTINGS.language,
     theme: apiSettings?.theme || DEFAULT_SETTINGS.theme,
     startOfWeek: apiSettings?.startOfWeek || DEFAULT_SETTINGS.startOfWeek,
-    budgetAlerts: apiSettings?.budgetAlerts ?? DEFAULT_SETTINGS.budgetAlerts,
-    billReminders: apiSettings?.billReminders ?? DEFAULT_SETTINGS.billReminders,
-    aiCoachNudges: apiSettings?.aiCoachNudges ?? DEFAULT_SETTINGS.aiCoachNudges,
-    lowBalanceAlerts: apiSettings?.lowBalanceAlerts ?? DEFAULT_SETTINGS.lowBalanceAlerts,
-    biometricLogin: DEFAULT_SETTINGS.biometricLogin, // Local setting, not in API
-    autoLockTime: DEFAULT_SETTINGS.autoLockTime,
-    connectedDevices: DEFAULT_SETTINGS.connectedDevices,
+    budgetAlerts:
+      apiSettings?.notifications?.budgetAlerts ?? DEFAULT_SETTINGS.budgetAlerts,
+    billReminders:
+      apiSettings?.notifications?.billReminders ??
+      DEFAULT_SETTINGS.billReminders,
+    goalUpdates:
+      apiSettings?.notifications?.goalUpdates ?? DEFAULT_SETTINGS.goalUpdates,
+    emailNotifications:
+      apiSettings?.notifications?.email ?? DEFAULT_SETTINGS.emailNotifications,
+    pushNotifications:
+      apiSettings?.notifications?.push ?? DEFAULT_SETTINGS.pushNotifications,
     appVersion: DEFAULT_SETTINGS.appVersion,
   };
 
-  // Format display values
-  const currencyDisplay = settings.currency === 'PHP' ? 'PHP (₱)' : settings.currency;
-  const languageDisplay = settings.language === 'en' ? 'English' : settings.language;
-  const themeDisplay = settings.theme.charAt(0).toUpperCase() + settings.theme.slice(1);
-  const startOfWeekDisplay = settings.startOfWeek.charAt(0).toUpperCase() + settings.startOfWeek.slice(1);
+  // Format display values using options arrays
+  const currencyDisplay =
+    CURRENCY_OPTIONS.find((o) => o.value === settings.currency)
+      ?.label.split(" ")
+      .slice(0, 3)
+      .join(" ") ?? settings.currency;
+  const languageDisplay =
+    LANGUAGE_OPTIONS.find((o) => o.value === settings.language)?.label ??
+    settings.language;
+  const themeDisplay =
+    settings.theme.charAt(0).toUpperCase() + settings.theme.slice(1);
+  const startOfWeekDisplay =
+    settings.startOfWeek.charAt(0).toUpperCase() +
+    settings.startOfWeek.slice(1);
 
-  // Toggle handlers - update via Redux
-  const handleToggle = (key: 'budgetAlerts' | 'billReminders' | 'aiCoachNudges' | 'lowBalanceAlerts') => async (value: boolean) => {
-    try {
-      await dispatch(updateSettings({ [key]: value }));
-    } catch (error) {
-      console.error('Failed to update setting:', error);
-    }
-  };
+  // Notification toggle handler — sends full nested notifications object
+  const handleNotificationToggle = useCallback(
+    (
+      key: "budgetAlerts" | "billReminders" | "goalUpdates" | "email" | "push",
+    ) =>
+      async (value: boolean) => {
+        await dispatch(
+          updateSettings({
+            notifications: {
+              email: settings.emailNotifications,
+              push: settings.pushNotifications,
+              billReminders: settings.billReminders,
+              budgetAlerts: settings.budgetAlerts,
+              goalUpdates: settings.goalUpdates,
+              [key]: value,
+            },
+          }),
+        );
+      },
+    [settings, dispatch],
+  );
 
-  // Local toggle handler for biometric (not stored in API)
-  const [biometricLogin, setBiometricLogin] = useState(DEFAULT_SETTINGS.biometricLogin);
+  // ---- Preferences handlers ----
+  const handleEditProfile = () => setEditProfileVisible(true);
 
-  // Navigation handlers
-  const handleEditProfile = () => {
-    console.log('Edit profile pressed');
-  };
+  const handleCurrencyPress = () =>
+    setSelectionModal({
+      title: "Currency",
+      options: CURRENCY_OPTIONS,
+      selectedValue: settings.currency,
+      onSelect: (value) => dispatch(updateSettings({ currency: value })),
+    });
 
-  const handleCurrencyPress = () => {
-    console.log('Currency selector pressed');
-  };
+  const handleLanguagePress = () =>
+    setSelectionModal({
+      title: "Language",
+      options: LANGUAGE_OPTIONS,
+      selectedValue: settings.language,
+      onSelect: (value) => dispatch(updateSettings({ language: value })),
+    });
 
-  const handleLanguagePress = () => {
-    console.log('Language selector pressed');
-  };
+  const handleThemePress = () =>
+    setSelectionModal({
+      title: "Theme",
+      options: THEME_OPTIONS,
+      selectedValue: settings.theme,
+      onSelect: (value) =>
+        dispatch(
+          updateSettings({ theme: value as "light" | "dark" | "system" }),
+        ),
+    });
 
-  const handleThemePress = () => {
-    console.log('Theme selector pressed');
-  };
+  const handleStartOfWeekPress = () =>
+    setSelectionModal({
+      title: "Start of Week",
+      options: START_OF_WEEK_OPTIONS,
+      selectedValue: settings.startOfWeek,
+      onSelect: (value) =>
+        dispatch(updateSettings({ startOfWeek: value as "sunday" | "monday" })),
+    });
 
-  const handleStartOfWeekPress = () => {
-    console.log('Start of week selector pressed');
-  };
+  // ---- Security handlers ----
+  const handleChangePinPress = () => setChangePasswordVisible(true);
 
-  const handleChangePinPress = () => {
-    console.log('Change PIN pressed');
-  };
-
-  const handleAutoLockPress = () => {
-    console.log('Auto-lock time selector pressed');
-  };
+  const handleAutoLockPress = () =>
+    setSelectionModal({
+      title: "Auto-Lock",
+      options: AUTO_LOCK_OPTIONS,
+      selectedValue: autoLockTime,
+      onSelect: async (value) => {
+        setAutoLockTime(value);
+        await AsyncStorage.setItem("autoLockTime", value);
+      },
+    });
 
   const handleConnectedDevicesPress = () => {
-    console.log('Connected devices pressed');
+    Alert.alert(
+      "Connected Devices",
+      `You are currently signed in on ${DEFAULT_SETTINGS.connectedDevices} device. Sign out of all other devices is coming soon.`,
+      [{ text: "OK" }],
+    );
   };
 
+  // ---- Privacy handlers ----
   const handleDataExportPress = () => {
-    console.log('Data export pressed');
+    Alert.alert(
+      "Export Data",
+      "Data export is coming soon. We'll notify you when it's available.",
+      [{ text: "OK" }],
+    );
   };
 
-  const handleDeleteAccountPress = () => {
-    console.log('Delete account pressed');
-  };
+  const handleDeleteAccountPress = () => setDeleteAccountVisible(true);
 
-  const handlePermissionsPress = () => {
-    console.log('Permissions pressed');
-  };
+  const handlePermissionsPress = () => Linking.openSettings();
 
+  // ---- About handlers ----
   const handleTermsPress = () => {
-    console.log('Terms pressed');
+    Alert.alert("Terms of Service", "Terms of service will be available soon.");
   };
 
   const handlePrivacyPress = () => {
-    console.log('Privacy pressed');
+    Alert.alert("Privacy Policy", "Privacy policy will be available soon.");
   };
 
+  // ---- Logout ----
   const handleLogoutPress = () => {
-    dispatch(logout());
+    Alert.alert("Log Out", "Are you sure you want to log out?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Log Out",
+        style: "destructive",
+        onPress: () => dispatch(logout()),
+      },
+    ]);
   };
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
+      <SafeAreaView
+        className="flex-1 bg-gray-50 dark:bg-gray-900"
+        edges={["top"]}
+      >
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 32 }}
@@ -488,16 +636,16 @@ export default function SettingsScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
+    <SafeAreaView
+      className="flex-1 bg-gray-50 dark:bg-gray-900"
+      edges={["top"]}
+    >
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 32 }}
       >
         {/* Header */}
-        <Animated.View
-          entering={FadeIn.duration(400)}
-          className="px-5 py-4"
-        >
+        <Animated.View entering={FadeIn.duration(400)} className="px-5 py-4">
           <View className="flex-row items-center mb-2">
             <Pressable
               onPress={() => navigation.goBack()}
@@ -517,17 +665,23 @@ export default function SettingsScreen() {
         </Animated.View>
 
         {/* Profile Card */}
-        <Animated.View entering={FadeInDown.duration(500).delay(100)} className="mt-2">
+        <Animated.View
+          entering={FadeInDown.duration(500).delay(100)}
+          className="mt-2"
+        >
           <ProfileCard
-            name={user?.name || 'User'}
-            email={user?.email || 'user@example.com'}
+            name={user?.name || "User"}
+            email={user?.email || "user@example.com"}
             avatarUrl={DEFAULT_AVATAR}
             onEditPress={handleEditProfile}
           />
         </Animated.View>
 
         {/* Preferences Section */}
-        <Animated.View entering={FadeInDown.duration(500).delay(200)} className="mt-8">
+        <Animated.View
+          entering={FadeInDown.duration(500).delay(200)}
+          className="mt-8"
+        >
           <SectionHeader title="Preferences" />
           <SectionCard>
             <SettingRow
@@ -567,9 +721,30 @@ export default function SettingsScreen() {
         </Animated.View>
 
         {/* Notifications Section */}
-        <Animated.View entering={FadeInDown.duration(500).delay(300)} className="mt-8">
+        <Animated.View
+          entering={FadeInDown.duration(500).delay(300)}
+          className="mt-8"
+        >
           <SectionHeader title="Notifications" />
           <SectionCard>
+            <SettingRow
+              icon="mail-outline"
+              iconColor="#3b82f6"
+              iconBgColor="bg-blue-50 dark:bg-blue-500/20"
+              title="Email Notifications"
+              hasToggle
+              toggleValue={settings.emailNotifications}
+              onToggleChange={handleNotificationToggle("email")}
+            />
+            <SettingRow
+              icon="notifications-outline"
+              iconColor="#22c55e"
+              iconBgColor="bg-emerald-50 dark:bg-emerald-500/20"
+              title="Push Notifications"
+              hasToggle
+              toggleValue={settings.pushNotifications}
+              onToggleChange={handleNotificationToggle("push")}
+            />
             <SettingRow
               icon="wallet-outline"
               iconColor="#ef4444"
@@ -577,7 +752,7 @@ export default function SettingsScreen() {
               title="Budget Alerts"
               hasToggle
               toggleValue={settings.budgetAlerts}
-              onToggleChange={handleToggle('budgetAlerts')}
+              onToggleChange={handleNotificationToggle("budgetAlerts")}
             />
             <SettingRow
               icon="receipt-outline"
@@ -586,7 +761,7 @@ export default function SettingsScreen() {
               title="Bill Reminders"
               hasToggle
               toggleValue={settings.billReminders}
-              onToggleChange={handleToggle('billReminders')}
+              onToggleChange={handleNotificationToggle("billReminders")}
             />
             <SettingRow
               icon="sparkles-outline"
@@ -594,24 +769,18 @@ export default function SettingsScreen() {
               iconBgColor="bg-violet-50 dark:bg-violet-500/20"
               title="AI Coach Nudges"
               hasToggle
-              toggleValue={settings.aiCoachNudges}
-              onToggleChange={handleToggle('aiCoachNudges')}
-            />
-            <SettingRow
-              icon="trending-down-outline"
-              iconColor="#06b6d4"
-              iconBgColor="bg-cyan-50 dark:bg-cyan-500/20"
-              title="Low Balance Alerts"
-              hasToggle
-              toggleValue={settings.lowBalanceAlerts}
-              onToggleChange={handleToggle('lowBalanceAlerts')}
+              toggleValue={settings.goalUpdates}
+              onToggleChange={handleNotificationToggle("goalUpdates")}
               isLast
             />
           </SectionCard>
         </Animated.View>
 
         {/* Security Section */}
-        <Animated.View entering={FadeInDown.duration(500).delay(400)} className="mt-8">
+        <Animated.View
+          entering={FadeInDown.duration(500).delay(400)}
+          className="mt-8"
+        >
           <SectionHeader title="Security" />
           <SectionCard>
             <SettingRow
@@ -635,7 +804,7 @@ export default function SettingsScreen() {
               iconColor="#8b5cf6"
               iconBgColor="bg-violet-50 dark:bg-violet-500/20"
               title="Auto-Lock"
-              value={settings.autoLockTime}
+              value={autoLockTime}
               onPress={handleAutoLockPress}
             />
             <SettingRow
@@ -643,7 +812,7 @@ export default function SettingsScreen() {
               iconColor="#f59e0b"
               iconBgColor="bg-amber-50 dark:bg-amber-500/20"
               title="Connected Devices"
-              value={`${settings.connectedDevices} devices`}
+              value={`${DEFAULT_SETTINGS.connectedDevices} device`}
               onPress={handleConnectedDevicesPress}
               isLast
             />
@@ -651,7 +820,10 @@ export default function SettingsScreen() {
         </Animated.View>
 
         {/* Privacy Section */}
-        <Animated.View entering={FadeInDown.duration(500).delay(500)} className="mt-8">
+        <Animated.View
+          entering={FadeInDown.duration(500).delay(500)}
+          className="mt-8"
+        >
           <SectionHeader title="Privacy" />
           <SectionCard>
             <SettingRow
@@ -681,7 +853,10 @@ export default function SettingsScreen() {
         </Animated.View>
 
         {/* App Info Section */}
-        <Animated.View entering={FadeInDown.duration(500).delay(600)} className="mt-8">
+        <Animated.View
+          entering={FadeInDown.duration(500).delay(600)}
+          className="mt-8"
+        >
           <SectionHeader title="About" />
           <SectionCard>
             <SettingRow
@@ -711,12 +886,15 @@ export default function SettingsScreen() {
         </Animated.View>
 
         {/* Logout Button */}
-        <Animated.View entering={FadeInDown.duration(500).delay(700)} className="mt-8 mx-5">
+        <Animated.View
+          entering={FadeInDown.duration(500).delay(700)}
+          className="mt-8 mx-5"
+        >
           <Pressable
             onPress={handleLogoutPress}
             className="bg-red-50 dark:bg-red-500/10 rounded-2xl py-4 items-center active:bg-red-100 dark:active:bg-red-500/20"
             style={{
-              shadowColor: '#ef4444',
+              shadowColor: "#ef4444",
               shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.1,
               shadowRadius: 8,
@@ -735,6 +913,30 @@ export default function SettingsScreen() {
         {/* Footer Spacing */}
         <View className="h-8" />
       </ScrollView>
+
+      {/* Modals */}
+      <EditProfileModal
+        visible={editProfileVisible}
+        onClose={() => setEditProfileVisible(false)}
+      />
+      <ChangePasswordModal
+        visible={changePasswordVisible}
+        onClose={() => setChangePasswordVisible(false)}
+      />
+      <DeleteAccountModal
+        visible={deleteAccountVisible}
+        onClose={() => setDeleteAccountVisible(false)}
+      />
+      {selectionModal && (
+        <SelectionModal
+          visible
+          title={selectionModal.title}
+          options={selectionModal.options}
+          selectedValue={selectionModal.selectedValue}
+          onSelect={selectionModal.onSelect}
+          onClose={() => setSelectionModal(null)}
+        />
+      )}
     </SafeAreaView>
   );
 }

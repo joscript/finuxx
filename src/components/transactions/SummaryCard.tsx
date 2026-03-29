@@ -7,7 +7,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import { formatCurrency } from './types';
+import { useCurrency } from '../../hooks/useCurrency';
 
 interface SummaryCardProps {
   totalIncome: number;
@@ -15,6 +15,7 @@ interface SummaryCardProps {
 }
 
 export default function SummaryCard({ totalIncome, totalExpense }: SummaryCardProps) {
+  const fmt = useCurrency();
   const netAmount = totalIncome - totalExpense;
   const isPositive = netAmount >= 0;
   const opacity = useSharedValue(0);
@@ -56,7 +57,7 @@ export default function SummaryCard({ totalIncome, totalExpense }: SummaryCardPr
             </Text>
           </View>
           <Text className="text-emerald-500 dark:text-emerald-400 text-lg font-bold">
-            +{formatCurrency(totalIncome)}
+            +{fmt(totalIncome)}
           </Text>
         </View>
 
@@ -74,7 +75,7 @@ export default function SummaryCard({ totalIncome, totalExpense }: SummaryCardPr
             </Text>
           </View>
           <Text className="text-red-500 dark:text-red-400 text-lg font-bold">
-            -{formatCurrency(totalExpense)}
+            -{fmt(totalExpense)}
           </Text>
         </View>
 
@@ -109,7 +110,7 @@ export default function SummaryCard({ totalIncome, totalExpense }: SummaryCardPr
             }`}
           >
             {isPositive ? '+' : ''}
-            {formatCurrency(netAmount)}
+            {fmt(netAmount)}
           </Text>
         </View>
       </View>

@@ -5,6 +5,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchAccounts, createAccount, updateAccount } from '../store/slices/accountsSlice';
 import { Account, CreateAccountRequest, UpdateAccountRequest } from '../api';
+import { useCurrencySymbol } from '../hooks/useCurrency';
 import {
   AccountsHeader,
   AccountsNetWorthCard,
@@ -27,6 +28,7 @@ export default function AccountsScreen() {
   // Redux
   const dispatch = useAppDispatch();
   const { accounts, totals, isLoading } = useAppSelector((state) => state.accounts);
+  const currencySymbol = useCurrencySymbol();
 
   // Fetch data on mount
   useEffect(() => {
@@ -98,6 +100,7 @@ export default function AccountsScreen() {
         <AccountsNetWorthCard
           assets={assets}
           liabilities={liabilities}
+          currency={currencySymbol}
           trend={5.2}
           onPress={handleNetWorthPress}
         />

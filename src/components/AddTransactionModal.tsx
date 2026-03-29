@@ -17,6 +17,7 @@ import Animated, {
 import { Ionicons } from "@expo/vector-icons";
 import { categoryService, accountService } from "../api/services";
 import { Category, Account } from "../api/types";
+import { useCurrencySymbol } from "../hooks/useCurrency";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -52,6 +53,7 @@ export default function AddTransactionModal({
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [accountsLoading, setAccountsLoading] = useState(false);
   const [account, setAccount] = useState<Account | null>(null);
+  const symbol = useCurrencySymbol();
   const [merchant, setMerchant] = useState("");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
@@ -267,7 +269,7 @@ export default function AddTransactionModal({
                 }}
               >
                 <Text className="text-gray-400 text-2xl font-medium mr-2">
-                  ₱
+                  {symbol}
                 </Text>
                 <TextInput
                   value={amount}
@@ -418,7 +420,7 @@ export default function AddTransactionModal({
                           {account.name}
                         </Text>
                         <Text className="text-gray-500 dark:text-gray-400 text-sm">
-                          Balance: ₱
+                          Balance: {symbol}
                           {parseFloat(account.balance).toLocaleString()}
                         </Text>
                       </View>
@@ -487,7 +489,7 @@ export default function AddTransactionModal({
                               : "text-red-500"
                           }`}
                         >
-                          ₱{parseFloat(acc.balance).toLocaleString()}
+                          {symbol}{parseFloat(acc.balance).toLocaleString()}
                         </Text>
                       </View>
                       {account?.id === acc.id && (

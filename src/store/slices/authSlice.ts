@@ -1,7 +1,7 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { authService, User } from '../../api';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { STORAGE_KEYS } from '../../api/client';
+import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import { authService, User } from "../../api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { STORAGE_KEYS } from "../../api/client";
 
 // ============ STATE TYPE ============
 interface AuthState {
@@ -24,161 +24,174 @@ const initialState: AuthState = {
  * Check authentication status on app start
  */
 export const checkAuth = createAsyncThunk(
-  'auth/checkAuth',
+  "auth/checkAuth",
   async (_, { rejectWithValue }) => {
     try {
       const accessToken = await AsyncStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
-      
+
       if (!accessToken) {
         return { isAuthenticated: false, user: null };
       }
 
       // Try to get stored user first
       const storedUser = await authService.getStoredUser();
-      
+
       // Verify with server
       const response = await authService.getCurrentUser();
-      
+
       if (response.success && response.data?.user) {
         return { isAuthenticated: true, user: response.data.user };
       }
-      
+
       // Token invalid, clear everything
       await authService.logout();
       return { isAuthenticated: false, user: null };
     } catch (error: any) {
       await authService.logout();
-      return rejectWithValue(error.message || 'Auth check failed');
+      return rejectWithValue(error.message || "Auth check failed");
     }
-  }
+  },
 );
 
 /**
  * Login user
  */
 export const login = createAsyncThunk(
-  'auth/login',
-  async ({ email, password }: { email: string; password: string }, { rejectWithValue }) => {
+  "auth/login",
+  async (
+    { email, password }: { email: string; password: string },
+    { rejectWithValue },
+  ) => {
     try {
       const response = await authService.login({ email, password });
-      
+
       if (response.success && response.data) {
         return response.data.user;
       }
-      
-      return rejectWithValue(response.message || 'Login failed');
+
+      return rejectWithValue(response.message || "Login failed");
     } catch (error: any) {
-      return rejectWithValue(error.message || 'An error occurred');
+      return rejectWithValue(error.message || "An error occurred");
     }
-  }
+  },
 );
 
 /**
  * Register new user
  */
 export const register = createAsyncThunk(
-  'auth/register',
+  "auth/register",
   async (
-    { name, email, password }: { name: string; email: string; password: string },
-    { rejectWithValue }
+    {
+      name,
+      email,
+      password,
+    }: { name: string; email: string; password: string },
+    { rejectWithValue },
   ) => {
     try {
       const response = await authService.register({ name, email, password });
-      
+
       if (response.success && response.data) {
         return response.data.user;
       }
-      
-      return rejectWithValue(response.message || 'Registration failed');
+
+      return rejectWithValue(response.message || "Registration failed");
     } catch (error: any) {
-      return rejectWithValue(error.message || 'An error occurred');
+      return rejectWithValue(error.message || "An error occurred");
     }
-  }
+  },
 );
 
 /**
  * Logout user
  */
 export const logout = createAsyncThunk(
-  'auth/logout',
+  "auth/logout",
   async (_, { rejectWithValue }) => {
     try {
       await authService.logout();
       return true;
     } catch (error: any) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
       // Still clear local state even if API call fails
       return true;
     }
-  }
+  },
 );
 
 /**
  * Update user profile
  */
 export const updateProfile = createAsyncThunk(
-  'auth/updateProfile',
+  "auth/updateProfile",
   async ({ name }: { name: string }, { rejectWithValue }) => {
     try {
       const response = await authService.updateProfile({ name });
-      
+
       if (response.success && response.data?.user) {
         return response.data.user;
       }
-      
-      return rejectWithValue(response.message || 'Failed to update profile');
+
+      return rejectWithValue(response.message || "Failed to update profile");
     } catch (error: any) {
-      return rejectWithValue(error.message || 'An error occurred');
+      return rejectWithValue(error.message || "An error occurred");
     }
-  }
+  },
 );
 
 /**
  * Update user password
  */
 export const updatePassword = createAsyncThunk(
-  'auth/updatePassword',
+  "auth/updatePassword",
   async (
-    { currentPassword, newPassword }: { currentPassword: string; newPassword: string },
-    { rejectWithValue }
+    {
+      currentPassword,
+      newPassword,
+    }: { currentPassword: string; newPassword: string },
+    { rejectWithValue },
   ) => {
     try {
-      const response = await authService.updatePassword({ currentPassword, newPassword });
-      
+      const response = await authService.updatePassword({
+        currentPassword,
+        newPassword,
+      });
+
       if (response.success) {
         return true;
       }
-      
-      return rejectWithValue(response.message || 'Failed to update password');
+
+      return rejectWithValue(response.message || "Failed to update password");
     } catch (error: any) {
-      return rejectWithValue(error.message || 'An error occurred');
+      return rejectWithValue(error.message || "An error occurred");
     }
-  }
+  },
 );
 
 /**
  * Refresh user data
  */
 export const refreshUser = createAsyncThunk(
-  'auth/refreshUser',
+  "auth/refreshUser",
   async (_, { rejectWithValue }) => {
     try {
       const response = await authService.getCurrentUser();
-      
+
       if (response.success && response.data?.user) {
         return response.data.user;
       }
-      
-      return rejectWithValue('Failed to refresh user');
+
+      return rejectWithValue("Failed to refresh user");
     } catch (error: any) {
-      return rejectWithValue(error.message || 'An error occurred');
+      return rejectWithValue(error.message || "An error occurred");
     }
-  }
+  },
 );
 
 // ============ SLICE ============
 const authSlice = createSlice({
-  name: 'auth',
+  name: "auth",
   initialState,
   reducers: {
     clearError: (state) => {
@@ -242,12 +255,11 @@ const authSlice = createSlice({
       });
 
     // Logout
-    builder
-      .addCase(logout.fulfilled, (state) => {
-        state.isAuthenticated = false;
-        state.user = null;
-        state.error = null;
-      });
+    builder.addCase(logout.fulfilled, (state) => {
+      state.isAuthenticated = false;
+      state.user = null;
+      state.error = null;
+    });
 
     // Update Profile
     builder
@@ -258,11 +270,19 @@ const authSlice = createSlice({
         state.error = action.payload as string;
       });
 
-    // Refresh User
+    // Update Password
     builder
-      .addCase(refreshUser.fulfilled, (state, action) => {
-        state.user = action.payload;
+      .addCase(updatePassword.pending, (state) => {
+        state.error = null;
+      })
+      .addCase(updatePassword.rejected, (state, action) => {
+        state.error = action.payload as string;
       });
+
+    // Refresh User
+    builder.addCase(refreshUser.fulfilled, (state, action) => {
+      state.user = action.payload;
+    });
   },
 });
 

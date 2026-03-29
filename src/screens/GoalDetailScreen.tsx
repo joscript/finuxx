@@ -41,6 +41,7 @@ import {
 import { fetchAccounts } from "../store/slices/accountsSlice";
 import { AddContributionRequest, UpdateGoalRequest } from "../api";
 import type { RootStackParamList } from "../navigation";
+import { useCurrency, useCurrencySymbol } from "../hooks/useCurrency";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const AnimatedView = Animated.createAnimatedComponent(View);
@@ -143,6 +144,7 @@ function ContributionItem({
   index,
   goalColor,
 }: ContributionItemProps) {
+  const fmt = useCurrency();
   const formattedDate = new Date(contribution.date).toLocaleDateString(
     "en-US",
     {
@@ -168,7 +170,7 @@ function ContributionItem({
       {/* Details */}
       <View className="flex-1">
         <Text className="text-gray-900 dark:text-white font-semibold">
-          +₱{contribution.amount.toLocaleString()}
+          +{fmt(contribution.amount)}
         </Text>
         <View className="flex-row items-center mt-1">
           <Text className="text-gray-500 dark:text-gray-400 text-sm">
@@ -197,6 +199,8 @@ export default function GoalDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute<RouteProp<RootStackParamList, "GoalDetail">>();
   const goalId = route.params?.goalId || "";
+  const fmt = useCurrency();
+  const symbol = useCurrencySymbol();
 
   // Redux
   const dispatch = useAppDispatch();
@@ -489,12 +493,12 @@ export default function GoalDetailScreen() {
             {/* Amount Display */}
             <View className="mb-4">
               <View className="flex-row items-baseline">
-                <Text className="text-gray-400 text-lg mr-1">₱</Text>
+                <Text className="text-gray-400 text-lg mr-1">{symbol}</Text>
                 <Text className="text-gray-900 dark:text-white text-4xl font-bold">
                   {goal.currentAmount.toLocaleString()}
                 </Text>
                 <Text className="text-gray-400 dark:text-gray-500 text-lg ml-2">
-                  / ₱{goal.targetAmount.toLocaleString()}
+                  / {fmt(goal.targetAmount)}
                 </Text>
               </View>
             </View>
@@ -508,7 +512,7 @@ export default function GoalDetailScreen() {
                 {Math.round(percentage)}% complete
               </Text>
               <Text className="text-gray-500 dark:text-gray-400 text-sm">
-                ₱{remaining.toLocaleString()} to go
+                {fmt(remaining)} to go
               </Text>
             </View>
 
@@ -532,7 +536,7 @@ export default function GoalDetailScreen() {
         <View className="flex-row gap-3 px-5 mb-6">
           <StatCard
             label="Monthly Target"
-            value={`₱${goal.monthlyContribution.toLocaleString()}`}
+            value={fmt(goal.monthlyContribution)}
             icon="calendar"
             iconColor="#3b82f6"
             iconBgColor="bg-blue-100 dark:bg-blue-500/20"
@@ -559,7 +563,7 @@ export default function GoalDetailScreen() {
           />
           <StatCard
             label="Avg per Contribution"
-            value={`₱${goal.contributions.length > 0 ? Math.round(goal.currentAmount / goal.contributions.length).toLocaleString() : 0}`}
+            value={`${fmt(goal.contributions.length > 0 ? Math.round(goal.currentAmount / goal.contributions.length) : 0)}`}
             icon="stats-chart"
             iconColor="#f59e0b"
             iconBgColor="bg-amber-100 dark:bg-amber-500/20"

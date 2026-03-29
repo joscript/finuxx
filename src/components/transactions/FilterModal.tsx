@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { FilterOptions, DEFAULT_FILTERS, CATEGORY_OPTIONS } from './types';
+import { useCurrencySymbol } from '../../hooks/useCurrency';
 
 interface FilterModalProps {
   visible: boolean;
@@ -19,6 +20,7 @@ interface FilterModalProps {
 }
 
 export default function FilterModal({ visible, onClose, filters, onApply, onReset }: FilterModalProps) {
+  const symbol = useCurrencySymbol();
   const [localFilters, setLocalFilters] = useState<FilterOptions>(filters);
 
   useEffect(() => {
@@ -181,7 +183,7 @@ export default function FilterModal({ visible, onClose, filters, onApply, onRese
                     elevation: 2,
                   }}
                 >
-                  <Text className="text-gray-400 text-base mr-1">₱</Text>
+                  <Text className="text-gray-400 text-base mr-1">{symbol}</Text>
                   <TextInput
                     value={localFilters.minAmount}
                     onChangeText={(text) =>
@@ -206,7 +208,7 @@ export default function FilterModal({ visible, onClose, filters, onApply, onRese
                     elevation: 2,
                   }}
                 >
-                  <Text className="text-gray-400 text-base mr-1">₱</Text>
+                  <Text className="text-gray-400 text-base mr-1">{symbol}</Text>
                   <TextInput
                     value={localFilters.maxAmount}
                     onChangeText={(text) =>

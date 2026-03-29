@@ -50,6 +50,7 @@ import {
   AddContributionRequest,
   Goal as ApiGoal,
 } from "../api";
+import { useCurrency, useCurrencySymbol } from "../hooks/useCurrency";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const AnimatedView = Animated.createAnimatedComponent(View);
@@ -418,6 +419,7 @@ function GoalsOverviewCard({
   overallProgress,
   onPress,
 }: GoalsOverviewCardProps) {
+  const fmt = useCurrency();
   const scale = useSharedValue(1);
   const countValue = useSharedValue(0);
   const contributionValue = useSharedValue(0);
@@ -496,7 +498,7 @@ function GoalsOverviewCard({
               Monthly Contribution
             </Text>
             <Text className="text-gray-900 dark:text-white text-xl font-bold">
-              ₱{monthlyContribution.toLocaleString()}
+              {fmt(monthlyContribution)}
             </Text>
           </View>
           <View className="bg-emerald-100 dark:bg-emerald-500/20 rounded-full px-3.5 py-1.5 flex-row items-center">
@@ -520,6 +522,7 @@ interface GoalItemProps {
 }
 
 function GoalItem({ goal, index, onPress, onAddFunds }: GoalItemProps) {
+  const fmt = useCurrency();
   const scale = useSharedValue(1);
   const addFundsScale = useSharedValue(1);
   const percentage = (goal.currentAmount / goal.targetAmount) * 100;
@@ -603,7 +606,7 @@ function GoalItem({ goal, index, onPress, onAddFunds }: GoalItemProps) {
             {/* Target and Timeline */}
             <View className="flex-row items-center mb-3">
               <Text className="text-gray-500 dark:text-gray-400 text-sm">
-                ₱{goal.targetAmount.toLocaleString()}
+                {fmt(goal.targetAmount)}
               </Text>
               <View className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600 mx-2" />
               <Text className="text-gray-400 dark:text-gray-500 text-sm">
@@ -621,7 +624,7 @@ function GoalItem({ goal, index, onPress, onAddFunds }: GoalItemProps) {
             {/* Amount and Status */}
             <View className="flex-row items-center justify-between mt-3">
               <Text className="text-gray-500 dark:text-gray-400 text-sm">
-                ₱{goal.currentAmount.toLocaleString()} saved
+                {fmt(goal.currentAmount)} saved
               </Text>
               <View
                 className={`${getStatusBgColor()} rounded-full px-2.5 py-1 flex-row items-center`}
@@ -696,6 +699,7 @@ function SimulationCard({
   currentContribution,
   onContributionChange,
 }: SimulationCardProps) {
+  const fmt = useCurrency();
   const [sliderValue, setSliderValue] = useState(currentContribution);
   const scale = useSharedValue(1);
   const monthsSaved = useSharedValue(0);
@@ -765,7 +769,7 @@ function SimulationCard({
               Monthly
             </Text>
             <Text className="text-gray-900 dark:text-white text-xl font-bold">
-              ₱{sliderValue.toLocaleString()}
+              {fmt(sliderValue)}
             </Text>
           </View>
           <Slider
@@ -780,10 +784,10 @@ function SimulationCard({
           />
           <View className="flex-row items-center justify-between">
             <Text className="text-gray-400 dark:text-gray-500 text-xs">
-              ₱{currentContribution.toLocaleString()}
+              {fmt(currentContribution)}
             </Text>
             <Text className="text-gray-400 dark:text-gray-500 text-xs">
-              ₱{(currentContribution * 2).toLocaleString()}
+              {fmt(currentContribution * 2)}
             </Text>
           </View>
         </View>
@@ -909,6 +913,7 @@ interface AddGoalModalProps {
 }
 
 function AddGoalModal({ visible, onClose, onAdd }: AddGoalModalProps) {
+  const symbol = useCurrencySymbol();
   const [goalName, setGoalName] = useState("");
   const [targetAmount, setTargetAmount] = useState("");
   const [selectedEmoji, setSelectedEmoji] = useState("🎯");
@@ -1005,7 +1010,7 @@ function AddGoalModal({ visible, onClose, onAdd }: AddGoalModalProps) {
               <TextInput
                 value={targetAmount}
                 onChangeText={setTargetAmount}
-                placeholder="₱0"
+                placeholder={`${symbol}0`}
                 placeholderTextColor="#9ca3af"
                 keyboardType="numeric"
                 className="bg-gray-100 dark:bg-gray-700 rounded-2xl px-4 py-4 text-gray-900 dark:text-white text-base mb-4"

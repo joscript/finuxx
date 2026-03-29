@@ -29,6 +29,7 @@ import { BillItem } from "../components";
 import { Bill, CreateBillRequest, UpdateBillRequest } from "../api";
 import { AddBillModal } from "../components/bills/AddBillModal";
 import { EditBillModal } from "../components/bills/EditBillModal";
+import { useCurrencySymbol } from "../hooks/useCurrency";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const AnimatedView = Animated.createAnimatedComponent(View);
@@ -241,6 +242,7 @@ export default function BillsScreen() {
   const navigation = useNavigation();
   const dispatch = useAppDispatch();
   const { bills, isLoading, error } = useAppSelector((state) => state.bills);
+  const currencySymbol = useCurrencySymbol();
 
   const [activeFilter, setActiveFilter] = useState<FilterTab>("all");
   const [addModalVisible, setAddModalVisible] = useState(false);
@@ -314,7 +316,7 @@ export default function BillsScreen() {
               day: "numeric",
               year: "numeric",
             })}
-            amount={`₱${parseFloat(item.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+            amount={`${currencySymbol}${parseFloat(item.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
             icon="receipt-outline"
             iconColor={item.isPaid ? "#22c55e" : "#3b82f6"}
             isPaid={item.isPaid}
@@ -338,7 +340,7 @@ export default function BillsScreen() {
 
   const renderHeader = () => (
     <>
-      <SummaryCard {...summary} />
+      <SummaryCard {...summary} currencySymbol={currencySymbol} />
       <FilterTabs activeTab={activeFilter} onTabChange={setActiveFilter} />
     </>
   );

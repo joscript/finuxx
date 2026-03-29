@@ -1,5 +1,6 @@
 import React from "react";
 import { View, Text, Pressable } from "react-native";
+import { useCurrency } from "../../hooks/useCurrency";
 
 export interface CategoryItemProps {
   name: string;
@@ -16,6 +17,7 @@ export function CategoryItem({
   color,
   onPress,
 }: CategoryItemProps) {
+  const fmt = useCurrency();
   const progress = Math.min((spent / budget) * 100, 100);
   const isOverBudget = spent > budget;
   const barColor = isOverBudget ? "#ef4444" : color;
@@ -37,8 +39,8 @@ export function CategoryItem({
           className={`text-sm font-medium ${isOverBudget ? "text-red-500" : "text-gray-500 dark:text-gray-400"}`}
         >
           {isOverBudget
-            ? `-₱${Math.abs(remaining).toLocaleString()} over`
-            : `₱${remaining.toLocaleString()} left`}
+            ? `-${fmt(Math.abs(remaining))} over`
+            : `${fmt(remaining)} left`}
         </Text>
       </View>
       <View className="h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -52,10 +54,10 @@ export function CategoryItem({
       </View>
       <View className="flex-row items-center justify-between mt-2">
         <Text className="text-gray-400 dark:text-gray-500 text-xs">
-          ₱{spent.toLocaleString()} spent
+          {fmt(spent)} spent
         </Text>
         <Text className="text-gray-400 dark:text-gray-500 text-xs">
-          ₱{budget.toLocaleString()} budget
+          {fmt(budget)} budget
         </Text>
       </View>
     </Pressable>

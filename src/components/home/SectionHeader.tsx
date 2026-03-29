@@ -14,7 +14,7 @@ export function SectionHeader({
 }: SectionHeaderProps) {
   return (
     <View className="flex-row items-center justify-between px-5 mb-4">
-      <Text className="text-gray-900 dark:text-white text-xl font-bold tracking-tight">
+      <Text className="text-gray-500 dark:text-gray-400 text-xs font-bold tracking-widest uppercase">
         {title}
       </Text>
       {actionLabel && (

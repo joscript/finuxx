@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -6,9 +6,9 @@ import {
   Pressable,
   Dimensions,
   LayoutChangeEvent,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -23,18 +23,23 @@ import Animated, {
   Layout,
   Easing,
   interpolate,
-} from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { fetchNotifications, markNotificationAsRead, markAllNotificationsAsRead, deleteNotification } from '../store/slices/notificationsSlice';
-import { Notification as ApiNotification } from '../api';
+} from "react-native-reanimated";
+import { Ionicons } from "@expo/vector-icons";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import {
+  fetchNotifications,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+  deleteNotification,
+} from "../store/slices/notificationsSlice";
+import { Notification as ApiNotification } from "../api";
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 // ============ TYPES ============
-type NotificationType = 'alert' | 'bill' | 'ai' | 'system';
+type NotificationType = "alert" | "bill" | "ai" | "system";
 
 interface Notification {
   id: string;
@@ -48,7 +53,7 @@ interface Notification {
   iconBgColor: string;
 }
 
-type FilterType = 'all' | 'alerts' | 'bills' | 'ai' | 'system';
+type FilterType = "all" | "alerts" | "bills" | "ai" | "system";
 
 interface FilterTabItem {
   id: FilterType;
@@ -57,37 +62,64 @@ interface FilterTabItem {
 
 // ============ CONSTANTS ============
 const FILTER_TABS: FilterTabItem[] = [
-  { id: 'all', label: 'All' },
-  { id: 'alerts', label: 'Alerts' },
-  { id: 'bills', label: 'Bills' },
-  { id: 'ai', label: 'AI Coach' },
-  { id: 'system', label: 'System' },
+  { id: "all", label: "All" },
+  { id: "alerts", label: "Alerts" },
+  { id: "bills", label: "Bills" },
+  { id: "ai", label: "AI Coach" },
+  { id: "system", label: "System" },
 ];
 
 // ============ HELPER FUNCTIONS ============
-function getTypeBadge(type: NotificationType): { label: string; color: string; bgColor: string } {
+function getTypeBadge(type: NotificationType): {
+  label: string;
+  color: string;
+  bgColor: string;
+} {
   switch (type) {
-    case 'alert':
-      return { label: 'Alert', color: 'text-amber-600 dark:text-amber-400', bgColor: 'bg-amber-100 dark:bg-amber-500/20' };
-    case 'bill':
-      return { label: 'Bill', color: 'text-red-600 dark:text-red-400', bgColor: 'bg-red-100 dark:bg-red-500/20' };
-    case 'ai':
-      return { label: 'AI Coach', color: 'text-violet-600 dark:text-violet-400', bgColor: 'bg-violet-100 dark:bg-violet-500/20' };
-    case 'system':
-      return { label: 'System', color: 'text-blue-600 dark:text-blue-400', bgColor: 'bg-blue-100 dark:bg-blue-500/20' };
+    case "alert":
+      return {
+        label: "Alert",
+        color: "text-amber-600 dark:text-amber-400",
+        bgColor: "bg-amber-100 dark:bg-amber-500/20",
+      };
+    case "bill":
+      return {
+        label: "Bill",
+        color: "text-red-600 dark:text-red-400",
+        bgColor: "bg-red-100 dark:bg-red-500/20",
+      };
+    case "ai":
+      return {
+        label: "AI Coach",
+        color: "text-violet-600 dark:text-violet-400",
+        bgColor: "bg-violet-100 dark:bg-violet-500/20",
+      };
+    case "system":
+      return {
+        label: "System",
+        color: "text-blue-600 dark:text-blue-400",
+        bgColor: "bg-blue-100 dark:bg-blue-500/20",
+      };
     default:
-      return { label: 'Info', color: 'text-gray-600 dark:text-gray-400', bgColor: 'bg-gray-100 dark:bg-gray-700' };
+      return {
+        label: "Info",
+        color: "text-gray-600 dark:text-gray-400",
+        bgColor: "bg-gray-100 dark:bg-gray-700",
+      };
   }
 }
 
-function filterNotifications(notifications: Notification[], filter: FilterType): Notification[] {
-  if (filter === 'all') return notifications;
+function filterNotifications(
+  notifications: Notification[],
+  filter: FilterType,
+): Notification[] {
+  if (filter === "all") return notifications;
   const typeMap: Record<FilterType, NotificationType | null> = {
     all: null,
-    alerts: 'alert',
-    bills: 'bill',
-    ai: 'ai',
-    system: 'system',
+    alerts: "alert",
+    bills: "bill",
+    ai: "ai",
+    system: "system",
   };
   return notifications.filter((n) => n.type === typeMap[filter]);
 }
@@ -100,10 +132,10 @@ function SkeletonNotificationRow() {
     shimmerValue.value = withRepeat(
       withSequence(
         withTiming(1, { duration: 1000, easing: Easing.ease }),
-        withTiming(0, { duration: 1000, easing: Easing.ease })
+        withTiming(0, { duration: 1000, easing: Easing.ease }),
       ),
       -1,
-      false
+      false,
     );
   }, []);
 
@@ -195,8 +227,8 @@ function FilterTab({ tab, isActive, onPress, onLayout }: FilterTabProps) {
       <Text
         className={`text-sm font-semibold ${
           isActive
-            ? 'text-gray-900 dark:text-white'
-            : 'text-gray-400 dark:text-gray-500'
+            ? "text-gray-900 dark:text-white"
+            : "text-gray-400 dark:text-gray-500"
         }`}
       >
         {tab.label}
@@ -213,7 +245,12 @@ interface NotificationItemProps {
   onDelete: (id: string) => void;
 }
 
-function NotificationItem({ notification, index, onPress, onDelete }: NotificationItemProps) {
+function NotificationItem({
+  notification,
+  index,
+  onPress,
+  onDelete,
+}: NotificationItemProps) {
   const scale = useSharedValue(1);
   const badge = getTypeBadge(notification.type);
 
@@ -241,7 +278,7 @@ function NotificationItem({ notification, index, onPress, onDelete }: Notificati
         style={[
           animatedStyle,
           {
-            shadowColor: '#000',
+            shadowColor: "#000",
             shadowOffset: { width: 0, height: 2 },
             shadowOpacity: notification.isRead ? 0.04 : 0.08,
             shadowRadius: 8,
@@ -250,13 +287,19 @@ function NotificationItem({ notification, index, onPress, onDelete }: Notificati
         ]}
         className={`flex-row items-start p-4 mx-5 mb-3 rounded-2xl ${
           notification.isRead
-            ? 'bg-white dark:bg-gray-800'
-            : 'bg-white dark:bg-gray-800 border-l-4 border-gray-900 dark:border-white'
+            ? "bg-white dark:bg-gray-800"
+            : "bg-white dark:bg-gray-800 border-l-4 border-gray-900 dark:border-white"
         }`}
       >
         {/* Icon */}
-        <View className={`w-12 h-12 rounded-2xl items-center justify-center ${notification.iconBgColor}`}>
-          <Ionicons name={notification.icon} size={24} color={notification.iconColor} />
+        <View
+          className={`w-12 h-12 rounded-2xl items-center justify-center ${notification.iconBgColor}`}
+        >
+          <Ionicons
+            name={notification.icon}
+            size={24}
+            color={notification.iconColor}
+          />
         </View>
 
         {/* Content */}
@@ -265,8 +308,8 @@ function NotificationItem({ notification, index, onPress, onDelete }: Notificati
             <Text
               className={`text-base font-bold flex-1 mr-2 ${
                 notification.isRead
-                  ? 'text-gray-700 dark:text-gray-300'
-                  : 'text-gray-900 dark:text-white'
+                  ? "text-gray-700 dark:text-gray-300"
+                  : "text-gray-900 dark:text-white"
               }`}
               numberOfLines={1}
             >
@@ -280,8 +323,8 @@ function NotificationItem({ notification, index, onPress, onDelete }: Notificati
           <Text
             className={`text-sm mb-3 leading-5 ${
               notification.isRead
-                ? 'text-gray-400 dark:text-gray-500'
-                : 'text-gray-600 dark:text-gray-400'
+                ? "text-gray-400 dark:text-gray-500"
+                : "text-gray-600 dark:text-gray-400"
             }`}
             numberOfLines={2}
           >
@@ -321,7 +364,8 @@ function EmptyState() {
         You're all caught up 🎉
       </Text>
       <Text className="text-gray-500 dark:text-gray-400 text-base text-center leading-6">
-        No new notifications. We'll let you know when something important happens.
+        No new notifications. We'll let you know when something important
+        happens.
       </Text>
     </Animated.View>
   );
@@ -390,8 +434,14 @@ function FilterTabsBar({ activeFilter, onFilterChange }: FilterTabsBarProps) {
   useEffect(() => {
     const measurement = tabMeasurements[activeFilter];
     if (measurement) {
-      indicatorX.value = withSpring(measurement.x, { damping: 15, stiffness: 150 });
-      indicatorWidth.value = withSpring(measurement.width, { damping: 15, stiffness: 150 });
+      indicatorX.value = withSpring(measurement.x, {
+        damping: 15,
+        stiffness: 150,
+      });
+      indicatorWidth.value = withSpring(measurement.width, {
+        damping: 15,
+        stiffness: 150,
+      });
     }
   }, [activeFilter, tabMeasurements]);
 
@@ -401,7 +451,10 @@ function FilterTabsBar({ activeFilter, onFilterChange }: FilterTabsBarProps) {
   }));
 
   return (
-    <Animated.View entering={FadeInDown.duration(400).delay(100)} className="mx-5 mb-4">
+    <Animated.View
+      entering={FadeInDown.duration(400).delay(100)}
+      className="mx-5 mb-4"
+    >
       <View className="flex-row bg-gray-100 dark:bg-gray-800 rounded-2xl p-1 relative">
         {/* Animated Indicator */}
         <Animated.View
@@ -426,37 +479,58 @@ function FilterTabsBar({ activeFilter, onFilterChange }: FilterTabsBarProps) {
 
 // ============ MAIN NOTIFICATIONS SCREEN ============
 export default function NotificationsScreen() {
-  const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  const [activeFilter, setActiveFilter] = useState<FilterType>("all");
   const navigation = useNavigation();
-  
+
   // Redux
   const dispatch = useAppDispatch();
-  const { notifications: apiNotifications, loading: isLoading } = useAppSelector((state) => state.notifications);
+  const { notifications: apiNotifications, isLoading } = useAppSelector(
+    (state) => state.notifications,
+  );
 
   // Fetch notifications on mount
   useEffect(() => {
     dispatch(fetchNotifications());
   }, [dispatch]);
-  
+
   // Transform API notifications to local format
   const notifications: Notification[] = useMemo(() => {
     if (!apiNotifications) return [];
     return apiNotifications.map((n: ApiNotification) => {
       const typeMap: Record<string, NotificationType> = {
-        'bill_reminder': 'bill',
-        'budget_alert': 'alert',
-        'goal_update': 'ai',
-        'general': 'system',
+        bill_reminder: "bill",
+        budget_alert: "alert",
+        goal_update: "ai",
+        general: "system",
       };
-      const notifType = typeMap[n.type] || 'system';
-      
-      const iconMap: Record<NotificationType, { icon: keyof typeof Ionicons.glyphMap; color: string; bgColor: string }> = {
-        'alert': { icon: 'warning-outline', color: '#f59e0b', bgColor: 'bg-amber-100 dark:bg-amber-500/20' },
-        'bill': { icon: 'calendar-outline', color: '#ef4444', bgColor: 'bg-red-100 dark:bg-red-500/20' },
-        'ai': { icon: 'sparkles', color: '#8b5cf6', bgColor: 'bg-violet-100 dark:bg-violet-500/20' },
-        'system': { icon: 'information-circle-outline', color: '#3b82f6', bgColor: 'bg-blue-100 dark:bg-blue-500/20' },
+      const notifType = typeMap[n.type] || "system";
+
+      const iconMap: Record<
+        NotificationType,
+        { icon: keyof typeof Ionicons.glyphMap; color: string; bgColor: string }
+      > = {
+        alert: {
+          icon: "warning-outline",
+          color: "#f59e0b",
+          bgColor: "bg-amber-100 dark:bg-amber-500/20",
+        },
+        bill: {
+          icon: "calendar-outline",
+          color: "#ef4444",
+          bgColor: "bg-red-100 dark:bg-red-500/20",
+        },
+        ai: {
+          icon: "sparkles",
+          color: "#8b5cf6",
+          bgColor: "bg-violet-100 dark:bg-violet-500/20",
+        },
+        system: {
+          icon: "information-circle-outline",
+          color: "#3b82f6",
+          bgColor: "bg-blue-100 dark:bg-blue-500/20",
+        },
       };
-      
+
       const iconInfo = iconMap[notifType];
       const createdAt = new Date(n.createdAt);
       const now = new Date();
@@ -464,12 +538,12 @@ export default function NotificationsScreen() {
       const diffMins = Math.floor(diffMs / 60000);
       const diffHours = Math.floor(diffMs / 3600000);
       const diffDays = Math.floor(diffMs / 86400000);
-      
-      let timestamp = 'Just now';
+
+      let timestamp = "Just now";
       if (diffDays > 0) timestamp = `${diffDays}d ago`;
       else if (diffHours > 0) timestamp = `${diffHours}h ago`;
       else if (diffMins > 0) timestamp = `${diffMins}m ago`;
-      
+
       return {
         id: n.id.toString(),
         type: notifType,
@@ -484,7 +558,10 @@ export default function NotificationsScreen() {
     });
   }, [apiNotifications]);
 
-  const filteredNotifications = filterNotifications(notifications, activeFilter);
+  const filteredNotifications = filterNotifications(
+    notifications,
+    activeFilter,
+  );
 
   const handleBack = () => {
     navigation.goBack();
@@ -494,13 +571,19 @@ export default function NotificationsScreen() {
     await dispatch(markAllNotificationsAsRead());
   };
 
-  const handleNotificationPress = useCallback(async (id: string) => {
-    await dispatch(markNotificationAsRead(parseInt(id)));
-  }, [dispatch]);
+  const handleNotificationPress = useCallback(
+    async (id: string) => {
+      await dispatch(markNotificationAsRead(parseInt(id)));
+    },
+    [dispatch],
+  );
 
-  const handleDeleteNotification = useCallback(async (id: string) => {
-    await dispatch(deleteNotification(parseInt(id)));
-  }, [dispatch]);
+  const handleDeleteNotification = useCallback(
+    async (id: string) => {
+      await dispatch(deleteNotification(parseInt(id)));
+    },
+    [dispatch],
+  );
 
   const handleFilterChange = (filter: FilterType) => {
     setActiveFilter(filter);
@@ -515,13 +598,16 @@ export default function NotificationsScreen() {
         onDelete={handleDeleteNotification}
       />
     ),
-    [handleNotificationPress, handleDeleteNotification]
+    [handleNotificationPress, handleDeleteNotification],
   );
 
   const keyExtractor = useCallback((item: Notification) => item.id, []);
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
+    <SafeAreaView
+      className="flex-1 bg-gray-50 dark:bg-gray-900"
+      edges={["top"]}
+    >
       {/* Header */}
       <Header
         onBack={handleBack}
@@ -530,7 +616,12 @@ export default function NotificationsScreen() {
       />
 
       {/* Filter Tabs */}
-      {!isLoading && <FilterTabsBar activeFilter={activeFilter} onFilterChange={handleFilterChange} />}
+      {!isLoading && (
+        <FilterTabsBar
+          activeFilter={activeFilter}
+          onFilterChange={handleFilterChange}
+        />
+      )}
 
       {/* Content */}
       {isLoading ? (

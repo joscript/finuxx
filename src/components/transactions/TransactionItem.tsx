@@ -8,7 +8,8 @@ import Animated, {
   Layout,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import { Transaction, formatCurrency } from './types';
+import { Transaction } from './types';
+import { useCurrency } from '../../hooks/useCurrency';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -27,6 +28,7 @@ export default function TransactionItem({
   onEdit,
   onDelete,
 }: TransactionItemProps) {
+  const fmt = useCurrency();
   const scale = useSharedValue(1);
   const isIncome = transaction.type === 'income';
 
@@ -115,7 +117,7 @@ export default function TransactionItem({
           }`}
         >
           {isIncome ? '+' : '-'}
-          {formatCurrency(transaction.amount)}
+          {fmt(transaction.amount)}
         </Text>
       </AnimatedPressable>
     </Animated.View>

@@ -19,6 +19,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { fetchAllReports, setPeriod } from "../store/slices/reportsSlice";
 import type { ReportPeriod } from "../api/types";
+import { useCurrency } from "../hooks/useCurrency";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const AnimatedText = Animated.createAnimatedComponent(Text);
@@ -210,6 +211,7 @@ interface OverviewCardProps {
 }
 
 function OverviewCard({ title, value, type, index }: OverviewCardProps) {
+  const fmt = useCurrency();
   const displayValue = useSharedValue(0);
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(30);
@@ -272,7 +274,7 @@ function OverviewCard({ title, value, type, index }: OverviewCardProps) {
         <Ionicons name={config.icon} size={16} color={config.iconColor} />
       </View>
       <Text className={`${config.text} text-lg font-bold`}>
-        ₱{value.toLocaleString()}
+        {fmt(value)}
       </Text>
     </AnimatedPressable>
   );
@@ -419,6 +421,7 @@ interface CategoryRowProps {
 }
 
 function CategoryRow({ category, index }: CategoryRowProps) {
+  const fmt = useCurrency();
   const opacity = useSharedValue(0);
   const translateX = useSharedValue(-20);
   const progressWidth = useSharedValue(0);
@@ -471,7 +474,7 @@ function CategoryRow({ category, index }: CategoryRowProps) {
       </View>
       <View className="items-end ml-3">
         <Text className="text-gray-900 dark:text-white text-sm font-bold">
-          ₱{category.amount.toLocaleString()}
+          {fmt(category.amount)}
         </Text>
         <Text className="text-gray-400 dark:text-gray-500 text-xs">
           {category.percent}%
@@ -488,6 +491,7 @@ interface ForecastCardProps {
 }
 
 function ForecastCard({ value, currentBalance = 48250 }: ForecastCardProps) {
+  const fmt = useCurrency();
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(30);
   const trendRotation = useSharedValue(0);
@@ -556,7 +560,7 @@ function ForecastCard({ value, currentBalance = 48250 }: ForecastCardProps) {
         </Animated.View>
       </View>
       <Text className="text-white text-3xl font-bold mb-2">
-        ₱{value.toLocaleString()}
+        {fmt(value)}
       </Text>
       <View className="flex-row items-center">
         <View

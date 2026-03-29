@@ -201,7 +201,7 @@ export default function HomeScreen() {
   const budgetCategories = (currentBudget?.categories || [])
     .slice(0, 4)
     .map((cat: any) => {
-      const spent = parseFloat(cat.spentAmount || "0");
+      const spent = cat.spent || 0;
       const budget = parseFloat(cat.allocatedAmount || "0");
       return {
         id: cat.id.toString(),

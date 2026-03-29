@@ -17,6 +17,7 @@ export const ENDPOINTS = {
     ME: "/auth/me",
     UPDATE_PASSWORD: "/auth/update-password",
     LOGOUT: "/auth/logout",
+    PUSH_TOKEN: "/auth/push-token",
   },
 
   // Accounts

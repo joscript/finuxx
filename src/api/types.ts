@@ -270,7 +270,7 @@ export interface Bill {
   accountId?: string;
   isPaid: boolean;
   isAutoPay: boolean;
-  reminderDaysBefore?: number;
+  reminderDaysBefore?: number[];
   notes?: string;
   paidAt?: string;
   paidAmount?: string;
@@ -297,7 +297,7 @@ export interface CreateBillRequest {
   accountId?: string;
   isPaid?: boolean;
   isAutoPay?: boolean;
-  reminderDaysBefore?: number;
+  reminderDaysBefore?: number[];
   notes?: string;
 }
 
@@ -308,11 +308,7 @@ export interface PayBillRequest {
 }
 
 // ============ NOTIFICATION TYPES ============
-export type NotificationType =
-  | "bill_reminder"
-  | "budget_alert"
-  | "goal_update"
-  | "general";
+export type NotificationType = "bill" | "alert" | "ai" | "system";
 
 export interface Notification {
   id: number;

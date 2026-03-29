@@ -305,38 +305,53 @@ export default function BillsScreen() {
     transform: [{ scale: fabScale.value }],
   }));
 
-  const renderBillItem = ({ item, index }: { item: Bill; index: number }) => (
-    <Animated.View entering={FadeInDown.delay(index * 60).duration(400)}>
-      <View className="flex-row items-center">
-        <View className="flex-1">
-          <BillItem
-            name={item.name}
-            date={new Date(item.dueDate).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })}
-            amount={`${currencySymbol}${parseFloat(item.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
-            icon="receipt-outline"
-            iconColor={item.isPaid ? "#22c55e" : "#3b82f6"}
-            isPaid={item.isPaid}
-            onPress={() => handleBillPress(item)}
-          />
+  const renderBillItem = ({ item, index }: { item: Bill; index: number }) => {
+    const isOverdue =
+      !item.isPaid &&
+      new Date(item.dueDate) < new Date(new Date().toDateString());
+
+    return (
+      <Animated.View entering={FadeInDown.delay(index * 60).duration(400)}>
+        <View className="flex-row items-center">
+          <View className="flex-1">
+            <BillItem
+              name={item.name}
+              date={new Date(item.dueDate).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
+              amount={`${currencySymbol}${parseFloat(item.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+              icon="receipt-outline"
+              iconColor={
+                item.isPaid ? "#22c55e" : isOverdue ? "#ef4444" : "#3b82f6"
+              }
+              isPaid={item.isPaid}
+              onPress={() => handleBillPress(item)}
+            />
+            {isOverdue && (
+              <View className="absolute top-3 right-12 bg-red-100 dark:bg-red-500/20 rounded-full px-2 py-0.5">
+                <Text className="text-red-500 text-[10px] font-bold uppercase tracking-wide">
+                  Overdue
+                </Text>
+              </View>
+            )}
+          </View>
+          <Pressable
+            onPress={() => handleTogglePaid(item)}
+            className="ml-2 p-2"
+            hitSlop={8}
+          >
+            <Ionicons
+              name={item.isPaid ? "checkmark-circle" : "ellipse-outline"}
+              size={24}
+              color={item.isPaid ? "#22c55e" : "#9ca3af"}
+            />
+          </Pressable>
         </View>
-        <Pressable
-          onPress={() => handleTogglePaid(item)}
-          className="ml-2 p-2"
-          hitSlop={8}
-        >
-          <Ionicons
-            name={item.isPaid ? "checkmark-circle" : "ellipse-outline"}
-            size={24}
-            color={item.isPaid ? "#22c55e" : "#9ca3af"}
-          />
-        </Pressable>
-      </View>
-    </Animated.View>
-  );
+      </Animated.View>
+    );
+  };
 
   const renderHeader = () => (
     <>

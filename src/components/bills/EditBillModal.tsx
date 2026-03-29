@@ -56,7 +56,7 @@ export function EditBillModal({
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [recurrence, setRecurrence] = useState<BillRecurrence>("monthly");
   const [isAutoPay, setIsAutoPay] = useState(false);
-  const [reminderDaysBefore, setReminderDaysBefore] = useState("3");
+  const [reminderDaysBefore, setReminderDaysBefore] = useState<number[]>([3]);
   const [notes, setNotes] = useState("");
 
   const scale = useSharedValue(1);
@@ -71,7 +71,12 @@ export function EditBillModal({
       setDueDate(new Date(bill.dueDate));
       setRecurrence(bill.recurrence);
       setIsAutoPay(bill.isAutoPay);
-      setReminderDaysBefore(bill.reminderDaysBefore?.toString() || "3");
+      setReminderDaysBefore(
+        Array.isArray(bill.reminderDaysBefore) &&
+          bill.reminderDaysBefore.length > 0
+          ? bill.reminderDaysBefore
+          : [3],
+      );
       setNotes(bill.notes || "");
     }
   }, [bill]);
@@ -87,7 +92,8 @@ export function EditBillModal({
       dueDate: formattedDate,
       recurrence,
       isAutoPay,
-      reminderDaysBefore: parseInt(reminderDaysBefore, 10) || 3,
+      reminderDaysBefore:
+        reminderDaysBefore.length > 0 ? reminderDaysBefore : [3],
       notes: notes.trim() || undefined,
     };
 
@@ -326,14 +332,40 @@ export function EditBillModal({
             {/* Reminder Days */}
             <View className="mb-5">
               <Text className="text-gray-700 dark:text-gray-300 text-sm font-semibold mb-2">
-                Remind me (days before)
+                Remind me before due date
               </Text>
-              <TextInput
-                value={reminderDaysBefore}
-                onChangeText={setReminderDaysBefore}
-                keyboardType="number-pad"
-                className="bg-white dark:bg-gray-800 rounded-2xl px-4 py-4 text-gray-900 dark:text-white text-base border border-gray-200 dark:border-gray-700"
-              />
+              <View className="flex-row flex-wrap gap-2">
+                {[1, 3, 7, 14].map((day) => {
+                  const selected = reminderDaysBefore.includes(day);
+                  return (
+                    <Pressable
+                      key={day}
+                      onPress={() =>
+                        setReminderDaysBefore((prev) =>
+                          selected
+                            ? prev.filter((d) => d !== day)
+                            : [...prev, day].sort((a, b) => a - b),
+                        )
+                      }
+                      className={`px-4 py-2.5 rounded-xl ${
+                        selected
+                          ? "bg-gray-900 dark:bg-white"
+                          : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                      }`}
+                    >
+                      <Text
+                        className={`text-sm font-semibold ${
+                          selected
+                            ? "text-white dark:text-gray-900"
+                            : "text-gray-700 dark:text-gray-300"
+                        }`}
+                      >
+                        {day === 1 ? "1 day" : `${day} days`}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
             </View>
 
             {/* Notes */}

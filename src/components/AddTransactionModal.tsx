@@ -115,6 +115,11 @@ export default function AddTransactionModal({
     onClose();
   };
 
+  const handleDismiss = () => {
+    resetForm();
+    onClose();
+  };
+
   const handleSubmit = async () => {
     const isTransfer = type === "transfer";
     if (!amount.trim() || !account) {
@@ -187,8 +192,10 @@ export default function AddTransactionModal({
     <Modal
       visible={visible}
       animationType="slide"
-      presentationStyle="fullScreen"
+      presentationStyle="pageSheet"
+      allowSwipeDismissal
       onRequestClose={handleClose}
+      onDismiss={handleDismiss}
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}

@@ -345,6 +345,7 @@ export interface Settings {
   notifications: NotificationSettings;
   dateFormat: string;
   startOfWeek: "sunday" | "monday";
+  hideNetWorth: boolean;
   lowBalanceThreshold: number;
   incomeType?: "salary" | "freelance" | "mixed" | null;
   financialGoals?: string[] | null;
@@ -359,6 +360,7 @@ export interface UpdateSettingsRequest {
   notifications?: Partial<NotificationSettings>;
   dateFormat?: string;
   startOfWeek?: "sunday" | "monday";
+  hideNetWorth?: boolean;
   incomeType?: "salary" | "freelance" | "mixed";
   financialGoals?: string[];
 }

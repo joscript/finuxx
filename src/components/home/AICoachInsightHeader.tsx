@@ -47,19 +47,6 @@ export function AICoachInsightHeader({
       {/* Top row: avatar + greeting + action buttons */}
       <View className="flex-row items-center justify-between mb-4 px-1">
         <View className="flex-row items-center flex-1">
-          <View
-            style={{
-              borderWidth: 2,
-              borderColor: avatarRingColor,
-              borderRadius: 9999,
-              padding: 2,
-            }}
-          >
-            <Image
-              source={{ uri: avatarUrl }}
-              className="w-10 h-10 rounded-full bg-gray-200"
-            />
-          </View>
           <View className="ml-3">
             <Text className="text-gray-400 dark:text-gray-500 text-xs font-medium">
               {getGreeting()}

@@ -25,6 +25,7 @@ import { fetchCurrentBudget } from "../store/slices/budgetsSlice";
 import { fetchBills } from "../store/slices/billsSlice";
 import { fetchTransactionSummary } from "../store/slices/transactionsSlice";
 import { fetchGoals } from "../store/slices/goalsSlice";
+import { fetchSettings, updateSettings } from "../store/slices/settingsSlice";
 
 type HomeScreenNavigationProp = NavigationProp<RootStackParamList>;
 
@@ -129,6 +130,7 @@ export default function HomeScreen() {
   const { goals, isLoading: goalsLoading } = useAppSelector(
     (state) => state.goals,
   );
+  const { settings: appSettings } = useAppSelector((state) => state.settings);
 
   // Fetch data on mount
   useEffect(() => {
@@ -137,6 +139,7 @@ export default function HomeScreen() {
     dispatch(fetchBills({ upcoming: true }));
     dispatch(fetchTransactionSummary());
     dispatch(fetchGoals());
+    dispatch(fetchSettings());
   }, [dispatch]);
 
   const isLoading =
@@ -196,6 +199,7 @@ export default function HomeScreen() {
         : budgetSpent / budgetTotal >= 0.8
           ? "warning"
           : "good";
+  const isNetWorthVisible = !(appSettings?.hideNetWorth ?? false);
 
   // Derive categories from budget data
   const budgetCategories = (currentBudget?.categories || [])
@@ -261,6 +265,10 @@ export default function HomeScreen() {
     navigation.navigate("Reports" as never);
   };
 
+  const handleNetWorthVisibilityToggle = (visible: boolean) => {
+    dispatch(updateSettings({ hideNetWorth: !visible }));
+  };
+
   if (isLoading) {
     return (
       <View className="flex-1">
@@ -317,6 +325,8 @@ export default function HomeScreen() {
               liabilities={totalLiabilities}
               currency={currencySymbol}
               percentageChange={percentageChange}
+              isVisible={isNetWorthVisible}
+              onVisibilityToggle={handleNetWorthVisibilityToggle}
               onPress={handleBalancePress}
             />
           </Animated.View>

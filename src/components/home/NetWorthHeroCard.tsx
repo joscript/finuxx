@@ -18,6 +18,8 @@ interface NetWorthHeroCardProps {
   liabilities: number;
   currency?: string;
   percentageChange?: number;
+  isVisible?: boolean;
+  onVisibilityToggle?: (value: boolean) => void;
   onPress?: () => void;
 }
 
@@ -26,6 +28,8 @@ export function NetWorthHeroCard({
   liabilities,
   currency = "₱",
   percentageChange,
+  isVisible = true,
+  onVisibilityToggle,
   onPress,
 }: NetWorthHeroCardProps) {
   const scale = useSharedValue(1);
@@ -69,6 +73,8 @@ export function NetWorthHeroCard({
     width: `${liabilitiesWidth.value}%`,
   }));
 
+  const maskedAmount = "••••••";
+
   return (
     <AnimatedPressable
       onPress={onPress}
@@ -95,26 +101,46 @@ export function NetWorthHeroCard({
         <Text className="text-gray-500 dark:text-gray-400 text-sm font-medium">
           Net Worth
         </Text>
-        {percentageChange !== undefined && (
-          <View
-            className={`flex-row items-center rounded-full px-2.5 py-1 ${
-              percentageChange >= 0 ? "bg-emerald-500/15" : "bg-red-500/15"
-            }`}
+        <View className="flex-row items-center gap-2">
+          <Pressable
+            onPress={(event) => {
+              event.stopPropagation();
+              onVisibilityToggle?.(!isVisible);
+            }}
+            onPressIn={(event) => event.stopPropagation()}
+            onPressOut={(event) => event.stopPropagation()}
+            className="w-8 h-8 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700"
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={isVisible ? "Hide net worth" : "Show net worth"}
           >
             <Ionicons
-              name={percentageChange >= 0 ? "arrow-up" : "arrow-down"}
-              size={10}
-              color={percentageChange >= 0 ? "#22c55e" : "#ef4444"}
+              name={isVisible ? "eye-outline" : "eye-off-outline"}
+              size={16}
+              color="#9ca3af"
             />
-            <Text
-              className={`text-[11px] font-bold ml-0.5 ${
-                percentageChange >= 0 ? "text-emerald-500" : "text-red-500"
+          </Pressable>
+          {percentageChange !== undefined && (
+            <View
+              className={`flex-row items-center rounded-full px-2.5 py-1 ${
+                percentageChange >= 0 ? "bg-emerald-500/15" : "bg-red-500/15"
               }`}
             >
-              {Math.abs(percentageChange).toFixed(1)}%
-            </Text>
-          </View>
-        )}
+              <Ionicons
+                name={percentageChange >= 0 ? "arrow-up" : "arrow-down"}
+                size={10}
+                color={percentageChange >= 0 ? "#22c55e" : "#ef4444"}
+              />
+              <Text
+                className={`text-[11px] font-bold ml-0.5 ${
+                  percentageChange >= 0 ? "text-emerald-500" : "text-red-500"
+                }`}
+              >
+                {Math.abs(percentageChange).toFixed(1)}%
+              </Text>
+            </View>
+          )}
+        </View>
       </View>
 
       {/* Big net worth number */}
@@ -130,7 +156,7 @@ export function NetWorthHeroCard({
           numberOfLines={1}
           minimumFontScale={0.7}
         >
-          {Math.abs(netWorth).toLocaleString()}
+          {isVisible ? Math.abs(netWorth).toLocaleString() : maskedAmount}
         </Text>
       </View>
 
@@ -156,7 +182,7 @@ export function NetWorthHeroCard({
             </Text>
             <Text className="text-gray-900 dark:text-white text-base font-bold mt-0.5">
               {currency}
-              {assets.toLocaleString()}
+              {isVisible ? assets.toLocaleString() : maskedAmount}
             </Text>
           </View>
         </View>
@@ -169,7 +195,7 @@ export function NetWorthHeroCard({
             </Text>
             <Text className="text-gray-900 dark:text-white text-base font-bold mt-0.5">
               {currency}
-              {liabilities.toLocaleString()}
+              {isVisible ? liabilities.toLocaleString() : maskedAmount}
             </Text>
           </View>
         </View>

@@ -4,15 +4,12 @@ import {
   Text,
   ScrollView,
   Pressable,
-  Image,
   Switch,
   Dimensions,
   Alert,
-  Linking,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { logout } from "../store/slices/authSlice";
 import { fetchSettings, updateSettings } from "../store/slices/settingsSlice";
@@ -37,15 +34,12 @@ import { Ionicons } from "@expo/vector-icons";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
-// Default avatar for users without profile picture
-const DEFAULT_AVATAR =
-  "https://ui-avatars.com/api/?name=User&background=random";
-
 // Default settings when API data is not available
 const DEFAULT_SETTINGS = {
   currency: "PHP",
   language: "en",
   theme: "system",
+  hideNetWorth: false,
   startOfWeek: "monday",
   budgetAlerts: true,
   billReminders: true,
@@ -72,14 +66,6 @@ const CURRENCY_OPTIONS: SelectionOption[] = [
   { label: "Australian Dollar (A$)", value: "AUD" },
 ];
 
-const LANGUAGE_OPTIONS: SelectionOption[] = [
-  { label: "English", value: "en" },
-  { label: "Filipino", value: "fil" },
-  { label: "Spanish", value: "es" },
-  { label: "French", value: "fr" },
-  { label: "German", value: "de" },
-];
-
 const THEME_OPTIONS: SelectionOption[] = [
   { label: "Light", value: "light" },
   { label: "Dark", value: "dark" },
@@ -89,14 +75,6 @@ const THEME_OPTIONS: SelectionOption[] = [
 const START_OF_WEEK_OPTIONS: SelectionOption[] = [
   { label: "Sunday", value: "sunday" },
   { label: "Monday", value: "monday" },
-];
-
-const AUTO_LOCK_OPTIONS: SelectionOption[] = [
-  { label: "Immediately", value: "immediately" },
-  { label: "1 minute", value: "1 minute" },
-  { label: "5 minutes", value: "5 minutes" },
-  { label: "15 minutes", value: "15 minutes" },
-  { label: "Never", value: "never" },
 ];
 
 // ============ SKELETON SHIMMER COMPONENT ============
@@ -254,16 +232,16 @@ function SkeletonLoading() {
 interface ProfileCardProps {
   name: string;
   email: string;
-  avatarUrl: string;
   onEditPress?: () => void;
 }
 
-function ProfileCard({
-  name,
-  email,
-  avatarUrl,
-  onEditPress,
-}: ProfileCardProps) {
+function ProfileCard({ name, email, onEditPress }: ProfileCardProps) {
+  const initials = name
+    .split(" ")
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("");
+
   return (
     <Pressable
       onPress={onEditPress}
@@ -277,10 +255,11 @@ function ProfileCard({
       }}
     >
       <View className="flex-row items-center">
-        <Image
-          source={{ uri: avatarUrl }}
-          className="w-[72px] h-[72px] rounded-full bg-gray-100"
-        />
+        <View className="w-[72px] h-[72px] rounded-full bg-violet-100 dark:bg-violet-500/20 items-center justify-center">
+          <Text className="text-violet-600 dark:text-violet-400 text-2xl font-bold">
+            {initials || "U"}
+          </Text>
+        </View>
         <View className="ml-4 flex-1">
           <Text className="text-gray-900 dark:text-white text-xl font-bold tracking-tight">
             {name}
@@ -455,20 +434,9 @@ export default function SettingsScreen() {
     onSelect: (value: string) => void;
   } | null>(null);
 
-  // Local settings not stored on the server
-  const [biometricLogin, setBiometricLogin] = useState(
-    DEFAULT_SETTINGS.biometricLogin,
-  );
-  const [autoLockTime, setAutoLockTime] = useState(
-    DEFAULT_SETTINGS.autoLockTime,
-  );
-
-  // Fetch settings on mount + restore local preferences
+  // Fetch settings on mount
   useEffect(() => {
     dispatch(fetchSettings());
-    AsyncStorage.getItem("autoLockTime").then((v) => {
-      if (v) setAutoLockTime(v);
-    });
   }, [dispatch]);
 
   // Transform API settings to local format with defaults
@@ -476,6 +444,7 @@ export default function SettingsScreen() {
     currency: apiSettings?.currency || DEFAULT_SETTINGS.currency,
     language: apiSettings?.language || DEFAULT_SETTINGS.language,
     theme: apiSettings?.theme || DEFAULT_SETTINGS.theme,
+    hideNetWorth: apiSettings?.hideNetWorth ?? DEFAULT_SETTINGS.hideNetWorth,
     startOfWeek: apiSettings?.startOfWeek || DEFAULT_SETTINGS.startOfWeek,
     budgetAlerts:
       apiSettings?.notifications?.budgetAlerts ?? DEFAULT_SETTINGS.budgetAlerts,
@@ -508,9 +477,6 @@ export default function SettingsScreen() {
       ?.label.split(" ")
       .slice(0, 3)
       .join(" ") ?? settings.currency;
-  const languageDisplay =
-    LANGUAGE_OPTIONS.find((o) => o.value === settings.language)?.label ??
-    settings.language;
   const themeDisplay =
     settings.theme.charAt(0).toUpperCase() + settings.theme.slice(1);
   const startOfWeekDisplay =
@@ -561,14 +527,6 @@ export default function SettingsScreen() {
       onSelect: (value) => dispatch(updateSettings({ currency: value })),
     });
 
-  const handleLanguagePress = () =>
-    setSelectionModal({
-      title: "Language",
-      options: LANGUAGE_OPTIONS,
-      selectedValue: settings.language,
-      onSelect: (value) => dispatch(updateSettings({ language: value })),
-    });
-
   const handleThemePress = () =>
     setSelectionModal({
       title: "Theme",
@@ -589,40 +547,15 @@ export default function SettingsScreen() {
         dispatch(updateSettings({ startOfWeek: value as "sunday" | "monday" })),
     });
 
+  const handleNetWorthVisibilityToggle = (isHidden: boolean) => {
+    dispatch(updateSettings({ hideNetWorth: isHidden }));
+  };
+
   // ---- Security handlers ----
   const handleChangePinPress = () => setChangePasswordVisible(true);
 
-  const handleAutoLockPress = () =>
-    setSelectionModal({
-      title: "Auto-Lock",
-      options: AUTO_LOCK_OPTIONS,
-      selectedValue: autoLockTime,
-      onSelect: async (value) => {
-        setAutoLockTime(value);
-        await AsyncStorage.setItem("autoLockTime", value);
-      },
-    });
-
-  const handleConnectedDevicesPress = () => {
-    Alert.alert(
-      "Connected Devices",
-      `You are currently signed in on ${DEFAULT_SETTINGS.connectedDevices} device. Sign out of all other devices is coming soon.`,
-      [{ text: "OK" }],
-    );
-  };
-
   // ---- Privacy handlers ----
-  const handleDataExportPress = () => {
-    Alert.alert(
-      "Export Data",
-      "Data export is coming soon. We'll notify you when it's available.",
-      [{ text: "OK" }],
-    );
-  };
-
   const handleDeleteAccountPress = () => setDeleteAccountVisible(true);
-
-  const handlePermissionsPress = () => Linking.openSettings();
 
   // ---- About handlers ----
   const handleTermsPress = () => {
@@ -698,7 +631,6 @@ export default function SettingsScreen() {
           <ProfileCard
             name={user?.name || "User"}
             email={user?.email || "user@example.com"}
-            avatarUrl={DEFAULT_AVATAR}
             onEditPress={handleEditProfile}
           />
         </Animated.View>
@@ -719,14 +651,6 @@ export default function SettingsScreen() {
               onPress={handleCurrencyPress}
             />
             <SettingRow
-              icon="language-outline"
-              iconColor="#3b82f6"
-              iconBgColor="bg-blue-50 dark:bg-blue-500/20"
-              title="Language"
-              value={languageDisplay}
-              onPress={handleLanguagePress}
-            />
-            <SettingRow
               icon="contrast-outline"
               iconColor="#8b5cf6"
               iconBgColor="bg-violet-50 dark:bg-violet-500/20"
@@ -741,6 +665,15 @@ export default function SettingsScreen() {
               title="Start of Week"
               value={startOfWeekDisplay}
               onPress={handleStartOfWeekPress}
+            />
+            <SettingRow
+              icon="eye-outline"
+              iconColor="#06b6d4"
+              iconBgColor="bg-cyan-50 dark:bg-cyan-500/20"
+              title="Hide Net Worth"
+              hasToggle
+              toggleValue={settings.hideNetWorth}
+              onToggleChange={handleNetWorthVisibilityToggle}
               isLast
             />
           </SectionCard>
@@ -837,36 +770,11 @@ export default function SettingsScreen() {
           <SectionHeader title="Security" />
           <SectionCard>
             <SettingRow
-              icon="finger-print-outline"
-              iconColor="#22c55e"
-              iconBgColor="bg-emerald-50 dark:bg-emerald-500/20"
-              title="Biometric Login"
-              hasToggle
-              toggleValue={biometricLogin}
-              onToggleChange={setBiometricLogin}
-            />
-            <SettingRow
               icon="keypad-outline"
               iconColor="#3b82f6"
               iconBgColor="bg-blue-50 dark:bg-blue-500/20"
               title="Change PIN"
               onPress={handleChangePinPress}
-            />
-            <SettingRow
-              icon="timer-outline"
-              iconColor="#8b5cf6"
-              iconBgColor="bg-violet-50 dark:bg-violet-500/20"
-              title="Auto-Lock"
-              value={autoLockTime}
-              onPress={handleAutoLockPress}
-            />
-            <SettingRow
-              icon="phone-portrait-outline"
-              iconColor="#f59e0b"
-              iconBgColor="bg-amber-50 dark:bg-amber-500/20"
-              title="Connected Devices"
-              value={`${DEFAULT_SETTINGS.connectedDevices} device`}
-              onPress={handleConnectedDevicesPress}
               isLast
             />
           </SectionCard>
@@ -879,20 +787,6 @@ export default function SettingsScreen() {
         >
           <SectionHeader title="Privacy" />
           <SectionCard>
-            <SettingRow
-              icon="download-outline"
-              iconColor="#3b82f6"
-              iconBgColor="bg-blue-50 dark:bg-blue-500/20"
-              title="Export Data"
-              onPress={handleDataExportPress}
-            />
-            <SettingRow
-              icon="shield-checkmark-outline"
-              iconColor="#22c55e"
-              iconBgColor="bg-emerald-50 dark:bg-emerald-500/20"
-              title="Permissions"
-              onPress={handlePermissionsPress}
-            />
             <SettingRow
               icon="trash-outline"
               iconColor="#ef4444"

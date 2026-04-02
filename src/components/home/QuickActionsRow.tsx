@@ -65,14 +65,14 @@ function ActionButton({
 export interface QuickActionsRowProps {
   onTransactions: () => void;
   onGoals: () => void;
-  onReports: () => void;
+  onBudgets: () => void;
   onBills: () => void;
 }
 
 export function QuickActionsRow({
   onTransactions,
   onGoals,
-  onReports,
+  onBudgets,
   onBills,
 }: QuickActionsRowProps) {
   const actions: QuickAction[] = [
@@ -93,9 +93,9 @@ export function QuickActionsRow({
       shadowColor: "#8b5cf6",
     },
     {
-      icon: "bar-chart-outline",
-      label: "Reports",
-      onPress: onReports,
+      icon: "wallet-outline",
+      label: "Budgets",
+      onPress: onBudgets,
       iconColor: "#22c55e",
       bgClass: "bg-emerald-50 dark:bg-emerald-500/20",
       shadowColor: "#22c55e",

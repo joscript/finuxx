@@ -261,8 +261,8 @@ export default function HomeScreen() {
     navigation.navigate("Transactions" as never);
   };
 
-  const handleReportsPress = () => {
-    navigation.navigate("Reports" as never);
+  const handleBudgetsPress = () => {
+    navigation.navigate("Budget" as never);
   };
 
   const handleNetWorthVisibilityToggle = (visible: boolean) => {
@@ -339,7 +339,7 @@ export default function HomeScreen() {
             <QuickActionsRow
               onTransactions={handleTransactionsPress}
               onGoals={handleGoalsPress}
-              onReports={handleReportsPress}
+              onBudgets={handleBudgetsPress}
               onBills={() => navigation.navigate("Bills" as never)}
             />
           </Animated.View>

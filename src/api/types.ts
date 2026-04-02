@@ -69,6 +69,17 @@ export interface Transaction {
   id: number;
   userId: number;
   accountId: number;
+  relatedTransactionId?: number;
+  transferDirection?: "out" | "in";
+  relatedTransaction?: {
+    id: number;
+    account?: {
+      id: number;
+      name: string;
+      icon?: string;
+      iconColor?: string;
+    };
+  };
   categoryId?: number;
   type: TransactionType;
   amount: string;
@@ -92,6 +103,7 @@ export interface TransactionSummary {
 
 export interface CreateTransactionRequest {
   accountId?: string;
+  destinationAccountId?: string;
   categoryId?: string;
   type: TransactionType;
   amount: number;

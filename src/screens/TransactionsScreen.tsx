@@ -13,7 +13,9 @@ import { useAppDispatch, useAppSelector } from "../store/hooks";
 import {
   fetchTransactions,
   createTransaction,
+  fetchTransactionSummary,
 } from "../store/slices/transactionsSlice";
+import { fetchAccounts } from "../store/slices/accountsSlice";
 import { CreateTransactionRequest } from "../api";
 import {
   TransactionItem,
@@ -94,19 +96,91 @@ export default function TransactionsScreen() {
 
     console.log(">>> Transforming API transactions:", apiTransactions);
 
-    return apiTransactions.map((t) => ({
-      id: t.id.toString(),
-      type: t.type as "income" | "expense",
-      category: t.category?.name || "Uncategorized",
-      categoryIcon: (t.category?.icon ||
-        "ellipsis-horizontal-outline") as keyof typeof Ionicons.glyphMap,
-      categoryColor: t.category?.color || "#6b7280",
-      merchant: t.merchant || t.description || "Unknown",
-      note: t.notes,
-      amount: parseFloat(t.amount),
-      date: t.transactionDate,
-      accountId: t.accountId?.toString(),
-    }));
+    const transactionsById = new Map(apiTransactions.map((tx) => [tx.id, tx]));
+    const processedTransferPairs = new Set<string>();
+
+    const getTransferPairKey = (transactionId: number, relatedId?: number) => {
+      if (!relatedId) return `single-${transactionId}`;
+      const [firstId, secondId] = [transactionId, relatedId].sort(
+        (a, b) => a - b,
+      );
+      return `pair-${firstId}-${secondId}`;
+    };
+
+    return apiTransactions.reduce<Transaction[]>((acc, t) => {
+      if (t.type === "transfer") {
+        const relatedTransaction = t.relatedTransactionId
+          ? transactionsById.get(t.relatedTransactionId)
+          : undefined;
+
+        let canonicalTransfer = t;
+        if (
+          relatedTransaction?.type === "transfer" &&
+          relatedTransaction.transferDirection === "out" &&
+          t.transferDirection !== "out"
+        ) {
+          canonicalTransfer = relatedTransaction;
+        }
+
+        const pairKey = getTransferPairKey(
+          canonicalTransfer.id,
+          canonicalTransfer.relatedTransactionId,
+        );
+
+        if (processedTransferPairs.has(pairKey)) {
+          return acc;
+        }
+
+        processedTransferPairs.add(pairKey);
+
+        const transferDirection = canonicalTransfer.transferDirection || "out";
+        const relatedAccountName =
+          canonicalTransfer.relatedTransaction?.account?.name ||
+          relatedTransaction?.account?.name;
+
+        const transferMerchant =
+          transferDirection === "in"
+            ? relatedAccountName
+              ? `Transfer from ${relatedAccountName}`
+              : "Account Transfer"
+            : relatedAccountName
+              ? `Transfer to ${relatedAccountName}`
+              : "Account Transfer";
+
+        acc.push({
+          id: canonicalTransfer.id.toString(),
+          type: "transfer",
+          category: "Transfer",
+          categoryIcon: "swap-horizontal-outline",
+          categoryColor: "#0ea5e9",
+          merchant: transferMerchant,
+          note: canonicalTransfer.notes,
+          amount: parseFloat(canonicalTransfer.amount),
+          date: canonicalTransfer.transactionDate,
+          accountId: canonicalTransfer.accountId?.toString(),
+          transferDirection,
+          relatedAccountName,
+        });
+
+        return acc;
+      }
+
+      acc.push({
+        id: t.id.toString(),
+        type: t.type,
+        category: t.category?.name || "Uncategorized",
+        categoryIcon: (t.category?.icon ||
+          "ellipsis-horizontal-outline") as keyof typeof Ionicons.glyphMap,
+        categoryColor: t.category?.color || "#6b7280",
+        merchant: t.merchant || t.description || "Unknown",
+        note: t.notes,
+        amount: parseFloat(t.amount),
+        date: t.transactionDate,
+        accountId: t.accountId?.toString(),
+      });
+
+      return acc;
+    }, []);
   }, [apiTransactions]);
 
   // Handle refresh
@@ -191,6 +265,7 @@ export default function TransactionsScreen() {
       // Create via API
       const createRequest: CreateTransactionRequest = {
         accountId: newTransaction.accountId,
+        destinationAccountId: newTransaction.destinationAccountId,
         categoryId: newTransaction.categoryId,
         type: newTransaction.type,
         amount: parseFloat(newTransaction.amount),
@@ -206,13 +281,17 @@ export default function TransactionsScreen() {
       console.log(">>> Create transaction result:", result);
       if (createTransaction.fulfilled.match(result)) {
         // Refresh and scroll to top to show new transaction
-        await dispatch(
-          fetchTransactions({
-            startDate,
-            endDate,
-            type: filters.type === "all" ? undefined : filters.type,
-          }),
-        );
+        await Promise.all([
+          dispatch(
+            fetchTransactions({
+              startDate,
+              endDate,
+              type: filters.type === "all" ? undefined : filters.type,
+            }),
+          ),
+          dispatch(fetchAccounts()),
+          dispatch(fetchTransactionSummary()),
+        ]);
         flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
       }
     },

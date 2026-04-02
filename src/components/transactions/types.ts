@@ -11,7 +11,9 @@ export interface Account {
 
 export interface Transaction {
   id: string;
-  type: "income" | "expense";
+  type: "income" | "expense" | "transfer";
+  transferDirection?: "out" | "in";
+  relatedAccountName?: string;
   category: string;
   categoryId?: string;
   categoryIcon: keyof typeof Ionicons.glyphMap;
@@ -33,7 +35,7 @@ export interface TransactionGroup {
 }
 
 export interface FilterOptions {
-  type: "all" | "income" | "expense";
+  type: "all" | "income" | "expense" | "transfer";
   categories: string[];
   showRecurringOnly: boolean;
   minAmount: string;

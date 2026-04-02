@@ -1,8 +1,14 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from "@expo/vector-icons";
 
 // ============ ACCOUNT TYPES ============
-export type AccountType = 'checking' | 'savings' | 'credit' | 'investment' | 'wallet' | 'loan';
-export type AccountCategory = 'asset' | 'liability';
+export type AccountType =
+  | "checking"
+  | "savings"
+  | "credit"
+  | "investment"
+  | "wallet"
+  | "loan";
+export type AccountCategory = "asset" | "liability";
 
 export interface Account {
   id: string;
@@ -47,7 +53,7 @@ export interface Goal {
 // ============ TRANSACTION TYPES ============
 export interface Transaction {
   id: string;
-  type: 'income' | 'expense';
+  type: "income" | "expense" | "transfer";
   category: string;
   categoryIcon: keyof typeof Ionicons.glyphMap;
   categoryColor: string;

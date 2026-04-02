@@ -24,11 +24,12 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 // ============ TYPES ============
 export interface Transaction {
   accountId: string;
-  type: "income" | "expense";
+  destinationAccountId?: string;
+  type: "income" | "expense" | "transfer";
   amount: string;
   transactionDate: string;
-  categoryId: string;
-  merchant: string;
+  categoryId?: string;
+  merchant?: string;
   description?: string;
   notes?: string;
   isRecurring: boolean;
@@ -46,13 +47,18 @@ export default function AddTransactionModal({
   onClose,
   onAdd,
 }: AddTransactionModalProps) {
-  const [type, setType] = useState<"income" | "expense">("expense");
+  const [type, setType] = useState<"income" | "expense" | "transfer">(
+    "expense",
+  );
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [category, setCategory] = useState<Category | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [accountsLoading, setAccountsLoading] = useState(false);
   const [account, setAccount] = useState<Account | null>(null);
+  const [destinationAccount, setDestinationAccount] = useState<Account | null>(
+    null,
+  );
   const symbol = useCurrencySymbol();
   const [merchant, setMerchant] = useState("");
   const [amount, setAmount] = useState("");
@@ -60,6 +66,8 @@ export default function AddTransactionModal({
   const [isRecurring, setIsRecurring] = useState(false);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showAccountPicker, setShowAccountPicker] = useState(false);
+  const [showDestinationAccountPicker, setShowDestinationAccountPicker] =
+    useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const scale = useSharedValue(1);
@@ -92,12 +100,14 @@ export default function AddTransactionModal({
     setType("expense");
     setCategory(null);
     setAccount(null);
+    setDestinationAccount(null);
     setMerchant("");
     setAmount("");
     setNote("");
     setIsRecurring(false);
     setShowCategoryPicker(false);
     setShowAccountPicker(false);
+    setShowDestinationAccountPicker(false);
   };
 
   const handleClose = () => {
@@ -106,17 +116,33 @@ export default function AddTransactionModal({
   };
 
   const handleSubmit = async () => {
-    if (!merchant.trim() || !amount.trim() || !category || !account) {
+    const isTransfer = type === "transfer";
+    if (!amount.trim() || !account) {
+      return;
+    }
+
+    if (!isTransfer && (!merchant.trim() || !category)) {
+      return;
+    }
+
+    if (
+      isTransfer &&
+      (!destinationAccount || destinationAccount.id === account.id)
+    ) {
       return;
     }
 
     const newTransaction: Transaction = {
       accountId: account.id.toString(),
+      destinationAccountId: isTransfer
+        ? destinationAccount?.id.toString()
+        : undefined,
       type,
       amount: amount.replace(/,/g, ""),
       transactionDate: new Date().toISOString().split("T")[0],
-      categoryId: category.id,
-      merchant: merchant.trim(),
+      categoryId: isTransfer ? undefined : category?.id,
+      merchant:
+        merchant.trim() || (isTransfer ? "Account Transfer" : undefined),
       notes: note.trim() || undefined,
       isRecurring,
     };
@@ -142,15 +168,26 @@ export default function AddTransactionModal({
     scale.value = withSpring(1);
   };
 
-  const filteredCategories = categories.filter((cat) =>
-    type === "income" ? cat.isIncomeCategory : !cat.isIncomeCategory,
-  );
+  const filteredCategories = categories.filter((cat) => {
+    if (type === "transfer") {
+      return false;
+    }
+    return type === "income" ? cat.isIncomeCategory : !cat.isIncomeCategory;
+  });
+
+  const canSubmit =
+    !!amount.trim() &&
+    !!account &&
+    !isSubmitting &&
+    (type === "transfer"
+      ? !!destinationAccount && destinationAccount.id !== account.id
+      : !!merchant.trim() && !!category);
 
   return (
     <Modal
       visible={visible}
       animationType="slide"
-      presentationStyle="pageSheet"
+      presentationStyle="fullScreen"
       onRequestClose={handleClose}
     >
       <KeyboardAvoidingView
@@ -250,6 +287,43 @@ export default function AddTransactionModal({
                     </Text>
                   </View>
                 </Pressable>
+                <Pressable
+                  onPress={() => {
+                    setType("transfer");
+                    setCategory(null);
+                  }}
+                  className={`flex-1 py-3 rounded-xl items-center ${
+                    type === "transfer" ? "bg-white dark:bg-gray-700" : ""
+                  }`}
+                  style={
+                    type === "transfer"
+                      ? {
+                          shadowColor: "#000",
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.1,
+                          shadowRadius: 4,
+                          elevation: 2,
+                        }
+                      : {}
+                  }
+                >
+                  <View className="flex-row items-center">
+                    <Ionicons
+                      name="swap-horizontal"
+                      size={18}
+                      color={type === "transfer" ? "#2563eb" : "#9ca3af"}
+                    />
+                    <Text
+                      className={`ml-2 font-semibold ${
+                        type === "transfer"
+                          ? "text-blue-600"
+                          : "text-gray-400 dark:text-gray-500"
+                      }`}
+                    >
+                      Transfer
+                    </Text>
+                  </View>
+                </Pressable>
               </View>
             </View>
 
@@ -283,58 +357,17 @@ export default function AddTransactionModal({
             </View>
 
             {/* Category */}
-            <View className="mb-6">
-              <Text className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-3">
-                Category
-              </Text>
-              <Pressable
-                onPress={() => {
-                  setShowCategoryPicker(!showCategoryPicker);
-                  setShowAccountPicker(false);
-                }}
-                className="bg-white dark:bg-gray-800 rounded-2xl px-5 py-4 flex-row items-center justify-between"
-                style={{
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.05,
-                  shadowRadius: 8,
-                  elevation: 2,
-                }}
-              >
-                <View className="flex-row items-center">
-                  {category ? (
-                    <>
-                      <View
-                        className="w-10 h-10 rounded-xl items-center justify-center mr-3"
-                        style={{ backgroundColor: `${category.color}20` }}
-                      >
-                        <Ionicons
-                          name={category.icon as keyof typeof Ionicons.glyphMap}
-                          size={20}
-                          color={category.color}
-                        />
-                      </View>
-                      <Text className="text-gray-900 dark:text-white text-base font-semibold">
-                        {category.name}
-                      </Text>
-                    </>
-                  ) : (
-                    <Text className="text-gray-400 text-base">
-                      {categoriesLoading ? "Loading..." : "Select category"}
-                    </Text>
-                  )}
-                </View>
-                <Ionicons
-                  name={showCategoryPicker ? "chevron-up" : "chevron-down"}
-                  size={20}
-                  color="#9ca3af"
-                />
-              </Pressable>
-
-              {/* Category Picker */}
-              {showCategoryPicker && (
-                <View
-                  className="bg-white dark:bg-gray-800 rounded-2xl mt-2 overflow-hidden"
+            {type !== "transfer" && (
+              <View className="mb-6">
+                <Text className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-3">
+                  Category
+                </Text>
+                <Pressable
+                  onPress={() => {
+                    setShowCategoryPicker(!showCategoryPicker);
+                    setShowAccountPicker(false);
+                  }}
+                  className="bg-white dark:bg-gray-800 rounded-2xl px-5 py-4 flex-row items-center justify-between"
                   style={{
                     shadowColor: "#000",
                     shadowOffset: { width: 0, height: 2 },
@@ -343,50 +376,104 @@ export default function AddTransactionModal({
                     elevation: 2,
                   }}
                 >
-                  {filteredCategories.map((cat, index) => (
-                    <Pressable
-                      key={cat.id}
-                      onPress={() => {
-                        setCategory(cat);
-                        setShowCategoryPicker(false);
-                      }}
-                      className={`flex-row items-center px-5 py-3 ${
-                        index > 0
-                          ? "border-t border-gray-100 dark:border-gray-700"
-                          : ""
-                      } ${category?.id === cat.id ? "bg-gray-50 dark:bg-gray-700" : ""}`}
-                    >
-                      <View
-                        className="w-10 h-10 rounded-xl items-center justify-center mr-3"
-                        style={{ backgroundColor: `${cat.color}20` }}
-                      >
-                        <Ionicons
-                          name={cat.icon as keyof typeof Ionicons.glyphMap}
-                          size={20}
-                          color={cat.color}
-                        />
-                      </View>
-                      <Text className="text-gray-900 dark:text-white text-base font-medium flex-1">
-                        {cat.name}
+                  <View className="flex-row items-center">
+                    {category ? (
+                      <>
+                        <View
+                          className="w-10 h-10 rounded-xl items-center justify-center mr-3"
+                          style={{ backgroundColor: `${category.color}20` }}
+                        >
+                          <Ionicons
+                            name={
+                              category.icon as keyof typeof Ionicons.glyphMap
+                            }
+                            size={20}
+                            color={category.color}
+                          />
+                        </View>
+                        <Text className="text-gray-900 dark:text-white text-base font-semibold">
+                          {category.name}
+                        </Text>
+                      </>
+                    ) : (
+                      <Text className="text-gray-400 text-base">
+                        {categoriesLoading ? "Loading..." : "Select category"}
                       </Text>
-                      {category?.id === cat.id && (
-                        <Ionicons name="checkmark" size={20} color="#22c55e" />
-                      )}
-                    </Pressable>
-                  ))}
-                </View>
-              )}
-            </View>
+                    )}
+                  </View>
+                  <Ionicons
+                    name={showCategoryPicker ? "chevron-up" : "chevron-down"}
+                    size={20}
+                    color="#9ca3af"
+                  />
+                </Pressable>
+
+                {/* Category Picker */}
+                {showCategoryPicker && (
+                  <View
+                    className="bg-white dark:bg-gray-800 rounded-2xl mt-2 overflow-hidden"
+                    style={{
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.05,
+                      shadowRadius: 8,
+                      elevation: 2,
+                    }}
+                  >
+                    {filteredCategories.map((cat, index) => (
+                      <Pressable
+                        key={cat.id}
+                        onPress={() => {
+                          setCategory(cat);
+                          setShowCategoryPicker(false);
+                        }}
+                        className={`flex-row items-center px-5 py-3 ${
+                          index > 0
+                            ? "border-t border-gray-100 dark:border-gray-700"
+                            : ""
+                        } ${category?.id === cat.id ? "bg-gray-50 dark:bg-gray-700" : ""}`}
+                      >
+                        <View
+                          className="w-10 h-10 rounded-xl items-center justify-center mr-3"
+                          style={{ backgroundColor: `${cat.color}20` }}
+                        >
+                          <Ionicons
+                            name={cat.icon as keyof typeof Ionicons.glyphMap}
+                            size={20}
+                            color={cat.color}
+                          />
+                        </View>
+                        <Text className="text-gray-900 dark:text-white text-base font-medium flex-1">
+                          {cat.name}
+                        </Text>
+                        {category?.id === cat.id && (
+                          <Ionicons
+                            name="checkmark"
+                            size={20}
+                            color="#22c55e"
+                          />
+                        )}
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+              </View>
+            )}
 
             {/* Account / Wallet */}
             <View className="mb-6">
               <Text className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-3">
-                {type === "income" ? "Add to Account" : "Pay from Account"}
+                {type === "income"
+                  ? "Add to Account"
+                  : type === "transfer"
+                    ? "From Account"
+                    : "Pay from Account"}
               </Text>
               <Pressable
                 onPress={() => {
                   setShowAccountPicker(!showAccountPicker);
                   setShowCategoryPicker(false);
+                  setShowDestinationAccountPicker(false);
                 }}
                 className="bg-white dark:bg-gray-800 rounded-2xl px-5 py-4 flex-row items-center justify-between"
                 style={{
@@ -502,10 +589,154 @@ export default function AddTransactionModal({
               )}
             </View>
 
+            {type === "transfer" && (
+              <View className="mb-6">
+                <Text className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-3">
+                  To Account
+                </Text>
+                <Pressable
+                  onPress={() => {
+                    setShowDestinationAccountPicker(
+                      !showDestinationAccountPicker,
+                    );
+                    setShowAccountPicker(false);
+                    setShowCategoryPicker(false);
+                  }}
+                  className="bg-white dark:bg-gray-800 rounded-2xl px-5 py-4 flex-row items-center justify-between"
+                  style={{
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.05,
+                    shadowRadius: 8,
+                    elevation: 2,
+                  }}
+                >
+                  <View className="flex-row items-center flex-1">
+                    {destinationAccount ? (
+                      <>
+                        <View
+                          className="w-10 h-10 rounded-xl items-center justify-center mr-3"
+                          style={{
+                            backgroundColor:
+                              destinationAccount.iconBgColor ?? "#e5e7eb",
+                          }}
+                        >
+                          <Ionicons
+                            name={
+                              (destinationAccount.icon ??
+                                "wallet-outline") as keyof typeof Ionicons.glyphMap
+                            }
+                            size={20}
+                            color={destinationAccount.iconColor ?? "#6b7280"}
+                          />
+                        </View>
+                        <View className="flex-1">
+                          <Text className="text-gray-900 dark:text-white text-base font-semibold">
+                            {destinationAccount.name}
+                          </Text>
+                          <Text className="text-gray-500 dark:text-gray-400 text-sm">
+                            Balance: {symbol}
+                            {parseFloat(
+                              destinationAccount.balance,
+                            ).toLocaleString()}
+                          </Text>
+                        </View>
+                      </>
+                    ) : (
+                      <Text className="text-gray-400 text-base">
+                        {accountsLoading ? "Loading..." : "Select destination"}
+                      </Text>
+                    )}
+                  </View>
+                  <Ionicons
+                    name={
+                      showDestinationAccountPicker
+                        ? "chevron-up"
+                        : "chevron-down"
+                    }
+                    size={20}
+                    color="#9ca3af"
+                  />
+                </Pressable>
+
+                {showDestinationAccountPicker && (
+                  <View
+                    className="bg-white dark:bg-gray-800 rounded-2xl mt-2 overflow-hidden"
+                    style={{
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.05,
+                      shadowRadius: 8,
+                      elevation: 2,
+                    }}
+                  >
+                    {accounts
+                      .filter((acc) => acc.id !== account?.id)
+                      .map((acc, index) => (
+                        <Pressable
+                          key={acc.id}
+                          onPress={() => {
+                            setDestinationAccount(acc);
+                            setShowDestinationAccountPicker(false);
+                          }}
+                          className={`flex-row items-center px-5 py-3 ${
+                            index > 0
+                              ? "border-t border-gray-100 dark:border-gray-700"
+                              : ""
+                          } ${destinationAccount?.id === acc.id ? "bg-gray-50 dark:bg-gray-700" : ""}`}
+                        >
+                          <View
+                            className="w-10 h-10 rounded-xl items-center justify-center mr-3"
+                            style={{
+                              backgroundColor: acc.iconBgColor ?? "#e5e7eb",
+                            }}
+                          >
+                            <Ionicons
+                              name={
+                                (acc.icon ??
+                                  "wallet-outline") as keyof typeof Ionicons.glyphMap
+                              }
+                              size={20}
+                              color={acc.iconColor ?? "#6b7280"}
+                            />
+                          </View>
+                          <View className="flex-1">
+                            <Text className="text-gray-900 dark:text-white text-base font-medium">
+                              {acc.name}
+                            </Text>
+                            <Text
+                              className={`text-sm ${
+                                parseFloat(acc.balance) >= 0
+                                  ? "text-gray-500 dark:text-gray-400"
+                                  : "text-red-500"
+                              }`}
+                            >
+                              {symbol}
+                              {parseFloat(acc.balance).toLocaleString()}
+                            </Text>
+                          </View>
+                          {destinationAccount?.id === acc.id && (
+                            <Ionicons
+                              name="checkmark"
+                              size={20}
+                              color="#22c55e"
+                            />
+                          )}
+                        </Pressable>
+                      ))}
+                  </View>
+                )}
+              </View>
+            )}
+
             {/* Merchant / Source */}
             <View className="mb-6">
               <Text className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-3">
-                {type === "income" ? "Source" : "Merchant"}
+                {type === "income"
+                  ? "Source"
+                  : type === "transfer"
+                    ? "Label (optional)"
+                    : "Merchant"}
               </Text>
               <View
                 className="bg-white dark:bg-gray-800 rounded-2xl px-5 py-4"
@@ -521,7 +752,11 @@ export default function AddTransactionModal({
                   value={merchant}
                   onChangeText={setMerchant}
                   placeholder={
-                    type === "income" ? "e.g., Company Inc." : "e.g., Jollibee"
+                    type === "income"
+                      ? "e.g., Company Inc."
+                      : type === "transfer"
+                        ? "e.g., E-wallet to Bank"
+                        : "e.g., Jollibee"
                   }
                   placeholderTextColor="#9ca3af"
                   className="text-gray-900 dark:text-white text-base"
@@ -609,13 +844,7 @@ export default function AddTransactionModal({
               onPress={handleSubmit}
               onPressIn={handlePressIn}
               onPressOut={handlePressOut}
-              disabled={
-                !merchant.trim() ||
-                !amount.trim() ||
-                !category ||
-                !account ||
-                isSubmitting
-              }
+              disabled={!canSubmit}
               style={[
                 animatedButtonStyle,
                 {
@@ -627,27 +856,23 @@ export default function AddTransactionModal({
                 },
               ]}
               className={`py-4 rounded-2xl items-center ${
-                merchant.trim() &&
-                amount.trim() &&
-                category &&
-                account &&
-                !isSubmitting
+                canSubmit
                   ? "bg-gray-900 dark:bg-white"
                   : "bg-gray-300 dark:bg-gray-700"
               }`}
             >
               <Text
                 className={`text-lg font-bold ${
-                  merchant.trim() &&
-                  amount.trim() &&
-                  category &&
-                  account &&
-                  !isSubmitting
+                  canSubmit
                     ? "text-white dark:text-gray-900"
                     : "text-gray-500 dark:text-gray-400"
                 }`}
               >
-                {isSubmitting ? "Adding..." : "Add Transaction"}
+                {isSubmitting
+                  ? "Adding..."
+                  : type === "transfer"
+                    ? "Transfer Funds"
+                    : "Add Transaction"}
               </Text>
             </AnimatedPressable>
           </View>

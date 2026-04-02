@@ -30,7 +30,10 @@ export default function TransactionItem({
 }: TransactionItemProps) {
   const fmt = useCurrency();
   const scale = useSharedValue(1);
+  const isTransfer = transaction.type === "transfer";
   const isIncome = transaction.type === "income";
+  const isPositiveAmount =
+    isIncome || (isTransfer && transaction.transferDirection === "in");
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -113,12 +116,14 @@ export default function TransactionItem({
         {/* Amount */}
         <Text
           className={`text-base font-bold ${
-            isIncome
-              ? "text-emerald-500 dark:text-emerald-400"
-              : "text-gray-900 dark:text-white"
+            isTransfer
+              ? "text-sky-600 dark:text-sky-400"
+              : isIncome
+                ? "text-emerald-500 dark:text-emerald-400"
+                : "text-gray-900 dark:text-white"
           }`}
         >
-          {isIncome ? "+" : "-"}
+          {isPositiveAmount ? "+" : "-"}
           {fmt(transaction.amount)}
         </Text>
       </AnimatedPressable>

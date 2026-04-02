@@ -54,16 +54,17 @@ export default function BottomTabNavigator() {
     async (transaction: Transaction) => {
       const createRequest: CreateTransactionRequest = {
         accountId: transaction.accountId,
+        destinationAccountId: transaction.destinationAccountId,
         categoryId: transaction.categoryId,
         type: transaction.type,
         amount: parseFloat(transaction.amount),
         merchant: transaction.merchant,
+        description: transaction.description,
         notes: transaction.notes,
         transactionDate: transaction.transactionDate,
       };
 
       await dispatch(createTransaction(createRequest));
-      setShowAddModal(false);
     },
     [dispatch],
   );

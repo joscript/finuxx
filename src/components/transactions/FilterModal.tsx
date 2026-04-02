@@ -91,40 +91,45 @@ export default function FilterModal({
                 Transaction Type
               </Text>
               <View className="flex-row bg-gray-100 dark:bg-gray-800 rounded-2xl p-1">
-                {(["all", "expense", "income"] as const).map((typeOption) => (
-                  <Pressable
-                    key={typeOption}
-                    onPress={() =>
-                      setLocalFilters((prev) => ({ ...prev, type: typeOption }))
-                    }
-                    className={`flex-1 py-3 rounded-xl items-center ${
-                      localFilters.type === typeOption
-                        ? "bg-white dark:bg-gray-700"
-                        : ""
-                    }`}
-                    style={
-                      localFilters.type === typeOption
-                        ? {
-                            shadowColor: "#000",
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.1,
-                            shadowRadius: 4,
-                            elevation: 2,
-                          }
-                        : {}
-                    }
-                  >
-                    <Text
-                      className={`font-semibold capitalize ${
+                {(["all", "expense", "income", "transfer"] as const).map(
+                  (typeOption) => (
+                    <Pressable
+                      key={typeOption}
+                      onPress={() =>
+                        setLocalFilters((prev) => ({
+                          ...prev,
+                          type: typeOption,
+                        }))
+                      }
+                      className={`flex-1 py-3 rounded-xl items-center ${
                         localFilters.type === typeOption
-                          ? "text-gray-900 dark:text-white"
-                          : "text-gray-400 dark:text-gray-500"
+                          ? "bg-white dark:bg-gray-700"
+                          : ""
                       }`}
+                      style={
+                        localFilters.type === typeOption
+                          ? {
+                              shadowColor: "#000",
+                              shadowOffset: { width: 0, height: 2 },
+                              shadowOpacity: 0.1,
+                              shadowRadius: 4,
+                              elevation: 2,
+                            }
+                          : {}
+                      }
                     >
-                      {typeOption}
-                    </Text>
-                  </Pressable>
-                ))}
+                      <Text
+                        className={`font-semibold capitalize ${
+                          localFilters.type === typeOption
+                            ? "text-gray-900 dark:text-white"
+                            : "text-gray-400 dark:text-gray-500"
+                        }`}
+                      >
+                        {typeOption}
+                      </Text>
+                    </Pressable>
+                  ),
+                )}
               </View>
             </View>
 

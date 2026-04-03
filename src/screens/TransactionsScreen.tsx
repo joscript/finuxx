@@ -23,6 +23,7 @@ import {
   FloatingAddButton,
   MonthSelector,
   FilterModal,
+  TransactionDetailsModal,
   SkeletonLoading,
   DEFAULT_FILTERS,
   groupTransactionsByDate,
@@ -42,6 +43,9 @@ export default function TransactionsScreen() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [showAddModal, setShowAddModal] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] =
+    useState<Transaction | null>(null);
   const [filters, setFilters] = useState<FilterOptions>(DEFAULT_FILTERS);
   const flatListRef = useRef<FlatList>(null);
 
@@ -134,9 +138,24 @@ export default function TransactionsScreen() {
         processedTransferPairs.add(pairKey);
 
         const transferDirection = canonicalTransfer.transferDirection || "out";
-        const relatedAccountName =
+        const currentAccountName = canonicalTransfer.account?.name;
+        const counterpartAccountName =
           canonicalTransfer.relatedTransaction?.account?.name ||
           relatedTransaction?.account?.name;
+
+        const sourceAccountName =
+          transferDirection === "out"
+            ? currentAccountName
+            : counterpartAccountName;
+        const destinationAccountName =
+          transferDirection === "out"
+            ? counterpartAccountName
+            : currentAccountName;
+
+        const relatedAccountName =
+          transferDirection === "in"
+            ? sourceAccountName
+            : destinationAccountName;
 
         const transferMerchant =
           transferDirection === "in"
@@ -158,8 +177,11 @@ export default function TransactionsScreen() {
           amount: parseFloat(canonicalTransfer.amount),
           date: canonicalTransfer.transactionDate,
           accountId: canonicalTransfer.accountId?.toString(),
+          accountName: currentAccountName,
           transferDirection,
           relatedAccountName,
+          sourceAccountName,
+          destinationAccountName,
         });
 
         return acc;
@@ -250,9 +272,11 @@ export default function TransactionsScreen() {
   console.log(">>> Grouped transactions:", JSON.stringify(groupedTransactions));
 
   // Handle transaction press
-  const handleTransactionPress = (transaction: Transaction) => {
+  const handleTransactionPress = useCallback((transaction: Transaction) => {
     console.log("Transaction pressed:", transaction.id);
-  };
+    setSelectedTransaction(transaction);
+    setShowDetailsModal(true);
+  }, []);
 
   // Handle add transaction
   const handleAddTransaction = () => {
@@ -467,6 +491,15 @@ export default function TransactionsScreen() {
             filters={filters}
             onApply={setFilters}
             onReset={() => setFilters(DEFAULT_FILTERS)}
+          />
+
+          <TransactionDetailsModal
+            visible={showDetailsModal}
+            transaction={selectedTransaction}
+            onClose={() => {
+              setShowDetailsModal(false);
+              setSelectedTransaction(null);
+            }}
           />
         </>
       )}

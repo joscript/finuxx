@@ -5,6 +5,7 @@ export { default as FloatingAddButton } from "./FloatingAddButton";
 export { default as MonthSelector } from "./MonthSelector";
 export { default as TransactionAddModal } from "./TransactionAddModal";
 export { default as FilterModal } from "./FilterModal";
+export { default as TransactionDetailsModal } from "./TransactionDetailsModal";
 export { default as SkeletonLoading } from "./SkeletonLoading";
 
 export type {

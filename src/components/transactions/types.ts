@@ -14,6 +14,8 @@ export interface Transaction {
   type: "income" | "expense" | "transfer";
   transferDirection?: "out" | "in";
   relatedAccountName?: string;
+  sourceAccountName?: string;
+  destinationAccountName?: string;
   category: string;
   categoryId?: string;
   categoryIcon: keyof typeof Ionicons.glyphMap;

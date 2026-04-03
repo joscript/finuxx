@@ -7,6 +7,7 @@ import {
   TextInput,
   ScrollView,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
 } from "react-native";
 import Animated, {
@@ -18,6 +19,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { categoryService, accountService } from "../api/services";
 import { Category, Account } from "../api/types";
 import { useCurrencySymbol } from "../hooks/useCurrency";
+import CalculatorKeypad, {
+  evaluateCalculatorExpression,
+} from "./CalculatorKeypad";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -61,7 +65,7 @@ export default function AddTransactionModal({
   );
   const symbol = useCurrencySymbol();
   const [merchant, setMerchant] = useState("");
-  const [amount, setAmount] = useState("");
+  const [amountExpression, setAmountExpression] = useState("");
   const [note, setNote] = useState("");
   const [isRecurring, setIsRecurring] = useState(false);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
@@ -69,8 +73,15 @@ export default function AddTransactionModal({
   const [showDestinationAccountPicker, setShowDestinationAccountPicker] =
     useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [amountKeypadVisible, setAmountKeypadVisible] = useState(true);
 
   const scale = useSharedValue(1);
+  const amountEvaluation = evaluateCalculatorExpression(amountExpression);
+  const normalizedAmount = amountEvaluation.normalizedResult;
+  const hasValidAmount =
+    amountEvaluation.isValid &&
+    amountEvaluation.result !== null &&
+    amountEvaluation.result > 0;
 
   useEffect(() => {
     if (visible) {
@@ -102,12 +113,13 @@ export default function AddTransactionModal({
     setAccount(null);
     setDestinationAccount(null);
     setMerchant("");
-    setAmount("");
+    setAmountExpression("");
     setNote("");
     setIsRecurring(false);
     setShowCategoryPicker(false);
     setShowAccountPicker(false);
     setShowDestinationAccountPicker(false);
+    setAmountKeypadVisible(true);
   };
 
   const handleClose = () => {
@@ -122,7 +134,7 @@ export default function AddTransactionModal({
 
   const handleSubmit = async () => {
     const isTransfer = type === "transfer";
-    if (!amount.trim() || !account) {
+    if (!hasValidAmount || !normalizedAmount || !account) {
       return;
     }
 
@@ -143,7 +155,7 @@ export default function AddTransactionModal({
         ? destinationAccount?.id.toString()
         : undefined,
       type,
-      amount: amount.replace(/,/g, ""),
+      amount: normalizedAmount,
       transactionDate: new Date().toISOString().split("T")[0],
       categoryId: isTransfer ? undefined : category?.id,
       merchant:
@@ -173,6 +185,10 @@ export default function AddTransactionModal({
     scale.value = withSpring(1);
   };
 
+  const hideAmountKeypad = () => {
+    setAmountKeypadVisible(false);
+  };
+
   const filteredCategories = categories.filter((cat) => {
     if (type === "transfer") {
       return false;
@@ -181,12 +197,17 @@ export default function AddTransactionModal({
   });
 
   const canSubmit =
-    !!amount.trim() &&
+    hasValidAmount &&
     !!account &&
     !isSubmitting &&
     (type === "transfer"
       ? !!destinationAccount && destinationAccount.id !== account.id
       : !!merchant.trim() && !!category);
+  const shouldShowAmountKeypad =
+    amountKeypadVisible &&
+    !showCategoryPicker &&
+    !showAccountPicker &&
+    !showDestinationAccountPicker;
 
   return (
     <Modal
@@ -222,6 +243,7 @@ export default function AddTransactionModal({
               <View className="flex-row bg-gray-100 dark:bg-gray-800 rounded-2xl p-1">
                 <Pressable
                   onPress={() => {
+                    hideAmountKeypad();
                     setType("expense");
                     setCategory(null);
                   }}
@@ -259,6 +281,7 @@ export default function AddTransactionModal({
                 </Pressable>
                 <Pressable
                   onPress={() => {
+                    hideAmountKeypad();
                     setType("income");
                     setCategory(null);
                   }}
@@ -296,6 +319,7 @@ export default function AddTransactionModal({
                 </Pressable>
                 <Pressable
                   onPress={() => {
+                    hideAmountKeypad();
                     setType("transfer");
                     setCategory(null);
                   }}
@@ -340,7 +364,7 @@ export default function AddTransactionModal({
                 Amount
               </Text>
               <View
-                className="bg-white dark:bg-gray-800 rounded-2xl px-5 py-4 flex-row items-center"
+                className="bg-white dark:bg-gray-800 rounded-2xl px-5 py-4"
                 style={{
                   shadowColor: "#000",
                   shadowOffset: { width: 0, height: 2 },
@@ -349,17 +373,47 @@ export default function AddTransactionModal({
                   elevation: 2,
                 }}
               >
-                <Text className="text-gray-400 text-2xl font-medium mr-2">
-                  {symbol}
-                </Text>
-                <TextInput
-                  value={amount}
-                  onChangeText={setAmount}
-                  placeholder="0.00"
-                  placeholderTextColor="#9ca3af"
-                  keyboardType="decimal-pad"
-                  className="flex-1 text-gray-900 dark:text-white text-2xl font-bold"
-                />
+                <Pressable
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    setAmountKeypadVisible(true);
+                  }}
+                >
+                  <Text className="text-gray-500 dark:text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">
+                    Expression
+                  </Text>
+                  <Text
+                    className={`text-base font-medium mb-3 ${
+                      amountExpression
+                        ? "text-gray-700 dark:text-gray-200"
+                        : "text-gray-400"
+                    }`}
+                  >
+                    {amountExpression ||
+                      "Tap the calculator to enter an amount"}
+                  </Text>
+                  <View className="flex-row items-end">
+                    <Text className="text-gray-400 text-2xl font-medium mr-2">
+                      {symbol}
+                    </Text>
+                    <Text
+                      className={`text-3xl font-bold ${
+                        hasValidAmount
+                          ? "text-gray-900 dark:text-white"
+                          : amountExpression
+                            ? "text-rose-500 dark:text-rose-300"
+                            : "text-gray-400"
+                      }`}
+                    >
+                      {hasValidAmount ? normalizedAmount : "0.00"}
+                    </Text>
+                  </View>
+                </Pressable>
+                {!!amountExpression && !amountEvaluation.isValid && (
+                  <Text className="text-rose-500 dark:text-rose-300 text-sm font-medium mt-3">
+                    {amountEvaluation.error ?? "Invalid calculation"}
+                  </Text>
+                )}
               </View>
             </View>
 
@@ -371,6 +425,7 @@ export default function AddTransactionModal({
                 </Text>
                 <Pressable
                   onPress={() => {
+                    hideAmountKeypad();
                     setShowCategoryPicker(!showCategoryPicker);
                     setShowAccountPicker(false);
                   }}
@@ -431,6 +486,7 @@ export default function AddTransactionModal({
                       <Pressable
                         key={cat.id}
                         onPress={() => {
+                          hideAmountKeypad();
                           setCategory(cat);
                           setShowCategoryPicker(false);
                         }}
@@ -478,6 +534,7 @@ export default function AddTransactionModal({
               </Text>
               <Pressable
                 onPress={() => {
+                  hideAmountKeypad();
                   setShowAccountPicker(!showAccountPicker);
                   setShowCategoryPicker(false);
                   setShowDestinationAccountPicker(false);
@@ -548,6 +605,7 @@ export default function AddTransactionModal({
                     <Pressable
                       key={acc.id}
                       onPress={() => {
+                        hideAmountKeypad();
                         setAccount(acc);
                         setShowAccountPicker(false);
                       }}
@@ -603,6 +661,7 @@ export default function AddTransactionModal({
                 </Text>
                 <Pressable
                   onPress={() => {
+                    hideAmountKeypad();
                     setShowDestinationAccountPicker(
                       !showDestinationAccountPicker,
                     );
@@ -683,6 +742,7 @@ export default function AddTransactionModal({
                         <Pressable
                           key={acc.id}
                           onPress={() => {
+                            hideAmountKeypad();
                             setDestinationAccount(acc);
                             setShowDestinationAccountPicker(false);
                           }}
@@ -758,6 +818,7 @@ export default function AddTransactionModal({
                 <TextInput
                   value={merchant}
                   onChangeText={setMerchant}
+                  onFocus={() => setAmountKeypadVisible(false)}
                   placeholder={
                     type === "income"
                       ? "e.g., Company Inc."
@@ -789,6 +850,7 @@ export default function AddTransactionModal({
                 <TextInput
                   value={note}
                   onChangeText={setNote}
+                  onFocus={() => setAmountKeypadVisible(false)}
                   placeholder="Add a note..."
                   placeholderTextColor="#9ca3af"
                   multiline
@@ -801,7 +863,10 @@ export default function AddTransactionModal({
 
             {/* Recurring Toggle */}
             <Pressable
-              onPress={() => setIsRecurring(!isRecurring)}
+              onPress={() => {
+                hideAmountKeypad();
+                setIsRecurring(!isRecurring);
+              }}
               className="bg-white dark:bg-gray-800 rounded-2xl px-5 py-4 flex-row items-center justify-between mb-8"
               style={{
                 shadowColor: "#000",
@@ -884,6 +949,12 @@ export default function AddTransactionModal({
             </AnimatedPressable>
           </View>
         </ScrollView>
+        {shouldShowAmountKeypad && (
+          <CalculatorKeypad
+            expression={amountExpression}
+            onChangeExpression={setAmountExpression}
+          />
+        )}
       </KeyboardAvoidingView>
     </Modal>
   );

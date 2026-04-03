@@ -82,27 +82,105 @@ function StatGridCard({
 }
 
 // ============ HELPER FUNCTIONS ============
-function getCoachInsight(
-  userName: string,
-  budgetSpent: number,
-  budgetTotal: number,
-  currencySymbol: string,
-): string {
+interface CoachInsightContext {
+  userName: string;
+  currencySymbol: string;
+  budgetSpent: number;
+  budgetTotal: number;
+  monthlyIncome: number;
+  monthlyExpenses: number;
+  netFlow: number;
+  topCategory?: {
+    name: string;
+    amount: number;
+    percent: number;
+  };
+  activeGoalsCount: number;
+  goalsAbove60: number;
+  nextBill?: {
+    name: string;
+    amount: number;
+    daysUntilDue: number;
+  };
+}
+
+function getCoachInsight(context: CoachInsightContext): string {
+  const {
+    userName,
+    currencySymbol,
+    budgetSpent,
+    budgetTotal,
+    monthlyIncome,
+    monthlyExpenses,
+    netFlow,
+    topCategory,
+    activeGoalsCount,
+    goalsAbove60,
+    nextBill,
+  } = context;
+
+  const formatAmount = (amount: number) =>
+    `${currencySymbol}${Math.abs(amount).toLocaleString(undefined, {
+      maximumFractionDigits: 0,
+    })}`;
+
   if (budgetTotal === 0) {
-    return `Welcome back, ${userName}! Set up your monthly budget so I can give you personalized financial guidance.`;
+    if (monthlyIncome === 0 && monthlyExpenses === 0) {
+      return `Welcome back, ${userName}! Set up your monthly budget so I can give you personalized financial guidance.`;
+    }
+
+    if (netFlow < 0) {
+      return `${userName}, your cash flow is negative this month (${currencySymbol}-${formatAmount(netFlow).replace(currencySymbol, "")}). Set a monthly budget so we can tighten spending and stabilize your plan.`;
+    }
+
+    return `Nice work, ${userName}! You're currently cash-flow positive by ${formatAmount(netFlow)}. Set a monthly budget so I can coach you with more targeted insights.`;
   }
-  const pct = Math.round((budgetSpent / budgetTotal) * 100);
-  const remaining = `${currencySymbol}${(budgetTotal - budgetSpent).toLocaleString()}`;
-  if (pct >= 100) {
-    return `${userName}, you've exceeded your monthly budget. Let's review your spending together and get back on track.`;
+
+  const budgetUsagePct = Math.round((budgetSpent / budgetTotal) * 100);
+  const budgetRemaining = Math.max(budgetTotal - budgetSpent, 0);
+
+  let primaryInsight = "";
+  if (budgetUsagePct >= 100) {
+    primaryInsight = `${userName}, you've exceeded your monthly budget by ${formatAmount(budgetSpent - budgetTotal)}.`;
+  } else if (budgetUsagePct >= 80) {
+    primaryInsight = `Heads up, ${userName}! You've used ${budgetUsagePct}% of your monthly budget with ${formatAmount(budgetRemaining)} left.`;
+  } else if (budgetUsagePct >= 50) {
+    primaryInsight = `Good pacing, ${userName}. You're at ${budgetUsagePct}% of your budget, with ${formatAmount(budgetRemaining)} remaining.`;
+  } else {
+    primaryInsight = `Great start, ${userName}! You've only used ${budgetUsagePct}% of your monthly budget.`;
   }
-  if (pct >= 80) {
-    return `Heads up, ${userName}! You've used ${pct}% of your monthly budget — only ${remaining} left. Let's keep it tight.`;
+
+  let secondaryInsight = "";
+  if (netFlow < 0) {
+    secondaryInsight = `Net cash flow is negative this month (${currencySymbol}-${formatAmount(netFlow).replace(currencySymbol, "")}), so trimming variable expenses now can help.`;
+  } else if (monthlyIncome > 0) {
+    const savingsRate = Math.round((netFlow / monthlyIncome) * 100);
+    secondaryInsight = `This month's cash flow is ${formatAmount(netFlow)} (${savingsRate}% of income) from ${formatAmount(monthlyIncome)} income vs ${formatAmount(monthlyExpenses)} expenses.`;
+  } else {
+    secondaryInsight = `This month you've spent ${formatAmount(monthlyExpenses)} with no recorded income yet.`;
   }
-  if (pct >= 50) {
-    return `Good progress, ${userName}! You're halfway through your budget with ${remaining} remaining. You're on a good pace.`;
+
+  let tertiaryInsight = "";
+  if (topCategory && topCategory.percent >= 35) {
+    tertiaryInsight = `Your biggest spending hotspot is ${topCategory.name} at ${topCategory.percent}% (${formatAmount(topCategory.amount)}) of tracked category spend.`;
+  } else if (activeGoalsCount > 0) {
+    tertiaryInsight =
+      goalsAbove60 > 0
+        ? `${goalsAbove60} of your active goals are above 60% complete. Keep that momentum going.`
+        : `You have ${activeGoalsCount} active goal${activeGoalsCount === 1 ? "" : "s"}; even small weekly contributions will move them forward.`;
+  } else if (nextBill) {
+    const dueLabel =
+      nextBill.daysUntilDue <= 0
+        ? "due today"
+        : nextBill.daysUntilDue === 1
+          ? "due tomorrow"
+          : `due in ${nextBill.daysUntilDue} days`;
+    tertiaryInsight = `Next bill: ${nextBill.name} (${formatAmount(nextBill.amount)}) is ${dueLabel}.`;
   }
-  return `Great start, ${userName}! You've only spent ${pct}% of your monthly budget. Keep it going strong!`;
+
+  return [primaryInsight, secondaryInsight, tertiaryInsight]
+    .filter(Boolean)
+    .join(" ");
 }
 
 // ============ MAIN HOME SCREEN ============
@@ -158,10 +236,13 @@ export default function HomeScreen() {
 
   const budgetSpent = currentBudget?.totalSpent || 0;
   const budgetTotal = parseFloat(currentBudget?.totalAmount || "0");
+  const monthlyIncomeRaw = transactionSummary?.totalIncome || 0;
+  const monthlyExpensesRaw = transactionSummary?.totalExpenses || 0;
+  const netFlowRaw = transactionSummary?.netFlow || 0;
 
-  const monthlyExpenses = fmt(transactionSummary?.totalExpenses || 0);
-  const monthIncome = fmt(transactionSummary?.totalIncome || 0);
-  const savings = fmt(transactionSummary?.netFlow || 0);
+  const monthlyExpenses = fmt(monthlyExpensesRaw);
+  const monthIncome = fmt(monthlyIncomeRaw);
+  const savings = fmt(netFlowRaw);
 
   const activeGoals = goals.filter(
     (g) => parseFloat(g.currentAmount) < parseFloat(g.targetAmount),
@@ -180,16 +261,16 @@ export default function HomeScreen() {
   ).length;
 
   const percentageChange =
-    transactionSummary?.totalIncome && transactionSummary.totalIncome > 0
-      ? parseFloat(
-          (
-            (transactionSummary.netFlow / transactionSummary.totalIncome) *
-            100
-          ).toFixed(1),
-        )
+    monthlyIncomeRaw > 0
+      ? parseFloat(((netFlowRaw / monthlyIncomeRaw) * 100).toFixed(1))
       : undefined;
 
-  const upcomingBills = bills?.slice(0, 3) || [];
+  const upcomingBills = [...(bills || [])]
+    .sort(
+      (left, right) =>
+        new Date(left.dueDate).getTime() - new Date(right.dueDate).getTime(),
+    )
+    .slice(0, 3);
 
   const budgetHealthColor: "good" | "warning" | "danger" =
     budgetTotal === 0
@@ -215,6 +296,58 @@ export default function HomeScreen() {
         color: spent > budget ? "#ef4444" : "#22c55e",
       };
     });
+
+  const totalCategorySpend = budgetCategories.reduce(
+    (sum, category) => sum + category.spent,
+    0,
+  );
+  const topCategory =
+    budgetCategories.length > 0
+      ? [...budgetCategories]
+          .sort((left, right) => right.spent - left.spent)
+          .map((category) => ({
+            name: category.name,
+            amount: category.spent,
+            percent:
+              totalCategorySpend > 0
+                ? Math.round((category.spent / totalCategorySpend) * 100)
+                : 0,
+          }))
+          .find((category) => category.amount > 0)
+      : undefined;
+
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const nextBill =
+    upcomingBills.length > 0
+      ? (() => {
+          const dueDate = new Date(upcomingBills[0].dueDate);
+          dueDate.setHours(0, 0, 0, 0);
+          const msPerDay = 1000 * 60 * 60 * 24;
+          return {
+            name: upcomingBills[0].name,
+            amount: parseFloat(upcomingBills[0].amount) || 0,
+            daysUntilDue: Math.max(
+              0,
+              Math.round((dueDate.getTime() - now.getTime()) / msPerDay),
+            ),
+          };
+        })()
+      : undefined;
+
+  const coachInsight = getCoachInsight({
+    userName,
+    currencySymbol,
+    budgetSpent,
+    budgetTotal,
+    monthlyIncome: monthlyIncomeRaw,
+    monthlyExpenses: monthlyExpensesRaw,
+    netFlow: netFlowRaw,
+    topCategory,
+    activeGoalsCount: activeGoals.length,
+    goalsAbove60,
+    nextBill,
+  });
 
   // Press handlers
   const handleBalancePress = () => {
@@ -302,12 +435,7 @@ export default function HomeScreen() {
           <AICoachInsightHeader
             userName={userName}
             avatarUrl={userAvatar}
-            insight={getCoachInsight(
-              userName,
-              budgetSpent,
-              budgetTotal,
-              currencySymbol,
-            )}
+            insight={coachInsight}
             budgetHealthColor={budgetHealthColor}
             onPress={handleCoachPress}
             onNotificationPress={handleNotificationPress}
@@ -394,12 +522,7 @@ export default function HomeScreen() {
             className="mt-6 px-4"
           >
             <AICoachInsightCard
-              insight={getCoachInsight(
-                userName,
-                budgetSpent,
-                budgetTotal,
-                currencySymbol,
-              )}
+              insight={coachInsight}
               onPress={handleCoachPress}
             />
           </Animated.View>
